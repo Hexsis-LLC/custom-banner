@@ -16,6 +16,7 @@ import {
   import type { IndexFiltersProps, TabProps } from '@shopify/polaris';
   import { useState, useCallback } from 'react';
   import { TitleBar } from "@shopify/app-bridge-react";
+  import { redirect, useNavigate } from '@remix-run/react';
   
   export default function CampaignPage() {
     const sleep = (ms: number) =>
@@ -332,12 +333,15 @@ import {
         </IndexTable.Row>
       ),
     );
-  
+    const navigate = useNavigate();
     return (
       <Page>
-        <TitleBar title="Campaign">
-        <button variant="primary" >
-          Generate a product
+        <TitleBar title="Welcome to Custom Banner
+      "> 
+        <button variant="primary" onClick={() => {
+           navigate("/app/campaign/announcement")
+        }}>
+        Create Custom Banner
         </button>
       </TitleBar>
         <Layout>
