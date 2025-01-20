@@ -5,28 +5,39 @@ import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "app/shopify.server";
-
+import { db } from "app/db.server";
+import { onboardingTable } from "drizzle/schemas";
+import { eq } from "drizzle-orm/sql";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
+    const {session } = await authenticate.admin(request);
 
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+// Check onboarding status
+const onboarding = await db.select()
+  .from(onboardingTable)
+  .where(eq(onboardingTable.shop, session.shop))
+  .get();
+
+const hasCompletedOnboarding = onboarding?.hasCompletedOnboarding ?? false;
+
+  return { apiKey: process.env.SHOPIFY_API_KEY || "", hideNav: hasCompletedOnboarding};
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, hideNav } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <NavMenu>
+      {hideNav && <NavMenu>
         <Link to="/app" rel="home">
           Home
         </Link>
         <Link to="/app/campaign">Campaign</Link>
         <Link to="/app/settings">Settings</Link>
-      </NavMenu>
-      <Outlet />
+      </NavMenu>}
+      <Outlet context={{ hideNav }} />
     </AppProvider>
   );
 }
