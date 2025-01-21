@@ -16,8 +16,8 @@ import {
   import type { IndexFiltersProps, TabProps } from '@shopify/polaris';
   import { useState, useCallback } from 'react';
   import { TitleBar } from "@shopify/app-bridge-react";
-  import { redirect, useNavigate } from '@remix-run/react';
-  
+  import { useNavigate } from '@remix-run/react';
+
   export default function CampaignPage() {
     const sleep = (ms: number) =>
       new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,14 +35,14 @@ import {
       setItemStrings(newItemStrings);
       setSelected(0);
     };
-  
+
     const duplicateView = async (name: string) => {
       setItemStrings([...itemStrings, name]);
       setSelected(itemStrings.length);
       await sleep(1);
       return true;
     };
-  
+
     const tabs: TabProps[] = itemStrings.map((item, index) => ({
       content: item,
       index,
@@ -109,12 +109,12 @@ import {
     const [sortSelected, setSortSelected] = useState(['order asc']);
     const {mode, setMode} = useSetIndexFiltersMode();
     const onHandleCancel = () => {};
-  
+
     const onHandleSave = async () => {
       await sleep(1);
       return true;
     };
-  
+
     const primaryAction: IndexFiltersProps['primaryAction'] =
       selected === 0
         ? {
@@ -137,7 +137,7 @@ import {
     );
     const [taggedWith, setTaggedWith] = useState('');
     const [queryValue, setQueryValue] = useState('');
-  
+
     const handleAccountStatusChange = useCallback(
       (value: string[]) => setAccountStatus(value),
       [],
@@ -175,7 +175,7 @@ import {
       handleQueryValueRemove,
       handleTaggedWithRemove,
     ]);
-  
+
     const filters = [
       {
         key: 'accountStatus',
@@ -229,7 +229,7 @@ import {
         ),
       },
     ];
-  
+
     const appliedFilters: IndexFiltersProps['appliedFilters'] = [];
     if (accountStatus && !isEmpty(accountStatus)) {
       const key = 'accountStatus';
@@ -255,7 +255,7 @@ import {
         onRemove: handleTaggedWithRemove,
       });
     }
-  
+
     const orders = [
       {
         id: '1020',
@@ -301,10 +301,10 @@ import {
       singular: 'order',
       plural: 'orders',
     };
-  
+
     const {selectedResources, allResourcesSelected, handleSelectionChange} =
       useIndexResourceState(orders);
-  
+
     const rowMarkup = orders.map(
       (
         {id, order, date, customer, total, paymentStatus, fulfillmentStatus},
@@ -337,7 +337,7 @@ import {
     return (
       <Page>
         <TitleBar title="Welcome to Custom Banner
-      "> 
+      ">
         <button variant="primary" onClick={() => {
            navigate("/app/campaign/announcement")
         }}>
@@ -400,7 +400,7 @@ import {
         </Layout>
       </Page>
     );
-  
+
     function disambiguateLabel(key: string, value: string | any[]): string {
       switch (key) {
         case 'moneySpent':
@@ -413,7 +413,7 @@ import {
           return value as string;
       }
     }
-  
+
     function isEmpty(value: string | string[]): boolean {
       if (Array.isArray(value)) {
         return value.length === 0;

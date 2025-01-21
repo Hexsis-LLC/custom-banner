@@ -8,7 +8,7 @@ import {
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 
-export const streamTimeout = 5000;
+const ABORT_DELAY = 5000;
 
 export default async function handleRequest(
   request: Request,
@@ -27,6 +27,7 @@ export default async function handleRequest(
       <RemixServer
         context={remixContext}
         url={request.url}
+        abortDelay={ABORT_DELAY}
       />,
       {
         [callbackName]: () => {
@@ -52,8 +53,6 @@ export default async function handleRequest(
       }
     );
 
-    // Automatically timeout the React renderer after 6 seconds, which ensures
-    // React has enough time to flush down the rejected boundary contents
-    setTimeout(abort, streamTimeout + 1000);
+    setTimeout(abort, ABORT_DELAY);
   });
 }
