@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
-application_url = "https://singles-fotos-magic-biol.trycloudflare.com"
+application_url = "https://keeping-compression-respond-notebook.trycloudflare.com"
 embedded = true
 name = "Custom Banner"
 handle = "custom-banner-63"
@@ -23,9 +23,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://singles-fotos-magic-biol.trycloudflare.com/auth/callback",
-  "https://singles-fotos-magic-biol.trycloudflare.com/auth/shopify/callback",
-  "https://singles-fotos-magic-biol.trycloudflare.com/api/auth/callback"
+  "https://keeping-compression-respond-notebook.trycloudflare.com/auth/callback",
+  "https://keeping-compression-respond-notebook.trycloudflare.com/auth/shopify/callback",
+  "https://keeping-compression-respond-notebook.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
@@ -34,3 +34,4 @@ embedded = false
 [build]
 dev_store_url = "hexsis-test-store.myshopify.com"
 automatically_update_urls_on_dev = true
+include_config_on_deploy = true

@@ -13,7 +13,7 @@ export const links = () => [{rel: "stylesheet", href: polarisStyles}];
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-  const {session} = await authenticate.admin(request);
+  const {admin,session} = await authenticate.admin(request);
 
 // Check onboarding status
   const onboarding = await db.select()

@@ -1,17 +1,12 @@
 import {
   Page,
-  Link, Card, Text,
+  Card, Text,
 } from "@shopify/polaris";
-import {TitleBar} from "@shopify/app-bridge-react";
-import {useEffect, useState} from "react";
-import {useNavigate, useOutletContext} from "@remix-run/react";
+import {useEffect} from "react";
+import {useOutletContext} from "@remix-run/react";
 import OnboardingInit from "../component/onbording";
 
 export default function Index() {
-  const [isLoding, setIsLoding] = useState(false)
-
-  const navigator = useNavigate()
-
   const outletContext = useOutletContext<{ hideNav: boolean }>()
 
 
