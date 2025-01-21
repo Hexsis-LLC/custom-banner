@@ -1,0 +1,40 @@
+<script>
+  // Check if the announcement bar exists
+  var announcementBar = document.querySelector('.announcement-bar');
+
+  if (announcementBar) {
+    // If it exists, replace the existing content
+    var newContent = '<p class="announcement-bar__message center h5"><span>New Announcement Content Here</span></p>';
+    announcementBar.innerHTML = newContent;
+  } else {
+    // If it doesn't exist, create a new element and add it to the body
+    announcementBar = document.createElement('div');
+    announcementBar.className = 'announcement-bar color-background-1 gradient';
+    announcementBar.setAttribute('role', 'region');
+    announcementBar.setAttribute('aria-label', 'Announcement');
+
+    var pageWidthDiv = document.createElement('div');
+    pageWidthDiv.className = 'page-width';
+
+    var newContent = '<p class="announcement-bar__message center h5"><span>New Announcement Content Here</span></p>';
+    pageWidthDiv.innerHTML = newContent;
+
+    announcementBar.appendChild(pageWidthDiv);
+
+    // Insert the new announcement bar at the top of the body
+    document.body.insertBefore(announcementBar, document.body.firstChild);
+  }
+</script>
+
+{% schema %}
+{
+  "name": "Custom Banner",
+  "target": "body",
+  "templates": ["product", "index"],
+  "settings": [
+    { "type": "product", "id": "product", "label": "product", "autofill": true },
+    { "type": "color", "id": "colour", "label": "Star Colour", "default": "#ff0000" }
+  ]
+}
+{% endschema %}
+
