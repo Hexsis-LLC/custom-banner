@@ -3,16 +3,17 @@ import image from "../assets/onboarding.png";
 
 interface OnboardingInitProps {
   onStart: () => void;
+  title?: string
 }
 
-export default function OnboardingInit({onStart}: OnboardingInitProps) {
+export default function OnboardingInit({onStart, title}: OnboardingInitProps) {
   return (
     <Card>
       <div
         style={{display: 'flex', justifyContent: 'center', width: '100%', paddingTop: '40px', paddingBottom: '64px'}}>
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: '400px'}}>
           <img src={image} alt="onboarding"/>
-          <Text variant="headingMd" alignment={"center"} as="h2">Online store dashboard</Text>
+          <Text variant="headingMd" alignment={"center"} as="h2">{`${title ?? 'Online store dashboard'}`}</Text>
           <div style={{height: '6px'}}/>
           <Text as={'h3'} alignment="center">Your one stop solution for announcement which will increase your sale as
             well as your impression..</Text>

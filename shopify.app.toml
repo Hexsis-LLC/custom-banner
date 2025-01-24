@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
-application_url = "https://simple-cio-take-kick.trycloudflare.com"
+application_url = "https://olympics-yield-beginning-dx.trycloudflare.com"
 embedded = true
 name = "Custom Banner"
 handle = "custom-banner-63"
@@ -23,9 +23,9 @@ scopes = "write_products, read_themes"
 
 [auth]
 redirect_urls = [
-  "https://simple-cio-take-kick.trycloudflare.com/auth/callback",
-  "https://simple-cio-take-kick.trycloudflare.com/auth/shopify/callback",
-  "https://simple-cio-take-kick.trycloudflare.com/api/auth/callback"
+  "https://olympics-yield-beginning-dx.trycloudflare.com/auth/callback",
+  "https://olympics-yield-beginning-dx.trycloudflare.com/auth/shopify/callback",
+  "https://olympics-yield-beginning-dx.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
