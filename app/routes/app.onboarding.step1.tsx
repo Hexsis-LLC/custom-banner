@@ -1,4 +1,4 @@
-import {useNavigate} from "@remix-run/react";
+import {useNavigate, useLoaderData, useSubmit, useActionData} from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -13,24 +13,159 @@ import {
   Grid,
   Image,
   Divider,
-  Banner,
 } from "@shopify/polaris";
-import {useState} from "react";
+import {useState, useCallback, useEffect} from "react";
+import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
+import {authenticate} from "../shopify.server";
+import {json} from "@remix-run/node";
+import {db} from "../db.server";
+import {onboardingTable} from "../../drizzle/schema/onboarding";
+import {eq} from "drizzle-orm";
 
 import enableAppEmbed from "../assets/enable-app-embed-example.png";
 
+interface LoaderData {
+  shop: string;
+  themeId: string;
+  hasCompletedEmbed: boolean;
+  hasCompletedCreateNewBanner: boolean;
+}
+
+interface ActionData {
+  success: boolean;
+  error?: string;
+  action?: string;
+}
+
+export const loader = async ({request}: LoaderFunctionArgs) => {
+  const {admin, session} = await authenticate.admin(request);
+
+  // Fetch shop and theme data
+  const response = await admin.graphql(
+    `query {
+      shop {
+        myshopifyDomain
+      }
+      themes(first: 1) {
+        edges {
+          node {
+            id
+          }
+        }
+      }
+    }`
+  );
+
+  const data = await response.json();
+
+  // Fetch onboarding status
+  const onboardingStatus = await db.select({
+    hasCompletedEmbed: onboardingTable.hasCompletedEmbed,
+    hasCompletedCreateNewBanner: onboardingTable.hasCompletedCreateNewBanner,
+  })
+    .from(onboardingTable)
+    .where(eq(onboardingTable.shop, session.shop))
+    .get();
+
+  return json<LoaderData>({
+    shop: data.data.shop.myshopifyDomain,
+    themeId: data.data.themes.edges[0]?.node.id.replace('gid://shopify/Theme/', ''),
+    hasCompletedEmbed: onboardingStatus?.hasCompletedEmbed ?? false,
+    hasCompletedCreateNewBanner: onboardingStatus?.hasCompletedCreateNewBanner ?? false,
+  });
+};
+
+export const action = async ({request}: ActionFunctionArgs) => {
+  const {session} = await authenticate.admin(request);
+  const formData = await request.formData();
+  const action = formData.get("action");
+
+  try {
+    if (action === "enable_embed") {
+      await db.update(onboardingTable)
+        .set({
+          hasCompletedEmbed: true,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(onboardingTable.shop, session.shop))
+        .run();
+
+      return json<ActionData>({success: true, action: "enable_embed"});
+    }
+
+    if (action === "create_banner") {
+      await db.update(onboardingTable)
+        .set({
+          hasCompletedCreateNewBanner: true,
+          hasCompletedOnboarding: true,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(onboardingTable.shop, session.shop))
+        .run();
+
+      return json<ActionData>({success: true, action: "create_banner"});
+    }
+
+    return json<ActionData>({success: false, error: "Invalid action"});
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return json<ActionData>({success: false, error: errorMessage});
+  }
+};
+
 export default function AppOnboardingStep1() {
   const navigate = useNavigate();
-  const [selectedStep, setSelectedStep] = useState<string | null>("embed");
-  const [showAppEmbed, setShowAppEmbed] = useState(true);
+  const submit = useSubmit();
+  const actionData = useActionData<ActionData>();
+  const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner} = useLoaderData<LoaderData>();
+  const [selectedStep, setSelectedStep] = useState<string | null>(() => {
+    // If embed is completed, select banner step, otherwise select embed step
+    return hasCompletedEmbed ? "banner" : "embed";
+  });
 
-  const handleNext = () => {
-    navigate("/app/campaign");
-  };
+  useEffect(() => {
+    // Update selected step when completion status changes
+    if (hasCompletedEmbed && !hasCompletedCreateNewBanner) {
+      setSelectedStep("banner");
+    }
+  }, [hasCompletedEmbed, hasCompletedCreateNewBanner]);
 
-  const handleBack = () => {
-    navigate("/app/onboarding");
-  };
+  // Handle navigation after successful banner creation
+  useEffect(() => {
+    if (actionData?.success && actionData.action === "create_banner") {
+      navigate("/app/campaign/announcement");
+    }
+  }, [actionData, navigate]);
+
+  const handleBack = useCallback(() => {
+    navigate("/app/");
+  }, [navigate]);
+
+  const handleEnableAppEmbed = useCallback(() => {
+    const shopName = shop.replace('.myshopify.com', '');
+    window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=e451d624-718c-470b-9466-778747ad40f5%2Fcustom_banner_emb`);
+
+    const formData = new FormData();
+    formData.append('action', 'enable_embed');
+    submit(formData, {method: 'post'});
+  }, [shop, themeId, submit]);
+
+  const handleCreateBanner = useCallback(() => {
+    const formData = new FormData();
+    formData.append('action', 'create_banner');
+    submit(formData, {method: 'post'});
+  }, [submit]);
+
+  const completedSteps = [hasCompletedEmbed, hasCompletedCreateNewBanner].filter(Boolean).length;
+  const progress = (completedSteps / 2) * 100;
+
+  const handleStepSelect = useCallback((step: string) => {
+    // Only allow selecting banner if embed is completed
+    if (step === "banner" && !hasCompletedEmbed) return;
+    // Don't allow selecting embed if it's completed
+    if (step === "embed" && hasCompletedEmbed) return;
+    setSelectedStep(step);
+  }, [hasCompletedEmbed]);
 
   return (
     <Page>
@@ -61,10 +196,10 @@ export default function AppOnboardingStep1() {
                     justifyContent: "space-between"
                   }}>
                     <Text as="p" variant="bodyMd">
-                      0 out of 2 steps are completed
+                      {completedSteps} out of 2 steps are completed
                     </Text>
                     <Box width="75%">
-                      <ProgressBar progress={0} size="small"/>
+                      <ProgressBar progress={progress} size="small"/>
                     </Box>
                   </div>
                 </Box>
@@ -78,13 +213,14 @@ export default function AppOnboardingStep1() {
                           <RadioButton
                             label=""
                             checked={selectedStep === "embed"}
-                            onChange={() => setSelectedStep("embed")}
+                            onChange={() => handleStepSelect("embed")}
+                            disabled={hasCompletedEmbed}
                           />
                         </div>
                         <div style={{flex: 1}}>
                           <BlockStack>
-                            <Text variant="headingMd" as="h3">
-                              Enable App Embed
+                            <Text variant="headingMd" as="h3" tone={hasCompletedEmbed ? "success" : undefined}>
+                              Enable App Embed {hasCompletedEmbed && "✓"}
                             </Text>
                           </BlockStack>
                         </div>
@@ -98,43 +234,32 @@ export default function AppOnboardingStep1() {
                               <RadioButton
                                 label=""
                                 checked={selectedStep === "embed"}
-                                onChange={() => setSelectedStep("embed")}
+                                onChange={() => handleStepSelect("embed")}
+                                disabled={hasCompletedEmbed}
                               />
                               <div style={{flex: 1}}>
                                 <BlockStack gap={"200"}>
-
                                   <Text variant="headingMd" as="h3">
                                     Enable App Embed
                                   </Text>
                                   <Text variant="bodyMd" as="p" tone="subdued">
-                                    The button below will open a new window with app embed enabled. You only need to
-                                    click
+                                    The button below will open a new window with app embed enabled. You only need to click
                                     Save in that window then come back here to continue.
                                   </Text>
                                   <Box paddingBlockStart="200" paddingBlockEnd="200">
                                     <InlineStack gap="200">
-                                      <Button variant="primary"
-                                              onClick={() => {
-                                               // window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeEditorId}/editor?context=apps&template=index&activateAppId=${EXTENSTION_ID}/${EXTENSTION_FILE_NAME}`, '_blank');
-                                              }}
-                                              disabled={selectedStep !== "embed"}
-                                      >
-                                        Enable app embed
-                                      </Button>
                                       <Button
-                                        onClick={handleBack}
+                                        variant="primary"
+                                        onClick={handleEnableAppEmbed}
+                                        disabled={hasCompletedEmbed}
                                       >
-                                        Back
+                                        {hasCompletedEmbed ? "Enabled" : "Enable app embed"}
                                       </Button>
                                     </InlineStack>
                                   </Box>
-
                                 </BlockStack>
                               </div>
-
                             </InlineStack>
-
-
                           </Grid.Cell>
                           <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 6, lg: 4, xl: 4}}>
                             <Box>
@@ -146,7 +271,8 @@ export default function AppOnboardingStep1() {
                             </Box>
                           </Grid.Cell>
                         </Grid>
-                      </Card>}
+                      </Card>
+                    }
                   </Box>
                   {/* Create Banner */}
                   <BlockStack gap="400">
@@ -156,13 +282,14 @@ export default function AppOnboardingStep1() {
                           <RadioButton
                             label=""
                             checked={selectedStep === "banner"}
-                            onChange={() => setSelectedStep("banner")}
+                            onChange={() => handleStepSelect("banner")}
+                            disabled={!hasCompletedEmbed || hasCompletedCreateNewBanner}
                           />
                         </div>
                         <div style={{flex: 1}}>
                           <BlockStack>
-                            <Text variant="headingMd" as="h3">
-                              Create your first banner
+                            <Text variant="headingMd" as="h3" tone={hasCompletedCreateNewBanner ? "success" : undefined}>
+                              Create your first banner {hasCompletedCreateNewBanner && "✓"}
                             </Text>
                           </BlockStack>
                         </div>
@@ -176,26 +303,25 @@ export default function AppOnboardingStep1() {
                               <RadioButton
                                 label=""
                                 checked={selectedStep === "banner"}
-                                onChange={() => setSelectedStep("banner")}
+                                onChange={() => handleStepSelect("banner")}
+                                disabled={!hasCompletedEmbed || hasCompletedCreateNewBanner}
                               />
                               <div style={{flex: 1}}>
                                 <BlockStack gap={"200"}>
-
                                   <Text variant="headingMd" as="h3">
                                     Create your first banner
                                   </Text>
                                   <Text variant="bodyMd" as="p" tone="subdued">
-                                    The button below will open a new window with app embed enabled. You only need to
-                                    click
-                                    Save in that window then come back here to continue.
+                                    Create your first announcement banner to engage with your customers.
                                   </Text>
                                   <Box paddingBlockStart="200" paddingBlockEnd="200">
                                     <InlineStack gap="200">
-                                      <Button variant="primary"
-                                              onClick={() => setShowAppEmbed(true)}
-
+                                      <Button
+                                        variant="primary"
+                                        onClick={handleCreateBanner}
+                                        disabled={!hasCompletedEmbed || hasCompletedCreateNewBanner}
                                       >
-                                        Enable app embed
+                                        {hasCompletedCreateNewBanner ? "Banner Created" : "Create banner"}
                                       </Button>
                                       <Button
                                         onClick={handleBack}
@@ -204,13 +330,9 @@ export default function AppOnboardingStep1() {
                                       </Button>
                                     </InlineStack>
                                   </Box>
-
                                 </BlockStack>
                               </div>
-
                             </InlineStack>
-
-
                           </Grid.Cell>
                           <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 6, lg: 4, xl: 4}}>
                             <Box>

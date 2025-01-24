@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
-application_url = "https://keeping-compression-respond-notebook.trycloudflare.com"
+application_url = "https://simple-cio-take-kick.trycloudflare.com"
 embedded = true
 name = "Custom Banner"
 handle = "custom-banner-63"
@@ -19,13 +19,13 @@ api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products, read_themes"
 
 [auth]
 redirect_urls = [
-  "https://keeping-compression-respond-notebook.trycloudflare.com/auth/callback",
-  "https://keeping-compression-respond-notebook.trycloudflare.com/auth/shopify/callback",
-  "https://keeping-compression-respond-notebook.trycloudflare.com/api/auth/callback"
+  "https://simple-cio-take-kick.trycloudflare.com/auth/callback",
+  "https://simple-cio-take-kick.trycloudflare.com/auth/shopify/callback",
+  "https://simple-cio-take-kick.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

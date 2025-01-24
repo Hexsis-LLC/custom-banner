@@ -1,1 +1,2 @@
-export { sessionTable, onboardingTable } from 'packages/shopify-drizzle-sqlite/sqlite.schema';
+export {sessionTable} from 'packages/shopify-drizzle-sqlite/sqlite.schema';
+export {onboardingTable} from './onboarding';

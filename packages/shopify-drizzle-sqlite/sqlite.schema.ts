@@ -11,12 +11,4 @@ export const sessionTable = sqliteTable('session' as string, {
   userId: blob('userId', { mode: 'bigint' }),
 });
 
-export const onboardingTable = sqliteTable('onboarding', {
-  shop: text('shop').primaryKey(),
-  hasCompletedOnboarding: integer('hasCompletedOnboarding', { mode: 'boolean' }).notNull().default(false),
-  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
-  updatedAt: text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
-});
-
 export type SQLiteSessionTable = typeof sessionTable;
-export type SQLiteOnboardingTable = typeof onboardingTable;

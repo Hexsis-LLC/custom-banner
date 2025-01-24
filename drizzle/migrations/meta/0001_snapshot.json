@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "67927d7c-de96-4838-895e-d86b9a798ddb",
-  "prevId": "7abdb10c-e63d-4ca1-944c-3e946f76e391",
+  "id": "ddc72be8-d0ba-4ff7-aa09-c21ad0c83fba",
+  "prevId": "6b0c3091-277b-47ab-ba81-d82d06b83270",
   "tables": {
     "onboarding": {
       "name": "onboarding",
@@ -16,6 +16,22 @@
         },
         "hasCompletedOnboarding": {
           "name": "hasCompletedOnboarding",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "hasCompletedEmbed": {
+          "name": "hasCompletedEmbed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "hasCompletedCreateNewBanner": {
+          "name": "hasCompletedCreateNewBanner",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

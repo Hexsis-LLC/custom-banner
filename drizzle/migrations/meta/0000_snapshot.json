@@ -1,9 +1,48 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7abdb10c-e63d-4ca1-944c-3e946f76e391",
+  "id": "6b0c3091-277b-47ab-ba81-d82d06b83270",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "onboarding": {
+      "name": "onboarding",
+      "columns": {
+        "shop": {
+          "name": "shop",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hasCompletedOnboarding": {
+          "name": "hasCompletedOnboarding",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "session": {
       "name": "session",
       "columns": {
