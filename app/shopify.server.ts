@@ -16,7 +16,7 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   restResources,
   future: {
-    unstable_newEmbeddedAuthStrategy: false
+    unstable_newEmbeddedAuthStrategy: true
   },
   logger: {
     level: LogSeverity.Debug,
