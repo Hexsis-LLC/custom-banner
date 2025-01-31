@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
-application_url = "https://scales-continuous-rap-unauthorized.trycloudflare.com"
+application_url = "https://custombanner.ishaf.info"
 embedded = true
 name = "Custom Banner"
 handle = "custom-banner-63"
@@ -23,9 +23,9 @@ scopes = "write_products, read_themes"
 
 [auth]
 redirect_urls = [
-  "https://scales-continuous-rap-unauthorized.trycloudflare.com/auth/callback",
-  "https://scales-continuous-rap-unauthorized.trycloudflare.com/auth/shopify/callback",
-  "https://scales-continuous-rap-unauthorized.trycloudflare.com/api/auth/callback"
+  "https://custombanner.ishaf.info/auth/callback",
+  "https://custombanner.ishaf.info/auth/shopify/callback",
+  "https://custombanner.ishaf.info/api/auth/callback"
 ]
 
 [pos]
