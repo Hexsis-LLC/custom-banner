@@ -146,13 +146,13 @@ export async function checkAppEmbed(admin: AdminApiContext, session: Session, th
     });
 
     if (!assets.data[0]?.value) {
-      throw new Error("Theme settings not found");
+      return false;
     }
 
     const themeSettings = JSON.parse(assets.data[0].value as string) as ThemeSettings;
 
     if (!themeSettings.current?.blocks) {
-      throw new Error("Theme blocks not found");
+      return false;
     }
 
     const block = findBlockByType(
