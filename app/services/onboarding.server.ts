@@ -129,7 +129,7 @@ function findBlockByType(blocks: ThemeBlocks, typeString: string) {
   }
 
   const blockEntry = Object.entries(blocks).find(
-    ([_, blockData]) => blockData.type === typeString
+    ([_, blockData]) => blockData.type.includes(typeString)
   );
 
   return blockEntry
@@ -157,7 +157,7 @@ export async function checkAppEmbed(admin: AdminApiContext, session: Session, th
 
     const block = findBlockByType(
       themeSettings.current.blocks,
-      'shopify://apps/custom-banner/blocks/custom_banner_emb/e451d624-718c-470b-9466-778747ad40f5'
+      'shopify://apps/custom-banner/blocks/custom_banner_emb'
     );
 
     if (block && 'disabled' in block.blockData) {
