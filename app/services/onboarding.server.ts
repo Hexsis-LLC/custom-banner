@@ -172,10 +172,7 @@ export async function checkAppEmbed(admin: AdminApiContext, session: Session, th
 
     return false;
   } catch (error) {
-    console.error("Error checking app embed:", error);
-    if (error instanceof Error) {
-      throw new Error(`Failed to check app embed status: ${error.message}`);
-    }
-    throw new Error("Failed to check app embed status");
+    console.error("Error checking app embed:");
+    return false;
   }
 }
