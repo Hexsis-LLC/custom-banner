@@ -159,6 +159,9 @@ export async function checkAppEmbed(admin: AdminApiContext, session: Session, th
       themeSettings.current.blocks,
       'shopify://apps/custom-banner/blocks/custom_banner_emb'
     );
+    if(block === null) {
+      return false;
+    }
 
     if (block && 'disabled' in block.blockData) {
       await updateOnboardingStep(session, {
