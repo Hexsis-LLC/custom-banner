@@ -22,7 +22,6 @@ export async function initializeOnboarding(session: Session) {
     return { success: true };
   } catch (error) {
     console.error("Database error:", error);
-    throw new Error("Failed to initialize onboarding");
   }
 }
 
@@ -39,7 +38,6 @@ export async function completeOnboarding(session: Session) {
     return { success: true };
   } catch (error) {
     console.error("Database error:", error);
-    throw new Error("Failed to complete onboarding");
   }
 }
 
@@ -55,7 +53,6 @@ export async function getOnboardingStatus(session: Session) {
         .get();
   } catch (error) {
     console.error("Database error:", error);
-    throw new Error("Failed to fetch onboarding status");
   }
 }
 
@@ -75,7 +72,6 @@ export async function updateOnboardingStep(session: Session, data: {
     return { success: true };
   } catch (error) {
     console.error("Database error:", error);
-    throw new Error("Failed to update onboarding step");
   }
 }
 
@@ -103,7 +99,7 @@ export async function getShopAndThemeData(admin: AdminApiContext) {
     };
   } catch (error) {
     console.error("GraphQL error:", error);
-    throw new Error("Failed to fetch shop and theme data");
+    return null;
   }
 }
 
@@ -125,7 +121,7 @@ interface ThemeSettings {
 
 function findBlockByType(blocks: ThemeBlocks, typeString: string) {
   if (!blocks || typeof blocks !== 'object') {
-    throw new Error("Invalid blocks data");
+    return null;
   }
 
   const blockEntry = Object.entries(blocks).find(

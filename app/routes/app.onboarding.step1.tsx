@@ -18,11 +18,11 @@ import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {json} from "@remix-run/node";
 import {StepIndicator} from "../component/StepIndicator";
-import { 
-  getShopAndThemeData, 
-  checkAppEmbed, 
-  updateOnboardingStep, 
-  getOnboardingStatus 
+import {
+  getShopAndThemeData,
+  checkAppEmbed,
+  updateOnboardingStep,
+  getOnboardingStatus
 } from "../services/onboarding.server";
 import enableAppEmbed from "../assets/enable-app-embed-example.png";
 import {SkeletonLoading} from "../components/SkeletonLoading";
@@ -45,23 +45,26 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
   try {
     // Get shop and theme data
-    const {shop, themeId} = await getShopAndThemeData(admin);
-    
-    // Check app embed status and update if needed
-    await checkAppEmbed(admin, session, themeId);
-    
-    // Get current onboarding status
-    const status = await getOnboardingStatus(session);
+    const shopAndThemeData = await getShopAndThemeData(admin);
+    if(shopAndThemeData) {
+      const {shop, themeId} =shopAndThemeData;
+      // Check app embed status and update if needed
+      await checkAppEmbed(admin, session, themeId);
 
-    return json<LoaderData>({
-      shop,
-      themeId,
-      hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
-      hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
-    });
+      // Get current onboarding status
+      const status = await getOnboardingStatus(session);
+
+      return json<LoaderData>({
+        shop,
+        themeId,
+        hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
+        hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
+      });
+    }
+
   } catch (error) {
     console.error("Error loading data:", error);
-    throw new Error("Failed to load onboarding data");
+    return null;
   }
 };
 
@@ -77,16 +80,16 @@ export const action = async ({request}: ActionFunctionArgs) => {
         return json<ActionData>({success: true, action: "enable_embed"});
 
       case "create_banner":
-        await updateOnboardingStep(session, { 
+        await updateOnboardingStep(session, {
           hasCompletedCreateNewBanner: true,
-          hasCompletedEmbed: true 
+          hasCompletedEmbed: true
         });
         return json<ActionData>({success: true, action: "create_banner"});
 
       case "create_banner_skip":
-        await updateOnboardingStep(session, { 
+        await updateOnboardingStep(session, {
           hasCompletedCreateNewBanner: true,
-          hasCompletedEmbed: true 
+          hasCompletedEmbed: true
         });
         return json<ActionData>({success: true, action: "create_banner_skip"});
 
@@ -108,7 +111,7 @@ export default function AppOnboardingStep1() {
   const actionData = useActionData<ActionData>();
   const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner} = useLoaderData<LoaderData>();
   const navigation = useNavigation();
-  
+
   const [selected, setSelected] = useState<string | null>(() => {
     return hasCompletedEmbed ? "banner" : "embed";
   });
@@ -148,12 +151,6 @@ export default function AppOnboardingStep1() {
 
   const completedSteps = [hasCompletedEmbed, hasCompletedCreateNewBanner].filter(Boolean).length;
   const progress = (completedSteps / 2) * 100;
-
-  const handleStepSelect = useCallback((step: string) => {
-    if (step === "banner" && !hasCompletedEmbed) return;
-    if (step === "embed" && hasCompletedEmbed) return;
-    setSelected(step);
-  }, [hasCompletedEmbed]);
 
   // Show skeleton loading during navigation or form submission
   if (navigation.state !== "idle") {
