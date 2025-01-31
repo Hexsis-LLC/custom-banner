@@ -1,4 +1,4 @@
-import {useNavigate, useLoaderData, useSubmit, useActionData} from "@remix-run/react";
+import {useNavigate, useLoaderData, useSubmit, useActionData, useNavigation} from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -25,6 +25,7 @@ import {
   getOnboardingStatus 
 } from "../services/onboarding.server";
 import enableAppEmbed from "../assets/enable-app-embed-example.png";
+import {SkeletonLoading} from "../components/SkeletonLoading";
 
 interface LoaderData {
   shop: string;
@@ -106,6 +107,7 @@ export default function AppOnboardingStep1() {
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
   const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner} = useLoaderData<LoaderData>();
+  const navigation = useNavigation();
   
   const [selected, setSelected] = useState<string | null>(() => {
     return hasCompletedEmbed ? "banner" : "embed";
@@ -152,6 +154,11 @@ export default function AppOnboardingStep1() {
     if (step === "embed" && hasCompletedEmbed) return;
     setSelected(step);
   }, [hasCompletedEmbed]);
+
+  // Show skeleton loading during navigation or form submission
+  if (navigation.state !== "idle") {
+    return <SkeletonLoading type="onboarding" title="Loading Onboarding..." />;
+  }
 
   return (
     <Page>
