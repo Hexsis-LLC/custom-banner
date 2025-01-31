@@ -18,13 +18,16 @@ export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
 
   try {
-    const result = await initializeOnboarding(session);
-    return json<ActionData>(result);
+    await initializeOnboarding(session);
+    return json<ActionData>({
+      success: true,
+      error: "Successfully initialized onboarding"
+    });
   } catch (error) {
     console.error("Error initializing onboarding:", error);
-    return json<ActionData>({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Failed to initialize onboarding" 
+    return json<ActionData>({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to initialize onboarding"
     });
   }
 };
