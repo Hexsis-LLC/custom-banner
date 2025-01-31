@@ -9,7 +9,6 @@ import {
   Box,
   Button,
   InlineStack,
-  RadioButton,
   Grid,
   Image,
   Divider,
@@ -18,12 +17,14 @@ import {useState, useCallback, useEffect} from "react";
 import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {json} from "@remix-run/node";
-import {db} from "../db.server";
-import {onboardingTable} from "../../drizzle/schema/onboarding";
-import {eq} from "drizzle-orm";
-
-import enableAppEmbed from "../assets/enable-app-embed-example.png";
 import {StepIndicator} from "../component/StepIndicator";
+import { 
+  getShopAndThemeData, 
+  checkAppEmbed, 
+  updateOnboardingStep, 
+  getOnboardingStatus 
+} from "../services/onboarding.server";
+import enableAppEmbed from "../assets/enable-app-embed-example.png";
 
 interface LoaderData {
   shop: string;
@@ -37,135 +38,66 @@ interface ActionData {
   error?: string;
   action?: string;
 }
-interface BlockData {
-  type: string; // E.g., 'shopify://apps/custom-banner/blocks/custom_banner_emb/...'
-  disabled: boolean;
-  settings: any;
-}
-
-interface Blocks {
-  [blockId: string]: BlockData; // Each block is keyed by its unique ID
-}
-
-
-const findBlockByType = (blocks: Blocks, typeString: string) => {
-  if (!blocks || typeof blocks !== 'object') {
-    throw new Error("Invalid blocks data.");
-  }
-
-  const block = Object.entries(blocks).find(
-    ([_, blockData]) => blockData.type === typeString
-  );
-
-  return block
-    ? {blockId: block[0], blockData: block[1]}
-    : null;
-};
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
   const {admin, session} = await authenticate.admin(request);
 
-  // Fetch shop and theme data
-  const response = await admin.graphql(
-    `query {
-      shop {
-        myshopifyDomain
-      }
-      themes(first: 1) {
-        edges {
-          node {
-            id
-          }
-        }
-      }
-    }`
-  );
+  try {
+    // Get shop and theme data
+    const {shop, themeId} = await getShopAndThemeData(admin);
+    
+    // Check app embed status and update if needed
+    await checkAppEmbed(admin, session, themeId);
+    
+    // Get current onboarding status
+    const status = await getOnboardingStatus(session);
 
-  const data = await response.json();
-
-
-  const assets = await admin.rest.resources.Asset.all({
-    session: session,
-    theme_id: data.data.themes.edges[0]?.node.id.replace('gid://shopify/OnlineStoreTheme/', ''),
-    asset: {"key": "config/settings_data.json"},
-  });
-  const blocks: Blocks = JSON.parse(assets.data[0].value as string)['current']['blocks'];
-  console.log(blocks)
-  const block  = findBlockByType(blocks, 'shopify://apps/custom-banner/blocks/custom_banner_emb/e451d624-718c-470b-9466-778747ad40f5');
-  if(block){
-    await db.update(onboardingTable)
-      .set({
-        hasCompletedEmbed: !block?.blockData.disabled,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(onboardingTable.shop, session.shop))
-      .run();
+    return json<LoaderData>({
+      shop,
+      themeId,
+      hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
+      hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
+    });
+  } catch (error) {
+    console.error("Error loading data:", error);
+    throw new Error("Failed to load onboarding data");
   }
-  // Fetch onboarding status
-  const onboardingStatus = await db.select({
-    hasCompletedEmbed: onboardingTable.hasCompletedEmbed,
-    hasCompletedCreateNewBanner: onboardingTable.hasCompletedCreateNewBanner,
-  })
-    .from(onboardingTable)
-    .where(eq(onboardingTable.shop, session.shop))
-    .get();
-
-  return json<LoaderData>({
-    shop: data.data.shop.myshopifyDomain,
-    themeId: data.data.themes.edges[0]?.node.id.replace('gid://shopify/OnlineStoreTheme/', ''),
-    hasCompletedEmbed: onboardingStatus?.hasCompletedEmbed ?? false,
-    hasCompletedCreateNewBanner: onboardingStatus?.hasCompletedCreateNewBanner ?? false,
-  });
 };
 
 export const action = async ({request}: ActionFunctionArgs) => {
   const {session} = await authenticate.admin(request);
   const formData = await request.formData();
-  const action = formData.get("action");
+  const action = formData.get("action") as string;
 
   try {
-    if (action === "enable_embed") {
-      await db.update(onboardingTable)
-        .set({
-          hasCompletedEmbed: true,
-          updatedAt: new Date().toISOString()
-        })
-        .where(eq(onboardingTable.shop, session.shop))
-        .run();
+    switch (action) {
+      case "enable_embed":
+        await updateOnboardingStep(session, {hasCompletedEmbed: true});
+        return json<ActionData>({success: true, action: "enable_embed"});
 
-      return json<ActionData>({success: true, action: "enable_embed"});
-    }
-
-    if (action === "create_banner") {
-      await db.update(onboardingTable)
-        .set({
+      case "create_banner":
+        await updateOnboardingStep(session, { 
           hasCompletedCreateNewBanner: true,
-          hasCompletedOnboarding: false,
-          updatedAt: new Date().toISOString()
-        })
-        .where(eq(onboardingTable.shop, session.shop))
-        .run();
+          hasCompletedEmbed: true 
+        });
+        return json<ActionData>({success: true, action: "create_banner"});
 
-      return json<ActionData>({success: true, action: "create_banner"});
-    }
-
-    if (action === "create_banner_skip") {
-      await db.update(onboardingTable)
-        .set({
+      case "create_banner_skip":
+        await updateOnboardingStep(session, { 
           hasCompletedCreateNewBanner: true,
-          hasCompletedOnboarding: false,
-          updatedAt: new Date().toISOString()
-        })
-        .where(eq(onboardingTable.shop, session.shop))
-        .run();
+          hasCompletedEmbed: true 
+        });
+        return json<ActionData>({success: true, action: "create_banner_skip"});
 
-      return json<ActionData>({success: true, action: "create_banner_skip"});
+      default:
+        return json<ActionData>({success: false, error: "Invalid action"});
     }
-
-    return json<ActionData>({success: false, error: "Invalid action"});
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    return json<ActionData>({success: false, error: errorMessage});
+  } catch (error) {
+    console.error("Error processing action:", error);
+    return json<ActionData>({
+      success: false,
+      error: error instanceof Error ? error.message : "An unknown error occurred"
+    });
   }
 };
 
@@ -174,66 +106,51 @@ export default function AppOnboardingStep1() {
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
   const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner} = useLoaderData<LoaderData>();
-  const [selectedStep, setSelectedStep] = useState<string | null>(() => {
-    // If embed is completed, select banner step, otherwise select embed step
+  
+  const [selected, setSelected] = useState<string | null>(() => {
     return hasCompletedEmbed ? "banner" : "embed";
   });
 
   useEffect(() => {
-    // Update selected step when completion status changes
     if (hasCompletedEmbed && !hasCompletedCreateNewBanner) {
-      setSelectedStep("banner");
+      setSelected("banner");
     }
-    if(hasCompletedEmbed && hasCompletedCreateNewBanner){
+    if (hasCompletedEmbed && hasCompletedCreateNewBanner) {
       navigate('/app/onboarding/step2');
     }
   }, [hasCompletedEmbed, hasCompletedCreateNewBanner]);
 
-  // Handle navigation after successful banner creation
   useEffect(() => {
-    if (actionData?.success && actionData.action === "create_banner") {
-      navigate("/app/campaign/announcement");
+    if (actionData?.success) {
+      if (actionData.action === "create_banner") {
+        navigate("/app/campaign/announcement");
+      } else if (actionData.action === "create_banner_skip") {
+        navigate("/app/onboarding/step2");
+      }
     }
   }, [actionData, navigate]);
-
-  useEffect(() => {
-    if (actionData?.success && actionData.action === "create_banner_skip") {
-      navigate("/app/onboarding/step2");
-    }
-  }, [actionData, navigate]);
-
 
   const handleEnableAppEmbed = useCallback(() => {
     const shopName = shop.replace('.myshopify.com', '');
-    console.log('Shop:', shop);
-    console.log('Shop Name:', shopName);
-    console.log('Theme ID:', themeId);
     window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=e451d624-718c-470b-9466-778747ad40f5`);
-    const formData = new FormData();
-    formData.append('action', 'enable_embed');
-    submit(formData, {method: 'post'});
+    submit({action: 'enable_embed'}, {method: 'post'});
   }, [shop, themeId, submit]);
 
   const handleCreateBanner = useCallback(() => {
-    const formData = new FormData();
-    formData.append('action', 'create_banner');
-    submit(formData, {method: 'post'});
+    submit({action: 'create_banner'}, {method: 'post'});
   }, [submit]);
+
   const handleCreateBannerSkip = useCallback(() => {
-    const formData = new FormData();
-    formData.append('action', 'create_banner_skip');
-    submit(formData, {method: 'post'});
+    submit({action: 'create_banner_skip'}, {method: 'post'});
   }, [submit]);
 
   const completedSteps = [hasCompletedEmbed, hasCompletedCreateNewBanner].filter(Boolean).length;
   const progress = (completedSteps / 2) * 100;
 
   const handleStepSelect = useCallback((step: string) => {
-    // Only allow selecting banner if embed is completed
     if (step === "banner" && !hasCompletedEmbed) return;
-    // Don't allow selecting embed if it's completed
     if (step === "embed" && hasCompletedEmbed) return;
-    setSelectedStep(step);
+    setSelected(step);
   }, [hasCompletedEmbed]);
 
   return (
@@ -241,7 +158,6 @@ export default function AppOnboardingStep1() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
-            {/* Title Card */}
             <Card>
               <BlockStack gap="200">
                 <Box paddingBlockEnd="200">
@@ -276,10 +192,10 @@ export default function AppOnboardingStep1() {
                 <BlockStack gap="500">
                   {/* Enable App Embed */}
                   <Box paddingBlockStart={"200"}>
-                    {selectedStep !== "embed" &&
+                    {selected !== "embed" &&
                       <InlineStack gap="200" align="center" blockAlign="center">
                         <div style={{paddingLeft: '14px'}}>
-                          <StepIndicator selected={selectedStep !== "embed" && hasCompletedEmbed} ></StepIndicator>
+                          <StepIndicator selected={selected !== "embed" && hasCompletedEmbed} />
                         </div>
                         <div style={{flex: 1}}>
                           <BlockStack>
@@ -290,12 +206,12 @@ export default function AppOnboardingStep1() {
                         </div>
                       </InlineStack>
                     }
-                    {selectedStep === "embed" &&
+                    {selected === "embed" &&
                       <Card background="bg-fill-secondary">
                         <Grid>
                           <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 6, lg: 8, xl: 8}}>
                             <InlineStack gap="200" align="start" blockAlign="start">
-                              <StepIndicator selected={selectedStep !== "embed" && hasCompletedEmbed} ></StepIndicator>
+                              <StepIndicator selected={selected !== "embed" && hasCompletedEmbed} />
                               <div style={{flex: 1}}>
                                 <BlockStack gap={"200"}>
                                   <Text variant="headingMd" as="h3">
@@ -303,8 +219,7 @@ export default function AppOnboardingStep1() {
                                   </Text>
                                   <Text variant="bodyMd" as="p" tone="subdued">
                                     The button below will open a new window with app embed enabled. You only need to
-                                    click
-                                    Save in that window then come back here to continue.
+                                    click Save in that window then come back here to continue.
                                   </Text>
                                   <Box paddingBlockStart="200" paddingBlockEnd="200">
                                     <InlineStack gap="200">
@@ -336,27 +251,26 @@ export default function AppOnboardingStep1() {
                   </Box>
                   {/* Create Banner */}
                   <BlockStack gap="400">
-                    {selectedStep !== "banner" &&
+                    {selected !== "banner" &&
                       <InlineStack gap="200" align="center" blockAlign="center">
                         <div style={{paddingLeft: '14px'}}>
-                          <StepIndicator selected={selectedStep !== "banner" && hasCompletedCreateNewBanner} ></StepIndicator>
+                          <StepIndicator selected={selected !== "banner" && hasCompletedCreateNewBanner} />
                         </div>
                         <div style={{flex: 1}}>
                           <BlockStack>
-                            <Text variant="headingMd" as="h3"
-                                  tone={hasCompletedCreateNewBanner ? "success" : undefined}>
+                            <Text variant="headingMd" as="h3" tone={hasCompletedCreateNewBanner ? "success" : undefined}>
                               Create your first banner {hasCompletedCreateNewBanner && "✓"}
                             </Text>
                           </BlockStack>
                         </div>
                       </InlineStack>
                     }
-                    {selectedStep === "banner" &&
+                    {selected === "banner" &&
                       <Card background="bg-fill-secondary">
                         <Grid>
                           <Grid.Cell columnSpan={{xs: 6, sm: 6, md: 6, lg: 8, xl: 8}}>
                             <InlineStack gap="200" align="start" blockAlign="start">
-                              <StepIndicator selected={selectedStep !== "banner" && hasCompletedCreateNewBanner} ></StepIndicator>
+                              <StepIndicator selected={selected !== "banner" && hasCompletedCreateNewBanner} />
                               <div style={{flex: 1}}>
                                 <BlockStack gap={"200"}>
                                   <Text variant="headingMd" as="h3">
@@ -374,9 +288,7 @@ export default function AppOnboardingStep1() {
                                       >
                                         {hasCompletedCreateNewBanner ? "Banner Created" : "Create banner"}
                                       </Button>
-                                      <Button
-                                        onClick={handleCreateBannerSkip}
-                                      >
+                                      <Button onClick={handleCreateBannerSkip}>
                                         Skip
                                       </Button>
                                     </InlineStack>
@@ -395,7 +307,8 @@ export default function AppOnboardingStep1() {
                             </Box>
                           </Grid.Cell>
                         </Grid>
-                      </Card>}
+                      </Card>
+                    }
                   </BlockStack>
                 </BlockStack>
               </BlockStack>

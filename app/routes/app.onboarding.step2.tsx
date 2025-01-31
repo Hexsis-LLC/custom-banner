@@ -3,41 +3,31 @@ import OnboardingInit from "../component/onbording";
 import {useActionData, useNavigate, useSubmit} from "@remix-run/react";
 import {json, LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
-import {db} from "../db.server";
-import {onboardingTable} from "../../drizzle/schema/onboarding";
+import {completeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
-import {CircleProgress} from "../component/CircleProgress";
 import {StepIndicator} from "../component/StepIndicator";
+
 interface ActionData {
   success: boolean;
   error?: string;
 }
+
 export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
 
   try {
-    // Insert or update onboarding record
-    await db.insert(onboardingTable).values({
-      shop: session.shop,
-      hasCompletedOnboarding: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }).onConflictDoUpdate({
-      target: onboardingTable.shop,
-      set: {
-        hasCompletedOnboarding: true,
-        updatedAt: new Date().toISOString()
-      }
-    }).run();
-
-    return json<ActionData>({success: true});
+    const result = await completeOnboarding(session);
+    return json<ActionData>(result);
   } catch (error) {
-    console.error("Database error:", error);
-    return json<ActionData>({success: false, error: "Failed to initialize onboarding"});
+    console.error("Error completing onboarding:", error);
+    return json<ActionData>({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to complete onboarding"
+    });
   }
 };
 
-export default function AppOnboardingStep1() {
+export default function AppOnboardingStep2() {
   const navigate = useNavigate();
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();

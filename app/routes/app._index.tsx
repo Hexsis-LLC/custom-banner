@@ -4,10 +4,9 @@ import {
 } from "@shopify/polaris";
 import {useOutletContext, useNavigate, useSubmit, useActionData} from "@remix-run/react";
 import OnboardingInit from "../component/onbording";
-import {json, LoaderFunctionArgs} from "@remix-run/node";
+import {json, type LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
-import {db} from "../db.server";
-import {onboardingTable} from "../../drizzle/schema/onboarding";
+import {initializeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
 
 interface ActionData {
@@ -19,24 +18,14 @@ export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
 
   try {
-    // Insert or update onboarding record
-    await db.insert(onboardingTable).values({
-      shop: session.shop,
-      hasCompletedOnboarding: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }).onConflictDoUpdate({
-      target: onboardingTable.shop,
-      set: {
-        hasCompletedOnboarding: false,
-        updatedAt: new Date().toISOString()
-      }
-    }).run();
-
-    return json<ActionData>({success: true});
+    const result = await initializeOnboarding(session);
+    return json<ActionData>(result);
   } catch (error) {
-    console.error("Database error:", error);
-    return json<ActionData>({success: false, error: "Failed to initialize onboarding"});
+    console.error("Error initializing onboarding:", error);
+    return json<ActionData>({ 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to initialize onboarding" 
+    });
   }
 };
 

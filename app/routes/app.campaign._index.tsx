@@ -72,7 +72,7 @@ import {
                 type: 'duplicate',
                 onPrimaryAction: async (value: string): Promise<boolean> => {
                   await sleep(1);
-                  duplicateView(value);
+                  await duplicateView(value);
                   return true;
                 },
               },

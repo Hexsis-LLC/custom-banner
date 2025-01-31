@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6b0c3091-277b-47ab-ba81-d82d06b83270",
+  "id": "3a486afa-5b09-4c0b-9ebc-f65d0f5dc0b8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "onboarding": {
@@ -14,23 +14,39 @@
           "notNull": true,
           "autoincrement": false
         },
-        "hasCompletedOnboarding": {
-          "name": "hasCompletedOnboarding",
+        "has_completed_onboarding": {
+          "name": "has_completed_onboarding",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": false
         },
-        "createdAt": {
-          "name": "createdAt",
+        "has_completed_embed": {
+          "name": "has_completed_embed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_completed_create_new_banner": {
+          "name": "has_completed_create_new_banner",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "updatedAt": {
-          "name": "updatedAt",
+        "updated_at": {
+          "name": "updated_at",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
