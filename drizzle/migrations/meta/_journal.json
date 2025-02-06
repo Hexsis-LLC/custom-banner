@@ -15,6 +15,13 @@
       "when": 1738616658223,
       "tag": "0001_lame_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1738824413430,
+      "tag": "0002_white_arachne",
+      "breakpoints": true
     }
   ]
 }
