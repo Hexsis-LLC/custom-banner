@@ -1,0 +1,37 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "5a23de560b18560427806c288b5f5b0d"
+application_url = "https://banner-staging.hexstore.io/"
+embedded = true
+name = "Custom Banner Test"
+handle = "custom-banner-test-1"
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "cuatom-banner-test.myshopify.com"
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_themes,write_products"
+
+[auth]
+redirect_urls = [
+  "https://banner-staging.hexstore.io/auth/callback",
+  "https://banner-staging.hexstore.io/auth/shopify/callback",
+  "https://banner-staging.hexstore.io/api/auth/callback"
+]
+
+[pos]
+embedded = false
