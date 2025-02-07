@@ -22,6 +22,8 @@ interface CTATabProps {
   fontSize: number;
   ctaButtonFontColor: string;
   ctaButtonBackgroundColor: string;
+  error?: boolean;
+  errorMessage?: string;
   onCtaButtonFontColorChange: (value: string) => void;
   onCtaButtonBackgroundColorChange: (value: string) => void;
   onCtaTypeChange: (value: string) => void;
@@ -41,16 +43,116 @@ export function CTATab({
   paddingBottom,
   paddingLeft,
   fontType,
+  fontSize,
+  ctaButtonFontColor,
+  ctaButtonBackgroundColor,
+  error,
+  errorMessage,
+  onCtaButtonFontColorChange,
+  onCtaButtonBackgroundColorChange,
   onCtaTypeChange,
   onCtaTextChange,
   onCtaLinkChange,
   onPaddingChange,
   onFontTypeChange,
-  ctaButtonFontColor,
-  ctaButtonBackgroundColor,
-  onCtaButtonFontColorChange,
-  onCtaButtonBackgroundColorChange,
+  onFontSizeChange,
 }: CTATabProps) {
+
+  const renderFields = () => {
+    switch (ctaType) {
+      case 'none':
+        return null;
+      case 'link':
+        return (
+          <InlineStack gap="400" align="space-between">
+            <div style={{width: '49%'}}>
+              <TextField
+                label="Call to action text"
+                value={ctaText}
+                autoComplete="off"
+                onChange={onCtaTextChange}
+                error={error && !ctaText}
+                helpText={error && !ctaText ? "CTA text is required for link type" : undefined}
+              />
+            </div>
+            <div style={{width: '49%'}}>
+              <TextField
+                label="Hyper Link"
+                value={ctaLink}
+                onChange={onCtaLinkChange}
+                autoComplete="off"
+                error={error}
+                helpText={error ? errorMessage : undefined}
+              />
+            </div>
+          </InlineStack>
+        );
+      case 'bar':
+        return (
+          <div style={{width: '100%'}}>
+            <TextField
+              label="Hyper Link"
+              value={ctaLink}
+              onChange={onCtaLinkChange}
+              autoComplete="off"
+              error={error}
+              helpText={error ? errorMessage : undefined}
+            />
+          </div>
+        );
+      case 'regular':
+        return (
+          <>
+            <InlineStack gap="400" align="space-between">
+              <div style={{width: '49%'}}>
+                <TextField
+                  label="Call to action text"
+                  value={ctaText}
+                  autoComplete="off"
+                  onChange={onCtaTextChange}
+                  error={error && !ctaText}
+                  helpText={error && !ctaText ? "CTA text is required for button type" : undefined}
+                />
+              </div>
+              <div style={{width: '49%'}}>
+                <TextField
+                  label="Hyper Link"
+                  value={ctaLink}
+                  onChange={onCtaLinkChange}
+                  autoComplete="off"
+                  error={error}
+                  helpText={error ? errorMessage : undefined}
+                />
+              </div>
+            </InlineStack>
+
+            <InlineStack gap="400" align="space-between">
+              <div style={{width: '49%'}}>
+                <TextField
+                  label="Button background"
+                  autoComplete="off"
+                  value={ctaButtonFontColor}
+                  onChange={onCtaButtonFontColorChange}
+                  prefix="#"
+                />
+              </div>
+              <div style={{width: '49%'}}>
+                <TextField
+                  label="Button text color"
+                  autoComplete="off"
+                  value={ctaButtonBackgroundColor}
+                  onChange={onCtaButtonBackgroundColorChange}
+                  prefix="#"
+                />
+              </div>
+            </InlineStack>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <Card roundedAbove="sm">
       <Box padding="400">
@@ -94,84 +196,51 @@ export function CTATab({
             </InlineStack>
           </BlockStack>
 
-          {/* CTA Text and Link Section */}
-          <InlineStack gap="400" align="space-between">
-            <div style={{width: '49%'}}>
-              <TextField
-                label="Call to action text"
-                value={ctaText}
-                autoComplete="off"
-                onChange={onCtaTextChange}
-              />
-            </div>
-            <div style={{width: '49%'}}>
-              <TextField
-                label="Hyper Link"
-                value={ctaLink}
-                onChange={onCtaLinkChange}
-                autoComplete="off"
-              />
-            </div>
-          </InlineStack>
+          {/* Conditional Fields */}
+          {renderFields()}
 
-          {/* Button Colors Section */}
-          <InlineStack gap="400" align="space-between">
-            <div style={{width: '49%'}}>
-              <TextField
-                label="Button background"
-                autoComplete="off"
-                value={ctaButtonFontColor}
-                onChange={onCtaButtonFontColorChange}
-                prefix="#"
-              />
-            </div>
-            <div style={{width: '49%'}}>
-              <TextField
-                label="Button text color"
-                autoComplete="off"
-                value={ctaButtonBackgroundColor}
-                onChange={onCtaButtonBackgroundColorChange}
-                prefix="#"
-              />
-            </div>
-          </InlineStack>
-          <BlockStack gap="400">
-            <Text variant="headingMd" as="h6">Font</Text>
-            <InlineStack gap="300">
-              <RadioButton
-                label={
-                  <BlockStack gap="100">
-                    <Text variant="bodyMd" as="p">Site font</Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
-                  </BlockStack>
-                }
-                checked={fontType === 'site'}
-                id="site-font"
-                name="font"
-                onChange={() => onFontTypeChange('site')}
-              />
-              <RadioButton
-                label={
-                  <BlockStack gap="100">
-                    <Text variant="bodyMd" as="p">Dynamic font</Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
-                  </BlockStack>
-                }
-                checked={fontType === 'dynamic'}
-                id="dynamic-font"
-                name="font"
-                onChange={() => onFontTypeChange('dynamic')}
-              />
-              <RadioButton
-                label="Custom font"
-                checked={fontType === 'custom'}
-                id="custom-font"
-                name="font"
-                onChange={() => onFontTypeChange('custom')}
-              />
-            </InlineStack>
-          </BlockStack>
-          {fontType === 'custom' && (
+          {/* Font Section - Only show for link and regular types */}
+          {(ctaType === 'link' || ctaType === 'regular') && (
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h6">Font</Text>
+              <InlineStack gap="300">
+                <RadioButton
+                  label={
+                    <BlockStack gap="100">
+                      <Text variant="bodyMd" as="p">Site font</Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
+                    </BlockStack>
+                  }
+                  checked={fontType === 'site'}
+                  id="site-font"
+                  name="font"
+                  onChange={() => onFontTypeChange('site')}
+                />
+                <RadioButton
+                  label={
+                    <BlockStack gap="100">
+                      <Text variant="bodyMd" as="p">Dynamic font</Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
+                    </BlockStack>
+                  }
+                  checked={fontType === 'dynamic'}
+                  id="dynamic-font"
+                  name="font"
+                  onChange={() => onFontTypeChange('dynamic')}
+                />
+                <RadioButton
+                  label="Custom font"
+                  checked={fontType === 'custom'}
+                  id="custom-font"
+                  name="font"
+                  onChange={() => onFontTypeChange('custom')}
+                />
+              </InlineStack>
+            </BlockStack>
+          )}
+
+          {/* Custom Font Options */}
+          {(ctaType === 'link' || ctaType === 'regular') && fontType === 'custom' && (
             <TextField
               label="Text Color"
               value="#FFFFFF"
@@ -180,8 +249,8 @@ export function CTATab({
             />
           )}
 
-          {/* Custom Font Color Input */}
-          {fontType === 'dynamic' && (
+          {/* Dynamic Font Display */}
+          {(ctaType === 'link' || ctaType === 'regular') && fontType === 'dynamic' && (
             <TextField
               label="Times New Roman"
               value="#FFFFFF"
@@ -190,7 +259,8 @@ export function CTATab({
               prefix="#"
             />
           )}
-          {/* Padding Top and Right Section */}
+
+          {/* Padding Section */}
           <InlineStack gap="400" align="space-between">
             <div style={{width: '49%'}}>
               <BlockStack gap="200">
@@ -224,7 +294,6 @@ export function CTATab({
             </div>
           </InlineStack>
 
-          {/* Padding Bottom and Left Section */}
           <InlineStack gap="400" align="space-between">
             <div style={{width: '49%'}}>
               <BlockStack gap="200">

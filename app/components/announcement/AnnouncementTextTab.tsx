@@ -15,6 +15,8 @@ interface AnnouncementTextTabProps {
   fontSize: number;
   announcementText: string;
   textColor: string;
+  error?: boolean;
+  errorMessage?: string;
   onAnnouncementTextChange: (value: string) => void;
   onTextColorChange: (value: string) => void;
   onFontTypeChange: (value: string) => void;
@@ -26,6 +28,8 @@ export function AnnouncementTextTab({
   fontSize,
   announcementText,
   textColor,
+  error,
+  errorMessage,
   onAnnouncementTextChange,
   onTextColorChange,
   onFontTypeChange,
@@ -50,6 +54,8 @@ export function AnnouncementTextTab({
               autoComplete="off"
               value={announcementText}
               onChange={onAnnouncementTextChange}
+              error={error}
+              helpText={error ? errorMessage : undefined}
             />
           </BlockStack>
 

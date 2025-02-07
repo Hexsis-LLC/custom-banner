@@ -20,6 +20,8 @@ interface BasicTabProps {
   campaignTitle: string;
   customHeight: string;
   customWidth: string;
+  error?: boolean;
+  errorMessage?: string;
   onCampaignCustomHeight: (value: string) => void;
   onCampaignCustomWidth: (value: string) => void;
   onCampaignTitleChange: (value: string) => void;
@@ -37,6 +39,8 @@ export function BasicTab({
   startTime,
   endTime,
   campaignTitle,
+  error,
+  errorMessage,
   onCampaignTitleChange,
   onSizeChange,
   onStartDateChange,
@@ -58,6 +62,8 @@ export function BasicTab({
             placeholder="Value"
             value={campaignTitle}
             onChange={onCampaignTitleChange}
+            error={error}
+            helpText={error ? errorMessage : undefined}
           />
         </Box>
       </Card>
