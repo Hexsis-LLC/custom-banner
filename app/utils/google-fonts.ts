@@ -1,10 +1,10 @@
 import fontsJson from "../assets/json/google-font.json";
 
 interface Fonts {
-  items: Font[];
+  items: IFont[];
 }
 
-interface Font {
+export interface IFont {
   family: string;
   files: FontFiles;
 }
@@ -14,22 +14,22 @@ interface FontFiles {
 }
 
 export default class CustomFonts {
-  private readonly fonts: Font[];
+  private readonly fonts: IFont[];
 
   constructor() {
     this.fonts = (fontsJson as Fonts).items;
   }
 
-  getAllFonts(): Font[] {
+  getAllFonts(): IFont[] {
     return this.fonts;
   }
 
 
-  getFontByFamily(family: string): Font | undefined {
+  getFontByFamily(family: string): IFont | undefined {
     return this.fonts.find(font => font.family.toLowerCase() === family.toLowerCase());
   }
 
-  getRandomFont(): Font {
+  getRandomFont(): IFont {
     const randomIndex = Math.floor(Math.random() * this.fonts.length);
     return this.fonts[randomIndex];
   }
@@ -40,7 +40,7 @@ export default class CustomFonts {
   }
 
 
-  searchFonts(query: string): Font[] {
+  searchFonts(query: string): IFont[] {
     const searchTerm = query.toLowerCase();
     return this.fonts.filter(font =>
       font.family.toLowerCase().includes(searchTerm)
