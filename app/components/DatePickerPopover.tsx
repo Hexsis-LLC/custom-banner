@@ -5,6 +5,9 @@ import {
   Icon,
   Popover,
   Box,
+  Button,
+  Text,
+  BlockStack,
 } from "@shopify/polaris";
 import type {Range} from "@shopify/polaris";
 import {useState, useCallback} from "react";
@@ -14,6 +17,7 @@ interface DatePickerPopoverProps {
   onChange: (date: Date) => void;
   label?: string;
   isModal?: boolean;
+  error?: boolean;
 }
 
 export function DatePickerPopover({
@@ -21,6 +25,7 @@ export function DatePickerPopover({
   onChange,
   label = "Date",
   isModal = false,
+  error,
 }: DatePickerPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(selectedDate);
@@ -71,6 +76,34 @@ export function DatePickerPopover({
     />
   );
 
+  const togglePopoverActive = useCallback(
+    () => setIsOpen((isOpen) => !isOpen),
+    [],
+  );
+
+  const handleDateSelection = useCallback(
+    ({end}: {end: Date}) => {
+      onChange(end);
+      togglePopoverActive();
+    },
+    [onChange, togglePopoverActive],
+  );
+
+  const activator = (
+    <BlockStack gap="100">
+      <Button
+        onClick={togglePopoverActive}
+        disclosure
+        fullWidth
+        textAlign="start"
+        icon={<Icon source="calendar" />}
+        tone={error ? "critical" : undefined}
+      >
+        {selectedDate.toLocaleDateString()}
+      </Button>
+    </BlockStack>
+  );
+
   if (isModal) {
     return (
       <>
@@ -111,14 +144,13 @@ export function DatePickerPopover({
   return (
     <Popover
       active={isOpen}
+      activator={activator}
+      onClose={togglePopoverActive}
       autofocusTarget="none"
       preferredAlignment="left"
-      fullWidth
       preferInputActivator={false}
-      preferredPosition="below"
       preventCloseOnChildOverlayClick
-      onClose={() => setIsOpen(false)}
-      activator={dateField}
+      fullWidth
     >
       <Box padding="400">
         <DatePicker
@@ -128,8 +160,8 @@ export function DatePickerPopover({
             start: tempDate,
             end: tempDate,
           }}
-          onChange={handleDateChange}
           onMonthChange={handleMonthChange}
+          onChange={handleDateSelection}
           allowRange={false}
         />
       </Box>

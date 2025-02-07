@@ -5,6 +5,8 @@ export interface BasicSettings {
   sizeHeight: string;
   sizeWidth: string;
   campaignTitle: string;
+  startType: 'now' | 'specific';
+  endType: 'until_stop' | 'specific';
   startDate: Date;
   endDate: Date;
   startTime: string;

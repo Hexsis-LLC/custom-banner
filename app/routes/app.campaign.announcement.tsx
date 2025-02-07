@@ -54,6 +54,8 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
       sizeHeight: "52",
       sizeWidth: "100",
       campaignTitle: '',
+      startType: 'now',
+      endType: 'until_stop',
       startDate: now,
       endDate: now,
       startTime: '12:30',
@@ -383,6 +385,8 @@ export default function AnnouncementBanner() {
         return (
           <BasicTab
             size={formData.basic.size as Size}
+            startType={formData.basic.startType || 'now'}
+            endType={formData.basic.endType || 'until_stop'}
             startDate={new Date(formData.basic.startDate)}
             endDate={new Date(formData.basic.endDate)}
             startTime={formData.basic.startTime}
@@ -392,10 +396,24 @@ export default function AnnouncementBanner() {
             campaignTitle={formData.basic.campaignTitle}
             error={hasError('basic.campaignTitle')}
             errorMessage={getFieldErrorMessage('basic.campaignTitle')}
+            startDateError={hasError('basic.startDate')}
+            startDateErrorMessage={getFieldErrorMessage('basic.startDate')}
+            startTimeError={hasError('basic.startTime')}
+            startTimeErrorMessage={getFieldErrorMessage('basic.startTime')}
+            endDateError={hasError('basic.endDate')}
+            endDateErrorMessage={getFieldErrorMessage('basic.endDate')}
+            endTimeError={hasError('basic.endTime')}
+            endTimeErrorMessage={getFieldErrorMessage('basic.endTime')}
+            heightError={hasError('basic.sizeHeight')}
+            heightErrorMessage={getFieldErrorMessage('basic.sizeHeight')}
+            widthError={hasError('basic.sizeWidth')}
+            widthErrorMessage={getFieldErrorMessage('basic.sizeWidth')}
             onCampaignCustomHeight={(value) => handleFormChange('basic', {sizeHeight: value})}
             onCampaignCustomWidth={(value) => handleFormChange('basic', {sizeWidth: value})}
             onCampaignTitleChange={(value) => handleFormChange('basic', {campaignTitle: value})}
             onSizeChange={(value) => handleFormChange('basic', {size: value as Size})}
+            onStartTypeChange={(value) => handleFormChange('basic', {startType: value})}
+            onEndTypeChange={(value) => handleFormChange('basic', {endType: value})}
             onStartDateChange={(value) => handleFormChange('basic', {startDate: value.toISOString()})}
             onEndDateChange={(value) => handleFormChange('basic', {endDate: value.toISOString()})}
             onStartTimeChange={(value) => handleFormChange('basic', {startTime: value})}

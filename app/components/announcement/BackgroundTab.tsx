@@ -62,7 +62,7 @@ export function BackgroundTab({
           <Text as="h2" variant="headingMd">
             Background
           </Text>
-          
+
           <BlockStack gap="200">
             <Text as="p" variant="bodyMd">
               Select background color type
@@ -127,6 +127,7 @@ export function BackgroundTab({
               output
               min={0}
               max={100}
+              prefix={paddingRight}
               suffix="%"
             />
           </BlockStack>
@@ -134,4 +135,4 @@ export function BackgroundTab({
       </Card>
     </BlockStack>
   );
-} 
+}

@@ -76,6 +76,7 @@ export function AnnouncementTextTab({
                 <RangeSlider
                   label="Font size"
                   labelHidden
+                  prefix={fontSize}
                   value={fontSize}
                   onChange={onFontSizeChange}
                   output
