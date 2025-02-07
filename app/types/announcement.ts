@@ -18,6 +18,7 @@ export interface TextSettings {
   textColor: string;
   fontSize: number;
   fontType: 'site' | string;
+  fontUrl?: string;
 }
 
 export interface CTASettings {
@@ -31,6 +32,7 @@ export interface CTASettings {
     left: number;
   };
   fontType: 'site' | string;
+  fontUrl?: string;
   buttonFontColor: string;
   buttonBackgroundColor: string;
 }

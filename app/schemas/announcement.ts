@@ -132,6 +132,22 @@ const textSchema = z.object({
   textColor: z.string(),
   fontSize: z.number().min(8).max(72),
   fontType: z.string(),
+  fontUrl: z.string().optional()
+}).superRefine((data, ctx) => {
+  if (data.fontType !== 'site' && !data.fontUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Font URL is required for dynamic and custom fonts",
+      path: ['fontUrl'],
+    });
+  }
+  if (data.fontUrl && !data.fontUrl.startsWith('http')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Font URL must be a valid URL starting with http",
+      path: ['fontUrl'],
+    });
+  }
 });
 
 // Define CTA schema based on type
@@ -140,12 +156,13 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
   z.object({
     ctaType: z.literal('none'),
     padding: z.object({
-      top: z.number().min(0),
-      right: z.number().min(0),
-      bottom: z.number().min(0),
-      left: z.number().min(0),
+      top: z.number(),
+      right: z.number(),
+      bottom: z.number(),
+      left: z.number(),
     }),
     fontType: z.string(),
+    fontUrl: z.string().optional(),
     buttonFontColor: z.string().optional(),
     buttonBackgroundColor: z.string().optional(),
     ctaText: z.string().optional(),
@@ -157,12 +174,13 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
     ctaText: z.string().min(1, "CTA text is required for link type"),
     ctaLink: z.string().url("Please enter a valid URL"),
     padding: z.object({
-      top: z.number().min(0),
-      right: z.number().min(0),
-      bottom: z.number().min(0),
-      left: z.number().min(0),
+      top: z.number(),
+      right: z.number(),
+      bottom: z.number(),
+      left: z.number(),
     }),
     fontType: z.string(),
+    fontUrl: z.string().optional(),
     buttonFontColor: z.string().optional(),
     buttonBackgroundColor: z.string().optional(),
   }),
@@ -171,12 +189,13 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
     ctaType: z.literal('bar'),
     ctaLink: z.string().url("Please enter a valid URL"),
     padding: z.object({
-      top: z.number().min(0),
-      right: z.number().min(0),
-      bottom: z.number().min(0),
-      left: z.number().min(0),
+      top: z.number(),
+      right: z.number(),
+      bottom: z.number(),
+      left: z.number(),
     }),
     fontType: z.string(),
+    fontUrl: z.string().optional(),
     buttonFontColor: z.string().optional(),
     buttonBackgroundColor: z.string().optional(),
     ctaText: z.string().optional(),
@@ -187,16 +206,43 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
     ctaText: z.string().min(1, "CTA text is required for button type"),
     ctaLink: z.string().url("Please enter a valid URL"),
     padding: z.object({
-      top: z.number().min(0),
-      right: z.number().min(0),
-      bottom: z.number().min(0),
-      left: z.number().min(0),
+      top: z.number().min(0, "Top padding must be at least 0"),
+      right: z.number().min(0, "Right padding must be at least 0"),
+      bottom: z.number().min(0, "Bottom padding must be at least 0"),
+      left: z.number().min(0, "Left padding must be at least 0"),
     }),
     fontType: z.string(),
+    fontUrl: z.string().optional(),
     buttonFontColor: z.string(),
     buttonBackgroundColor: z.string(),
   }),
-]);
+]).superRefine((data, ctx) => {
+  if (data.fontType !== 'site' && !data.fontUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Font URL is required for dynamic and custom fonts",
+      path: ['fontUrl'],
+    });
+  }
+  if (data.fontUrl && !data.fontUrl.startsWith('http')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Font URL must be a valid URL starting with http",
+      path: ['fontUrl'],
+    });
+  }
+
+  // Add padding validation only for regular button type
+  if (data.ctaType === 'regular') {
+    if (data.padding.top < 0 || data.padding.right < 0 || data.padding.bottom < 0 || data.padding.left < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Padding values must be non-negative for regular button type",
+        path: ['padding'],
+      });
+    }
+  }
+});
 
 const backgroundSchema = z.object({
   backgroundType: z.enum(['solid', 'gradient']),

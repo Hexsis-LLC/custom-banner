@@ -15,12 +15,14 @@ interface AnnouncementTextTabProps {
   fontSize: number;
   announcementText: string;
   textColor: string;
-  error?: boolean;
-  errorMessage?: string;
+  fontUrl?: string;
+  hasError: (fieldPath: string) => boolean;
+  getFieldErrorMessage: (fieldPath: string) => string;
   onAnnouncementTextChange: (value: string) => void;
   onTextColorChange: (value: string) => void;
   onFontTypeChange: (value: string) => void;
   onFontSizeChange: (value: number) => void;
+  onFontUrlChange: (value: string) => void;
 }
 
 export function AnnouncementTextTab({
@@ -28,12 +30,14 @@ export function AnnouncementTextTab({
   fontSize,
   announcementText,
   textColor,
-  error,
-  errorMessage,
+  fontUrl = '',
+  hasError,
+  getFieldErrorMessage,
   onAnnouncementTextChange,
   onTextColorChange,
   onFontTypeChange,
   onFontSizeChange,
+  onFontUrlChange,
 }: AnnouncementTextTabProps) {
   return (
     <Card roundedAbove="sm">
@@ -54,8 +58,8 @@ export function AnnouncementTextTab({
               autoComplete="off"
               value={announcementText}
               onChange={onAnnouncementTextChange}
-              error={error}
-              helpText={error ? errorMessage : undefined}
+              error={hasError('text.announcementText')}
+              helpText={hasError('text.announcementText') ? getFieldErrorMessage('text.announcementText') : undefined}
             />
           </BlockStack>
 
@@ -68,6 +72,8 @@ export function AnnouncementTextTab({
                 onChange={onTextColorChange}
                 autoComplete="off"
                 prefix="#"
+                error={hasError('text.textColor')}
+                helpText={hasError('text.textColor') ? getFieldErrorMessage('text.textColor') : undefined}
               />
             </div>
             <div style={{width: '49%'}}>
@@ -126,28 +132,20 @@ export function AnnouncementTextTab({
                 onChange={() => onFontTypeChange('custom')}
               />
             </InlineStack>
+
+            {/* Font URL Input for Dynamic and Custom Fonts */}
+            {(fontType === 'dynamic' || fontType === 'custom') && (
+              <TextField
+                label="Font URL"
+                value={fontUrl}
+                onChange={onFontUrlChange}
+                autoComplete="off"
+                placeholder="Enter font URL"
+                error={hasError('text.fontUrl')}
+                helpText={hasError('text.fontUrl') ? getFieldErrorMessage('text.fontUrl') : undefined}
+              />
+            )}
           </BlockStack>
-
-          {/* Custom Font Color Input */}
-          {fontType === 'custom' && (
-            <TextField
-              label="Text Color"
-              value="#FFFFFF"
-              autoComplete="off"
-              prefix="#"
-            />
-          )}
-
-          {/* Custom Font Color Input */}
-          {fontType === 'dynamic' && (
-            <TextField
-              label="Times New Roman"
-              value="#FFFFFF"
-              readOnly={true}
-              autoComplete="off"
-              prefix="#"
-            />
-          )}
         </BlockStack>
       </Box>
     </Card>

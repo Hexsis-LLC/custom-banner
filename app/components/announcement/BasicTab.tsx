@@ -23,20 +23,8 @@ interface BasicTabProps {
   campaignTitle: string;
   customHeight: string;
   customWidth: string;
-  error?: boolean;
-  errorMessage?: string;
-  startDateError?: boolean;
-  startDateErrorMessage?: string;
-  startTimeError?: boolean;
-  startTimeErrorMessage?: string;
-  endDateError?: boolean;
-  endDateErrorMessage?: string;
-  endTimeError?: boolean;
-  endTimeErrorMessage?: string;
-  heightError?: boolean;
-  heightErrorMessage?: string;
-  widthError?: boolean;
-  widthErrorMessage?: string;
+  hasError: (fieldPath: string) => boolean;
+  getFieldErrorMessage: (fieldPath: string) => string;
   onCampaignCustomHeight: (value: string) => void;
   onCampaignCustomWidth: (value: string) => void;
   onCampaignTitleChange: (value: string) => void;
@@ -58,16 +46,10 @@ export function BasicTab({
   startTime,
   endTime,
   campaignTitle,
-  error,
-  errorMessage,
-  startDateError,
-  startDateErrorMessage,
-  startTimeError,
-  startTimeErrorMessage,
-  endDateError,
-  endDateErrorMessage,
-  endTimeError,
-  endTimeErrorMessage,
+  customHeight,
+  customWidth,
+  hasError,
+  getFieldErrorMessage,
   onCampaignTitleChange,
   onSizeChange,
   onStartTypeChange,
@@ -76,14 +58,8 @@ export function BasicTab({
   onEndDateChange,
   onStartTimeChange,
   onEndTimeChange,
-  customHeight,
-  customWidth,
-  onCampaignCustomWidth,
   onCampaignCustomHeight,
-  heightError,
-  heightErrorMessage,
-  widthError,
-  widthErrorMessage
+  onCampaignCustomWidth,
 }: BasicTabProps) {
   return (
     <BlockStack gap="300">
@@ -95,8 +71,8 @@ export function BasicTab({
             placeholder="Value"
             value={campaignTitle}
             onChange={onCampaignTitleChange}
-            error={error}
-            helpText={error ? errorMessage : undefined}
+            error={hasError('basic.campaignTitle')}
+            helpText={hasError('basic.campaignTitle') ? getFieldErrorMessage('basic.campaignTitle') : undefined}
           />
         </Box>
       </Card>
@@ -150,8 +126,8 @@ export function BasicTab({
                   suffix="px"
                   autoComplete="off"
                   disabled={size !== 'custom'}
-                  error={heightError}
-                  helpText={heightError ? heightErrorMessage : undefined}
+                  error={hasError('basic.sizeHeight')}
+                  helpText={hasError('basic.sizeHeight') ? getFieldErrorMessage('basic.sizeHeight') : undefined}
                 />
               </div>
               <div style={{width: '49%'}}>
@@ -163,8 +139,8 @@ export function BasicTab({
                   onChange={onCampaignCustomWidth}
                   autoComplete="off"
                   disabled={size !== 'custom'}
-                  error={widthError}
-                  helpText={widthError ? widthErrorMessage : undefined}
+                  error={hasError('basic.sizeWidth')}
+                  helpText={hasError('basic.sizeWidth') ? getFieldErrorMessage('basic.sizeWidth') : undefined}
                 />
               </div>
             </InlineStack>
@@ -205,10 +181,10 @@ export function BasicTab({
                               onChange={onStartDateChange}
                               isModal={false}
                               label="Start date"
-                              error={startDateError}
+                              error={hasError('basic.startDate')}
                             />
-                            {startDateError && startDateErrorMessage && (
-                              <Text tone="critical" as="span">{startDateErrorMessage}</Text>
+                            {hasError('basic.startDate') && (
+                              <Text tone="critical" as="span">{getFieldErrorMessage('basic.startDate')}</Text>
                             )}
                           </BlockStack>
                         </div>
@@ -219,10 +195,10 @@ export function BasicTab({
                               selectedTime={startTime || ''}
                               onChange={onStartTimeChange}
                               label="Start time"
-                              error={startTimeError}
+                              error={hasError('basic.startTime')}
                             />
-                            {startTimeError && startTimeErrorMessage && (
-                              <Text tone="critical" as="span">{startTimeErrorMessage}</Text>
+                            {hasError('basic.startTime') && (
+                              <Text tone="critical" as="span">{getFieldErrorMessage('basic.startTime')}</Text>
                             )}
                           </BlockStack>
                         </div>
@@ -254,10 +230,10 @@ export function BasicTab({
                               isModal={false}
                               onChange={onEndDateChange}
                               label="End date"
-                              error={endDateError}
+                              error={hasError('basic.endDate')}
                             />
-                            {endDateError && endDateErrorMessage && (
-                              <Text tone="critical" as="span">{endDateErrorMessage}</Text>
+                            {hasError('basic.endDate') && (
+                              <Text tone="critical" as="span">{getFieldErrorMessage('basic.endDate')}</Text>
                             )}
                           </BlockStack>
                         </div>
@@ -268,10 +244,10 @@ export function BasicTab({
                               selectedTime={endTime || ''}
                               onChange={onEndTimeChange}
                               label="End time"
-                              error={endTimeError}
+                              error={hasError('basic.endTime')}
                             />
-                            {endTimeError && endTimeErrorMessage && (
-                              <Text tone="critical" as="span">{endTimeErrorMessage}</Text>
+                            {hasError('basic.endTime') && (
+                              <Text tone="critical" as="span">{getFieldErrorMessage('basic.endTime')}</Text>
                             )}
                           </BlockStack>
                         </div>

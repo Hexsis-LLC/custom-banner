@@ -27,6 +27,7 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
     textColor: '#FFFFFF',
     fontSize: 16,
     fontType: 'site',
+    fontUrl: '',
   },
   cta: {
     ctaType: 'regular',
@@ -39,6 +40,7 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
       left: 0,
     },
     fontType: 'site',
+    fontUrl: '',
     buttonFontColor: '#FFFFFF',
     buttonBackgroundColor: '#FFFFFF',
   },

@@ -7,9 +7,7 @@ import {
   Text,
   Tag, Icon, TextField,
 } from "@shopify/polaris";
-import {useState, useCallback} from "react";
-import {DatePickerPopover} from "../DatePickerPopover";
-import {TimePickerPopover} from "../TimePickerPopover";
+import {useState, useCallback, useEffect} from "react";
 
 interface OtherTabProps {
   closeButtonPosition: string;
@@ -100,6 +98,10 @@ export function OtherTab({
     },
     [onCampaignTimingChange],
   );
+
+  useEffect(() => {
+
+  },[])
 
 
   const delayOptions = [
@@ -208,7 +210,7 @@ export function OtherTab({
         </BlockStack>
       </Card>
 
-      <Card>
+      {/*<Card>
         <BlockStack gap="400">
           <Text as="h2" variant="headingMd">
             Schedule campaign
@@ -294,7 +296,7 @@ export function OtherTab({
             )}
           </BlockStack>
         </BlockStack>
-      </Card>
+      </Card>*/}
     </BlockStack>
   );
 }

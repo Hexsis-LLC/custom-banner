@@ -20,10 +20,11 @@ interface CTATabProps {
   paddingLeft: number;
   fontType: string;
   fontSize: number;
+  fontUrl?: string;
   ctaButtonFontColor: string;
   ctaButtonBackgroundColor: string;
-  error?: boolean;
-  errorMessage?: string;
+  hasError: (field: string) => boolean;
+  getFieldErrorMessage: (field: string) => string;
   onCtaButtonFontColorChange: (value: string) => void;
   onCtaButtonBackgroundColorChange: (value: string) => void;
   onCtaTypeChange: (value: string) => void;
@@ -31,6 +32,7 @@ interface CTATabProps {
   onCtaLinkChange: (value: string) => void;
   onPaddingChange: (value: number, position: 'top' | 'right' | 'bottom' | 'left') => void;
   onFontTypeChange: (value: string) => void;
+  onFontUrlChange: (value: string) => void;
   onFontSizeChange: (value: number) => void;
 }
 
@@ -44,10 +46,11 @@ export function CTATab({
   paddingLeft,
   fontType,
   fontSize,
+  fontUrl = '',
   ctaButtonFontColor,
   ctaButtonBackgroundColor,
-  error,
-  errorMessage,
+  hasError,
+  getFieldErrorMessage,
   onCtaButtonFontColorChange,
   onCtaButtonBackgroundColorChange,
   onCtaTypeChange,
@@ -55,6 +58,7 @@ export function CTATab({
   onCtaLinkChange,
   onPaddingChange,
   onFontTypeChange,
+  onFontUrlChange,
   onFontSizeChange,
 }: CTATabProps) {
 
@@ -71,8 +75,8 @@ export function CTATab({
                 value={ctaText}
                 autoComplete="off"
                 onChange={onCtaTextChange}
-                error={error && !ctaText}
-                helpText={error && !ctaText ? "CTA text is required for link type" : undefined}
+                error={hasError('cta.ctaText')}
+                helpText={hasError('cta.ctaText') ? getFieldErrorMessage('cta.ctaText') : undefined}
               />
             </div>
             <div style={{width: '49%'}}>
@@ -81,8 +85,8 @@ export function CTATab({
                 value={ctaLink}
                 onChange={onCtaLinkChange}
                 autoComplete="off"
-                error={error}
-                helpText={error ? errorMessage : undefined}
+                error={hasError('cta.ctaLink')}
+                helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
               />
             </div>
           </InlineStack>
@@ -95,8 +99,8 @@ export function CTATab({
               value={ctaLink}
               onChange={onCtaLinkChange}
               autoComplete="off"
-              error={error}
-              helpText={error ? errorMessage : undefined}
+              error={hasError('cta.ctaLink')}
+              helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
             />
           </div>
         );
@@ -110,8 +114,8 @@ export function CTATab({
                   value={ctaText}
                   autoComplete="off"
                   onChange={onCtaTextChange}
-                  error={error && !ctaText}
-                  helpText={error && !ctaText ? "CTA text is required for button type" : undefined}
+                  error={hasError('cta.ctaText')}
+                  helpText={hasError('cta.ctaText') ? getFieldErrorMessage('cta.ctaText') : undefined}
                 />
               </div>
               <div style={{width: '49%'}}>
@@ -120,8 +124,8 @@ export function CTATab({
                   value={ctaLink}
                   onChange={onCtaLinkChange}
                   autoComplete="off"
-                  error={error}
-                  helpText={error ? errorMessage : undefined}
+                  error={hasError('cta.ctaLink')}
+                  helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
                 />
               </div>
             </InlineStack>
@@ -134,6 +138,8 @@ export function CTATab({
                   value={ctaButtonFontColor}
                   onChange={onCtaButtonFontColorChange}
                   prefix="#"
+                  error={hasError('cta.buttonFontColor')}
+                  helpText={hasError('cta.buttonFontColor') ? getFieldErrorMessage('cta.buttonFontColor') : undefined}
                 />
               </div>
               <div style={{width: '49%'}}>
@@ -143,6 +149,8 @@ export function CTATab({
                   value={ctaButtonBackgroundColor}
                   onChange={onCtaButtonBackgroundColorChange}
                   prefix="#"
+                  error={hasError('cta.buttonBackgroundColor')}
+                  helpText={hasError('cta.buttonBackgroundColor') ? getFieldErrorMessage('cta.buttonBackgroundColor') : undefined}
                 />
               </div>
             </InlineStack>
@@ -204,30 +212,32 @@ export function CTATab({
             <BlockStack gap="400">
               <Text variant="headingMd" as="h6">Font</Text>
               <InlineStack gap="300">
-                <RadioButton
-                  label={
-                    <BlockStack gap="100">
-                      <Text variant="bodyMd" as="p">Site font</Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
-                    </BlockStack>
-                  }
-                  checked={fontType === 'site'}
-                  id="site-font"
-                  name="font"
-                  onChange={() => onFontTypeChange('site')}
-                />
-                <RadioButton
-                  label={
-                    <BlockStack gap="100">
-                      <Text variant="bodyMd" as="p">Dynamic font</Text>
-                      <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
-                    </BlockStack>
-                  }
-                  checked={fontType === 'dynamic'}
-                  id="dynamic-font"
-                  name="font"
-                  onChange={() => onFontTypeChange('dynamic')}
-                />
+                <InlineStack blockAlign={'start'}>
+                  <RadioButton
+                    label=''
+                    checked={fontType === 'site'}
+                    id="site-font"
+                    name="font"
+                    onChange={() => onFontTypeChange('site')}
+                  />
+                  <BlockStack gap="100">
+                    <Text variant="bodyMd" as="p">Site font</Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
+                  </BlockStack>
+                </InlineStack>
+                <InlineStack blockAlign={'start'}>
+                  <RadioButton
+                    label=""
+                    checked={fontType === 'dynamic'}
+                    id="dynamic-font"
+                    name="font"
+                    onChange={() => onFontTypeChange('dynamic')}
+                  />
+                  <BlockStack gap="100">
+                    <Text variant="bodyMd" as="p">Dynamic font</Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
+                  </BlockStack>
+                </InlineStack>
                 <RadioButton
                   label="Custom font"
                   checked={fontType === 'custom'}
@@ -236,100 +246,109 @@ export function CTATab({
                   onChange={() => onFontTypeChange('custom')}
                 />
               </InlineStack>
+
+              {/* Font URL Input for Dynamic and Custom Fonts */}
+              {(fontType === 'dynamic' || fontType === 'custom') && (
+                <TextField
+                  label="Font URL"
+                  value={fontUrl}
+                  onChange={onFontUrlChange}
+                  autoComplete="off"
+                  placeholder="Enter font URL"
+                  error={hasError('cta.fontUrl')}
+                  helpText={hasError('cta.fontUrl') ? getFieldErrorMessage('cta.fontUrl') : undefined}
+                />
+              )}
             </BlockStack>
           )}
 
-          {/* Custom Font Options */}
-          {(ctaType === 'link' || ctaType === 'regular') && fontType === 'custom' && (
-            <TextField
-              label="Text Color"
-              value="#FFFFFF"
-              autoComplete="off"
-              prefix="#"
-            />
+          {/* Padding Section - Only show for regular button type */}
+          {ctaType === 'regular' && (
+            <>
+              <Text variant="headingMd" as="h6">Padding</Text>
+              <InlineStack gap="400" align="space-between">
+                <div style={{width: '49%'}}>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p">Padding top</Text>
+                    <RangeSlider
+                      label="Padding top"
+                      labelHidden
+                      value={paddingTop}
+                      prefix={paddingTop}
+                      onChange={(value) => onPaddingChange(value as number, 'top')}
+                      output
+                      suffix="px"
+                      min={0}
+                      max={50}
+                    />
+                    {hasError('cta.padding.top') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.top')}</Text>
+                    )}
+                  </BlockStack>
+                </div>
+                <div style={{width: '49%'}}>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p">Padding right</Text>
+                    <RangeSlider
+                      label="Padding right"
+                      labelHidden
+                      value={paddingRight}
+                      prefix={paddingRight}
+                      onChange={(value) => onPaddingChange(value as number, 'right')}
+                      output
+                      suffix="px"
+                      min={0}
+                      max={50}
+                    />
+                    {hasError('cta.padding.right') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.right')}</Text>
+                    )}
+                  </BlockStack>
+                </div>
+              </InlineStack>
+
+              <InlineStack gap="400" align="space-between">
+                <div style={{width: '49%'}}>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p">Padding bottom</Text>
+                    <RangeSlider
+                      label="Padding bottom"
+                      labelHidden
+                      value={paddingBottom}
+                      prefix={paddingBottom}
+                      onChange={(value) => onPaddingChange(value as number, 'bottom')}
+                      output
+                      suffix="px"
+                      min={0}
+                      max={50}
+                    />
+                    {hasError('cta.padding.bottom') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.bottom')}</Text>
+                    )}
+                  </BlockStack>
+                </div>
+                <div style={{width: '49%'}}>
+                  <BlockStack gap="200">
+                    <Text variant="bodyMd" as="p">Padding left</Text>
+                    <RangeSlider
+                      label="Padding left"
+                      labelHidden
+                      value={paddingLeft}
+                      prefix={paddingLeft}
+                      onChange={(value) => onPaddingChange(value as number, 'left')}
+                      output
+                      suffix="px"
+                      min={0}
+                      max={50}
+                    />
+                    {hasError('cta.padding.left') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.left')}</Text>
+                    )}
+                  </BlockStack>
+                </div>
+              </InlineStack>
+            </>
           )}
-
-          {/* Dynamic Font Display */}
-          {(ctaType === 'link' || ctaType === 'regular') && fontType === 'dynamic' && (
-            <TextField
-              label="Times New Roman"
-              value="#FFFFFF"
-              readOnly={true}
-              autoComplete="off"
-              prefix="#"
-            />
-          )}
-
-          {/* Padding Section */}
-          <InlineStack gap="400" align="space-between">
-            <div style={{width: '49%'}}>
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">Padding top</Text>
-                <RangeSlider
-                  label="Padding top"
-                  labelHidden
-                  value={paddingTop}
-                  prefix={paddingTop}
-                  onChange={(value) => onPaddingChange(value as number, 'top')}
-                  output
-                  suffix="px"
-                  min={0}
-                  max={50}
-                />
-              </BlockStack>
-            </div>
-            <div style={{width: '49%'}}>
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">Padding right</Text>
-                <RangeSlider
-                  label="Padding right"
-                  labelHidden
-                  value={paddingRight}
-                  prefix={paddingRight}
-                  onChange={(value) => onPaddingChange(value as number, 'right')}
-                  output
-                  suffix="px"
-                  min={0}
-                  max={50}
-                />
-              </BlockStack>
-            </div>
-          </InlineStack>
-
-          <InlineStack gap="400" align="space-between">
-            <div style={{width: '49%'}}>
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">Padding bottom</Text>
-                <RangeSlider
-                  label="Padding bottom"
-                  labelHidden
-                  value={paddingBottom}
-                  prefix={paddingBottom}
-                  onChange={(value) => onPaddingChange(value as number, 'bottom')}
-                  output
-                  suffix="px"
-                  min={0}
-                  max={50}
-                />
-              </BlockStack>
-            </div>
-            <div style={{width: '49%'}}>
-              <BlockStack gap="200">
-                <Text variant="bodyMd" as="p">Padding left</Text>
-                <RangeSlider
-                  label="Padding left"
-                  labelHidden
-                  value={paddingLeft}
-                  prefix={paddingLeft}
-                  onChange={(value) => onPaddingChange(value as number, 'left')}
-                  output
-                  suffix="px"
-                  min={0}
-                  max={50}
-                />
-              </BlockStack>
-            </div>
-          </InlineStack>
         </BlockStack>
       </Box>
     </Card>

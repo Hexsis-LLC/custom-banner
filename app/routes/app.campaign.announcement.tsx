@@ -107,14 +107,14 @@ export default function AnnouncementBanner() {
           endDate: new Date(formData.basic.endDate),
         },
       };
-      
+
       validateAnnouncement(dataToValidate);
       setFieldErrors({ errors: [], errorFields: new Set() });
       return true;
     } catch (error) {
       if (error instanceof ZodError) {
         const errorMessages = error.errors.map((err: { path: (string | number)[]; message: string }) => getErrorMessage(err));
-        
+
         const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
           const tabName = message.split(' in ')[1].split(' tab')[0];
           if (!acc[tabName]) acc[tabName] = [];
@@ -122,7 +122,7 @@ export default function AnnouncementBanner() {
           return acc;
         }, {});
 
-        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) => 
+        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
           `${tab} tab: ${errors.join(', ')}`
         );
 
@@ -199,6 +199,7 @@ export default function AnnouncementBanner() {
             onTextColorChange={(value) => handleFormChange('text', {textColor: value})}
             onFontTypeChange={(value) => handleFormChange('text', {fontType: value})}
             onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
+            onFontUrlChange={(value) => handleFormChange('text', {fontUrl: value})}
             {...commonProps}
           />
         );
@@ -214,6 +215,7 @@ export default function AnnouncementBanner() {
             paddingLeft={formData.cta.padding.left}
             fontType={formData.cta.fontType}
             fontSize={formData.text.fontSize}
+            fontUrl={formData.cta.fontUrl}
             ctaButtonFontColor={formData.cta.buttonFontColor}
             ctaButtonBackgroundColor={formData.cta.buttonBackgroundColor}
             onCtaTypeChange={(value) => handleFormChange('cta', {ctaType: value})}
@@ -224,6 +226,7 @@ export default function AnnouncementBanner() {
               handleFormChange('cta', {padding: newPadding});
             }}
             onFontTypeChange={(value) => handleFormChange('cta', {fontType: value})}
+            onFontUrlChange={(value) => handleFormChange('cta', {fontUrl: value})}
             onCtaButtonFontColorChange={(value) => handleFormChange('cta', {buttonFontColor: value})}
             onCtaButtonBackgroundColorChange={(value) => handleFormChange('cta', {buttonBackgroundColor: value})}
             onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
@@ -296,7 +299,7 @@ export default function AnnouncementBanner() {
           <Box padding="400">
             <Banner
               title="Please review the following:"
-              tone="critical"
+              tone="warning"
             >
               <ul style={{ margin: 0, paddingLeft: '20px' }}>
                 {validationErrors.map((error, index) => (

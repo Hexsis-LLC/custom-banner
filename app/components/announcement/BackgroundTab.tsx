@@ -22,6 +22,8 @@ interface BackgroundTabProps {
     bottom: number;
     left: number;
   };
+  hasError: (fieldPath: string) => boolean;
+  getFieldErrorMessage: (fieldPath: string) => string;
   onBackgroundTypeChange: (value: string) => void;
   onColor1Change: (value: string) => void;
   onColor2Change: (value: string) => void;
@@ -35,6 +37,8 @@ export function BackgroundTab({
   color2,
   pattern,
   padding,
+  hasError,
+  getFieldErrorMessage,
   onBackgroundTypeChange,
   onColor1Change,
   onColor2Change,
@@ -79,25 +83,17 @@ export function BackgroundTab({
               />
             </InlineStack>
 
-            {backgroundType === 'solid' && (
-              <BlockStack gap="400">
-                <TextField
-                  label="Color"
-                  value={color1}
-                  onChange={onColor1Change}
-                  autoComplete="off"
-                  prefix="#"
-                />
-                <Select
-                  label="Pattern"
-                  options={patternOptions}
-                  value={pattern}
-                  onChange={onPatternChange}
-                />
-              </BlockStack>
-            )}
-
-            {backgroundType === 'gradient' && (
+            {backgroundType === 'solid' ? (
+              <TextField
+                label="Color"
+                value={color1}
+                onChange={onColor1Change}
+                autoComplete="off"
+                prefix="#"
+                error={hasError('background.color1')}
+                helpText={hasError('background.color1') ? getFieldErrorMessage('background.color1') : undefined}
+              />
+            ) : (
               <InlineStack gap="400" align="space-between">
                 <div style={{width: '49%'}}>
                   <TextField
@@ -106,6 +102,8 @@ export function BackgroundTab({
                     onChange={onColor1Change}
                     autoComplete="off"
                     prefix="#"
+                    error={hasError('background.color1')}
+                    helpText={hasError('background.color1') ? getFieldErrorMessage('background.color1') : undefined}
                   />
                 </div>
                 <div style={{width: '49%'}}>
@@ -115,10 +113,20 @@ export function BackgroundTab({
                     onChange={onColor2Change}
                     autoComplete="off"
                     prefix="#"
+                    error={hasError('background.color2')}
+                    helpText={hasError('background.color2') ? getFieldErrorMessage('background.color2') : undefined}
                   />
                 </div>
               </InlineStack>
             )}
+
+            <Select
+              label="Pattern"
+              options={patternOptions}
+              value={pattern}
+              onChange={onPatternChange}
+              error={hasError('background.pattern')}
+            />
           </BlockStack>
         </Box>
         <Box padding="400">
@@ -197,7 +205,6 @@ export function BackgroundTab({
           </BlockStack>
         </Box>
       </Card>
-
     </BlockStack>
   );
 }
