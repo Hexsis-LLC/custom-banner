@@ -15,101 +15,25 @@ import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {json, redirect} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import CustomFonts from "../utils/google-fonts";
-import {validateAnnouncement, announcementSchema} from "../schemas/announcement";
-import type {AnnouncementBannerData, Size} from "../types/announcement";
+import {validateAnnouncement} from "../schemas/announcement";
+import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
+import {getErrorMessage} from "../utils/announcement-form";
+import type {FormState, LoaderData, ValidationState} from "../types/announcement-form";
 import {ZodError} from "zod";
+import type {Size} from "../types/announcement";
 
-interface FormState extends Omit<AnnouncementBannerData, 'basic'> {
-  basic: Omit<AnnouncementBannerData['basic'], 'startDate' | 'endDate'> & {
-    startDate: string;
-    endDate: string;
-  };
-}
-
-interface LoaderData {
-  initialData: FormState;
-  fonts: { family: string }[];
-}
-
-interface FieldError {
-  path: (string | number)[];
-  message: string;
-}
-
-interface ValidationState {
-  errors: FieldError[];
-  errorFields: Set<string>;
-}
-
+// Loader
 export const loader = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
   const fonts = new CustomFonts();
   const randomFont = fonts.getRandomFont();
 
-  const now = new Date();
-  // Initialize with default values
-  const initialData: AnnouncementBannerData = {
-    basic: {
-      size: 'large' as Size,
-      sizeHeight: "52",
-      sizeWidth: "100",
-      campaignTitle: '',
-      startType: 'now',
-      endType: 'until_stop',
-      startDate: now,
-      endDate: now,
-      startTime: '12:30 AM',
-      endTime: '1:30 PM',
-    },
-    text: {
-      announcementText: '',
-      textColor: '#FFFFFF',
-      fontSize: 16,
-      fontType: 'site',
-    },
-    cta: {
-      ctaType: 'regular',
-      ctaText: '',
-      ctaLink: '',
-      padding: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-      },
-      fontType: 'site',
-      buttonFontColor: '#FFFFFF',
-      buttonBackgroundColor: '#FFFFFF',
-    },
-    background: {
-      backgroundType: 'solid',
-      color1: '',
-      color2: '',
-      pattern: 'none',
-      padding: {
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-      },
-    },
-    other: {
-      closeButtonPosition: 'right' as const,
-      displayBeforeDelay: 'no-delay',
-      showAfterClosing: 'never',
-      showAfterCTA: 'no-delay',
-      selectedPages: ['products'],
-      campaignTiming: 'immediate',
-    },
-  };
-
-  // Transform the data for client-side use
   const formData: FormState = {
-    ...initialData,
+    ...DEFAULT_INITIAL_DATA,
     basic: {
-      ...initialData.basic,
-      startDate: initialData.basic.startDate.toISOString(),
-      endDate: initialData.basic.endDate.toISOString(),
+      ...DEFAULT_INITIAL_DATA.basic,
+      startDate: DEFAULT_INITIAL_DATA.basic.startDate.toISOString(),
+      endDate: DEFAULT_INITIAL_DATA.basic.endDate.toISOString(),
     },
   };
 
@@ -119,19 +43,19 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
   });
 };
 
+// Action
 export const action = async ({request}: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const rawData = Object.fromEntries(formData);
-
   try {
+    const formData = await request.formData();
+    const rawData = Object.fromEntries(formData);
     const parsedData = JSON.parse(rawData.formData as string);
-    // Convert date strings back to Date objects
+
     if (parsedData.basic) {
       parsedData.basic.startDate = new Date(parsedData.basic.startDate);
       parsedData.basic.endDate = new Date(parsedData.basic.endDate);
     }
+
     const validatedData = validateAnnouncement(parsedData);
-    // TODO: Save announcement data to your database
     return redirect('/app/campaign/banner_type');
   } catch (error) {
     if (error instanceof ZodError) {
@@ -144,120 +68,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
   }
 };
 
-const getTabNameFromPath = (path: (string | number)[]): string => {
-  const section = path[0].toString();
-  switch (section) {
-    case 'basic':
-      return 'Basic Settings';
-    case 'text':
-      return 'Announcement Text';
-    case 'cta':
-      return 'Call to Action';
-    case 'background':
-      return 'Background';
-    case 'other':
-      return 'Other Settings';
-    default:
-      return section;
-  }
-};
-
-const getFieldName = (path: (string | number)[]): string => {
-  const field = path[path.length - 1].toString();
-  switch (field) {
-    case 'size':
-      return 'Banner Size';
-    case 'sizeHeight':
-      return 'Height';
-    case 'sizeWidth':
-      return 'Width';
-    case 'campaignTitle':
-      return 'Campaign Title';
-    case 'startDate':
-      return 'Start Date';
-    case 'endDate':
-      return 'End Date';
-    case 'startTime':
-      return 'Start Time';
-    case 'endTime':
-      return 'End Time';
-    case 'announcementText':
-      return 'Announcement Text';
-    case 'textColor':
-      return 'Text Color';
-    case 'fontSize':
-      return 'Font Size';
-    case 'fontType':
-      return 'Font Type';
-    case 'ctaType':
-      return 'CTA Type';
-    case 'ctaText':
-      return 'CTA Text';
-    case 'ctaLink':
-      return 'CTA Link';
-    case 'buttonFontColor':
-      return 'Button Text Color';
-    case 'buttonBackgroundColor':
-      return 'Button Background Color';
-    case 'backgroundType':
-      return 'Background Type';
-    case 'color1':
-      return 'Primary Color';
-    case 'color2':
-      return 'Secondary Color';
-    case 'color3':
-      return 'Tertiary Color';
-    case 'pattern':
-      return 'Pattern';
-    case 'paddingRight':
-      return 'Right Padding';
-    case 'closeButtonPosition':
-      return 'Close Button Position';
-    case 'displayBeforeDelay':
-      return 'Display Delay';
-    case 'showAfterClosing':
-      return 'Show After Closing';
-    case 'showAfterCTA':
-      return 'Show After CTA Click';
-    case 'selectedPages':
-      return 'Selected Pages';
-    case 'campaignTiming':
-      return 'Campaign Timing';
-    default:
-      return field;
-  }
-};
-
-const getErrorMessage = (error: { path: (string | number)[]; message: string }): string => {
-  const tabName = getTabNameFromPath(error.path);
-  const fieldName = getFieldName(error.path);
-
-  // Handle specific error messages
-  if (error.message.includes('Required')) {
-    return `${fieldName} is required in ${tabName} tab`;
-  }
-
-  if (error.message.includes('Invalid url')) {
-    return `${fieldName} must be a valid URL in ${tabName} tab`;
-  }
-
-  if (error.message.includes('min')) {
-    return `${fieldName} is too small in ${tabName} tab`;
-  }
-
-  if (error.message.includes('max')) {
-    return `${fieldName} is too large in ${tabName} tab`;
-  }
-
-  // For date validation errors
-  if (error.message.includes('date')) {
-    return `Please enter a valid date for ${fieldName} in ${tabName} tab`;
-  }
-
-  // For any other errors, make the message more user-friendly
-  return `${fieldName} in ${tabName} tab: ${error.message.charAt(0).toUpperCase() + error.message.slice(1)}`;
-};
-
+// Component
 export default function AnnouncementBanner() {
   const navigate = useNavigate();
   const {initialData} = useLoaderData<typeof loader>();
@@ -268,29 +79,6 @@ export default function AnnouncementBanner() {
     errors: [],
     errorFields: new Set(),
   });
-
-  const tabs = [
-    {
-      id: 'basic',
-      content: 'Basic',
-    },
-    {
-      id: 'announcement-text',
-      content: 'Announcement text',
-    },
-    {
-      id: 'cta',
-      content: 'CTA',
-    },
-    {
-      id: 'background',
-      content: 'Background',
-    },
-    {
-      id: 'other',
-      content: 'Other',
-    },
-  ];
 
   const handleTabChange = useCallback(
     (selectedTabIndex: number) => setSelected(selectedTabIndex),
@@ -305,14 +93,9 @@ export default function AnnouncementBanner() {
         ...data,
       },
     }));
-    // Clear validation errors when form changes
     setValidationErrors([]);
     setFieldErrors({ errors: [], errorFields: new Set() });
   }, []);
-
-  const getFieldPath = (error: { path: (string | number)[] }): string => {
-    return error.path.join('.');
-  };
 
   const validateForm = useCallback(() => {
     try {
@@ -324,34 +107,28 @@ export default function AnnouncementBanner() {
           endDate: new Date(formData.basic.endDate),
         },
       };
-
-      announcementSchema.parse(dataToValidate);
+      
+      validateAnnouncement(dataToValidate);
       setFieldErrors({ errors: [], errorFields: new Set() });
       return true;
     } catch (error) {
       if (error instanceof ZodError) {
-        // Transform Zod errors into user-friendly messages
-        const errorMessages = error.errors.map(err => getErrorMessage(err));
-
-        // Group errors by tab
-        const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message) => {
+        const errorMessages = error.errors.map((err: { path: (string | number)[]; message: string }) => getErrorMessage(err));
+        
+        const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
           const tabName = message.split(' in ')[1].split(' tab')[0];
-          if (!acc[tabName]) {
-            acc[tabName] = [];
-          }
+          if (!acc[tabName]) acc[tabName] = [];
           acc[tabName].push(message.split(' in ')[0]);
           return acc;
         }, {});
 
-        // Format grouped errors
-        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
+        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) => 
           `${tab} tab: ${errors.join(', ')}`
         );
 
-        // Set field-level errors
-        const errorFields = new Set(error.errors.map(getFieldPath));
+        const errorFields = new Set(error.errors.map((err: { path: (string | number)[]; message: string }) => err.path.join('.')));
         setFieldErrors({
-          errors: error.errors.map(err => ({
+          errors: error.errors.map((err: { path: (string | number)[]; message: string }) => ({
             path: err.path,
             message: err.message,
           })),
@@ -369,51 +146,38 @@ export default function AnnouncementBanner() {
   }, [fieldErrors.errorFields]);
 
   const getFieldErrorMessage = useCallback((fieldPath: string) => {
-    const error = fieldErrors.errors.find(err => getFieldPath(err) === fieldPath);
+    const error = fieldErrors.errors.find(err => err.path.join('.') === fieldPath);
     return error ? error.message : '';
   }, [fieldErrors.errors]);
 
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (validateForm()) {
-      // If validation passes, submit the form
       const form = e.currentTarget;
       form.submit();
     }
   }, [validateForm]);
 
   const renderContent = () => {
+    const commonProps = {
+      hasError,
+      getFieldErrorMessage,
+    };
+
     switch (selected) {
       case 0:
         return (
           <BasicTab
             size={formData.basic.size as Size}
-            startType={formData.basic.startType || 'now'}
-            endType={formData.basic.endType || 'until_stop'}
+            startType={formData.basic.startType}
+            endType={formData.basic.endType}
             startDate={new Date(formData.basic.startDate)}
             endDate={new Date(formData.basic.endDate)}
             startTime={formData.basic.startTime}
             endTime={formData.basic.endTime}
+            campaignTitle={formData.basic.campaignTitle}
             customHeight={formData.basic.sizeHeight}
             customWidth={formData.basic.sizeWidth}
-            campaignTitle={formData.basic.campaignTitle}
-            error={hasError('basic.campaignTitle')}
-            errorMessage={getFieldErrorMessage('basic.campaignTitle')}
-            startDateError={hasError('basic.startDate')}
-            startDateErrorMessage={getFieldErrorMessage('basic.startDate')}
-            startTimeError={hasError('basic.startTime')}
-            startTimeErrorMessage={getFieldErrorMessage('basic.startTime')}
-            endDateError={hasError('basic.endDate')}
-            endDateErrorMessage={getFieldErrorMessage('basic.endDate')}
-            endTimeError={hasError('basic.endTime')}
-            endTimeErrorMessage={getFieldErrorMessage('basic.endTime')}
-            heightError={hasError('basic.sizeHeight')}
-            heightErrorMessage={getFieldErrorMessage('basic.sizeHeight')}
-            widthError={hasError('basic.sizeWidth')}
-            widthErrorMessage={getFieldErrorMessage('basic.sizeWidth')}
-            onCampaignCustomHeight={(value) => handleFormChange('basic', {sizeHeight: value})}
-            onCampaignCustomWidth={(value) => handleFormChange('basic', {sizeWidth: value})}
             onCampaignTitleChange={(value) => handleFormChange('basic', {campaignTitle: value})}
             onSizeChange={(value) => handleFormChange('basic', {size: value as Size})}
             onStartTypeChange={(value) => handleFormChange('basic', {startType: value})}
@@ -422,18 +186,20 @@ export default function AnnouncementBanner() {
             onEndDateChange={(value) => handleFormChange('basic', {endDate: value.toISOString()})}
             onStartTimeChange={(value) => handleFormChange('basic', {startTime: value})}
             onEndTimeChange={(value) => handleFormChange('basic', {endTime: value})}
+            onCampaignCustomHeight={(value) => handleFormChange('basic', {sizeHeight: value})}
+            onCampaignCustomWidth={(value) => handleFormChange('basic', {sizeWidth: value})}
+            {...commonProps}
           />
         );
       case 1:
         return (
           <AnnouncementTextTab
             {...formData.text}
-            error={hasError('text.announcementText')}
-            errorMessage={getFieldErrorMessage('text.announcementText')}
             onAnnouncementTextChange={(value) => handleFormChange('text', {announcementText: value})}
             onTextColorChange={(value) => handleFormChange('text', {textColor: value})}
             onFontTypeChange={(value) => handleFormChange('text', {fontType: value})}
             onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
+            {...commonProps}
           />
         );
       case 2:
@@ -450,8 +216,6 @@ export default function AnnouncementBanner() {
             fontSize={formData.text.fontSize}
             ctaButtonFontColor={formData.cta.buttonFontColor}
             ctaButtonBackgroundColor={formData.cta.buttonBackgroundColor}
-            error={hasError('cta.ctaLink')}
-            errorMessage={getFieldErrorMessage('cta.ctaLink')}
             onCtaTypeChange={(value) => handleFormChange('cta', {ctaType: value})}
             onCtaTextChange={(value) => handleFormChange('cta', {ctaText: value})}
             onCtaLinkChange={(value) => handleFormChange('cta', {ctaLink: value})}
@@ -463,6 +227,7 @@ export default function AnnouncementBanner() {
             onCtaButtonFontColorChange={(value) => handleFormChange('cta', {buttonFontColor: value})}
             onCtaButtonBackgroundColorChange={(value) => handleFormChange('cta', {buttonBackgroundColor: value})}
             onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
+            {...commonProps}
           />
         );
       case 3:
@@ -477,17 +242,13 @@ export default function AnnouncementBanner() {
               const newPadding = {...formData.background.padding, [position]: value};
               handleFormChange('background', {padding: newPadding});
             }}
+            {...commonProps}
           />
         );
       case 4:
         return (
           <OtherTab
-            closeButtonPosition={formData.other.closeButtonPosition}
-            displayBeforeDelay={formData.other.displayBeforeDelay}
-            showAfterClosing={formData.other.showAfterClosing}
-            showAfterCTA={formData.other.showAfterCTA}
-            selectedPages={formData.other.selectedPages}
-            campaignTiming={formData.other.campaignTiming}
+            {...formData.other}
             startDate={new Date(formData.basic.startDate)}
             endDate={new Date(formData.basic.endDate)}
             startTime={formData.basic.startTime}
@@ -502,6 +263,7 @@ export default function AnnouncementBanner() {
             onEndDateChange={(value) => handleFormChange('basic', {endDate: value.toISOString()})}
             onStartTimeChange={(value) => handleFormChange('basic', {startTime: value})}
             onEndTimeChange={(value) => handleFormChange('basic', {endTime: value})}
+            {...commonProps}
           />
         );
       default:
@@ -544,7 +306,7 @@ export default function AnnouncementBanner() {
             </Banner>
           </Box>
         )}
-        <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
+        <Tabs tabs={TABS} selected={selected} onSelect={handleTabChange}>
           <Box padding="200">
             {renderContent()}
             <input type="hidden" name="formData" value={JSON.stringify(formData)} />
