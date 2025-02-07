@@ -117,6 +117,17 @@ export function AnnouncementTextTab({
               prefix="#"
             />
           )}
+
+          {/* Custom Font Color Input */}
+          {fontType === 'dynamic' && (
+            <TextField
+              label="Times New Roman"
+              value="#FFFFFF"
+              readOnly={true}
+              autoComplete="off"
+              prefix="#"
+            />
+          )}
         </BlockStack>
       </Box>
     </Card>

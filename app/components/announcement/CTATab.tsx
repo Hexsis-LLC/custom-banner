@@ -9,7 +9,6 @@ import {
   Card,
   Box,
 } from "@shopify/polaris";
-import type { RangeSliderValue } from "@shopify/polaris/build/ts/src/components/RangeSlider/types";
 
 interface CTATabProps {
   ctaType: string;
@@ -19,17 +18,25 @@ interface CTATabProps {
   paddingLeft: number;
   onCtaTypeChange: (value: string) => void;
   onPaddingChange: (value: number, position: 'top' | 'right' | 'bottom' | 'left') => void;
+  fontType: string;
+  fontSize: number;
+  onFontTypeChange: (value: string) => void;
+  onFontSizeChange: (value: number) => void;
 }
 
 export function CTATab({
-  ctaType,
-  paddingTop,
-  paddingRight,
-  paddingBottom,
-  paddingLeft,
-  onCtaTypeChange,
-  onPaddingChange,
-}: CTATabProps) {
+                         ctaType,
+                         paddingTop,
+                         paddingRight,
+                         paddingBottom,
+                         paddingLeft,
+                         onCtaTypeChange,
+                         onPaddingChange,
+                         fontType,
+                         fontSize,
+                         onFontTypeChange,
+                         onFontSizeChange,
+                       }: CTATabProps) {
   return (
     <Card roundedAbove="sm">
       <Box padding="400">
@@ -38,7 +45,7 @@ export function CTATab({
           <BlockStack gap="400">
             <InlineStack align="start" gap="200">
               <Text variant="headingMd" as="h6">CTA</Text>
-              <Icon source="help" />
+              <Icon source="help"/>
             </InlineStack>
 
             <InlineStack gap="300">
@@ -110,7 +117,61 @@ export function CTATab({
               />
             </div>
           </InlineStack>
+          <BlockStack gap="400">
+            <Text variant="headingMd" as="h6">Font</Text>
+            <InlineStack gap="300">
+              <RadioButton
+                label={
+                  <BlockStack gap="100">
+                    <Text variant="bodyMd" as="p">Site font</Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
+                  </BlockStack>
+                }
+                checked={fontType === 'site'}
+                id="site-font"
+                name="font"
+                onChange={() => onFontTypeChange('site')}
+              />
+              <RadioButton
+                label={
+                  <BlockStack gap="100">
+                    <Text variant="bodyMd" as="p">Dynamic font</Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
+                  </BlockStack>
+                }
+                checked={fontType === 'dynamic'}
+                id="dynamic-font"
+                name="font"
+                onChange={() => onFontTypeChange('dynamic')}
+              />
+              <RadioButton
+                label="Custom font"
+                checked={fontType === 'custom'}
+                id="custom-font"
+                name="font"
+                onChange={() => onFontTypeChange('custom')}
+              />
+            </InlineStack>
+          </BlockStack>
+          {fontType === 'custom' && (
+            <TextField
+              label="Text Color"
+              value="#FFFFFF"
+              autoComplete="off"
+              prefix="#"
+            />
+          )}
 
+          {/* Custom Font Color Input */}
+          {fontType === 'dynamic' && (
+            <TextField
+              label="Times New Roman"
+              value="#FFFFFF"
+              readOnly={true}
+              autoComplete="off"
+              prefix="#"
+            />
+          )}
           {/* Padding Top and Right Section */}
           <InlineStack gap="400" align="space-between">
             <div style={{width: '49%'}}>

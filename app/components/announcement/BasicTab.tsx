@@ -7,11 +7,9 @@ import {
   BlockStack,
   InlineStack,
   Select,
-  DatePicker,
   Box,
-  Popover,
 } from "@shopify/polaris";
-import {useState, useRef, useCallback} from "react";
+import {DatePickerPopover} from "../DatePickerPopover";
 
 interface BasicTabProps {
   size: string;
@@ -24,61 +22,16 @@ interface BasicTabProps {
   onEndDateChange: (date: Date) => void;
 }
 
-interface DateChangeEvent {
-  end: Date;
-}
-
 export function BasicTab({
-                           size,
-                           startDate,
-                           endDate,
-                           startTime,
-                           endTime,
-                           onSizeChange,
-                           onStartDateChange,
-                           onEndDateChange,
-                         }: BasicTabProps) {
-  const [startDatePickerActive, setStartDatePickerActive] = useState(false);
-  const [endDatePickerActive, setEndDatePickerActive] = useState(false);
-
-  const [{startMonth, startYear}, setStartDate] = useState({
-    startMonth: startDate.getMonth(),
-    startYear: startDate.getFullYear(),
-  });
-
-  const [{endMonth, endYear}, setEndDate] = useState({
-    endMonth: endDate.getMonth(),
-    endYear: endDate.getFullYear(),
-  });
-
-  const handleStartMonthChange = useCallback(
-    (month: number, year: number) => setStartDate({startMonth: month, startYear: year}),
-    [],
-  );
-
-  const handleEndMonthChange = useCallback(
-    (month: number, year: number) => setEndDate({endMonth: month, endYear: year}),
-    [],
-  );
-
-  const handleStartDateChange = useCallback(({end: newDate}: DateChangeEvent) => {
-    onStartDateChange(newDate);
-    setStartDatePickerActive(false);
-  }, [onStartDateChange]);
-
-  const handleEndDateChange = useCallback(({end: newDate}: DateChangeEvent) => {
-    onEndDateChange(newDate);
-    setEndDatePickerActive(false);
-  }, [onEndDateChange]);
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
+  size,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  onSizeChange,
+  onStartDateChange,
+  onEndDateChange,
+}: BasicTabProps) {
   return (
     <BlockStack gap="300">
       <Card roundedAbove="sm">
@@ -181,38 +134,12 @@ export function BasicTab({
                       <div style={{width: '49%'}}>
                         <BlockStack gap="300">
                           <Text as="p" variant="bodyMd">Date</Text>
-                          <Popover
-                            active={startDatePickerActive}
-                            autofocusTarget="none"
-                            preferredAlignment="left"
-                            fullWidth
-                            preferInputActivator={false}
-                            preferredPosition="below"
-                            preventCloseOnChildOverlayClick
-                            onClose={() => setStartDatePickerActive(false)}
-                            activator={
-                              <TextField
-                                role="combobox"
-                                label="Start date"
-                                labelHidden
-                                prefix={<Icon source="calendar"/>}
-                                value={formatDate(startDate)}
-                                onFocus={() => setStartDatePickerActive(true)}
-                                autoComplete="off"
-                                readOnly
-                              />
-                            }
-                          >
-                            <Box padding="400">
-                              <DatePicker
-                                month={startMonth}
-                                year={startYear}
-                                selected={startDate}
-                                onMonthChange={handleStartMonthChange}
-                                onChange={handleStartDateChange}
-                              />
-                            </Box>
-                          </Popover>
+                          <DatePickerPopover
+                            selectedDate={startDate}
+                            onChange={onStartDateChange}
+                            isModal={true}
+                            label="Start date"
+                          />
                         </BlockStack>
                       </div>
                       <div style={{width: '49%'}}>
@@ -246,38 +173,12 @@ export function BasicTab({
                       <div style={{width: '49%'}}>
                         <BlockStack gap="300">
                           <Text as="p" variant="bodyMd">Date</Text>
-                          <Popover
-                            active={endDatePickerActive}
-                            autofocusTarget="none"
-                            preferredAlignment="left"
-                            fullWidth
-                            preferInputActivator={false}
-                            preferredPosition="below"
-                            preventCloseOnChildOverlayClick
-                            onClose={() => setEndDatePickerActive(false)}
-                            activator={
-                              <TextField
-                                role="combobox"
-                                label="End date"
-                                labelHidden
-                                prefix={<Icon source="calendar"/>}
-                                value={formatDate(endDate)}
-                                onFocus={() => setEndDatePickerActive(true)}
-                                autoComplete="off"
-                                readOnly
-                              />
-                            }
-                          >
-                            <Box padding="400">
-                              <DatePicker
-                                month={endMonth}
-                                year={endYear}
-                                selected={endDate}
-                                onMonthChange={handleEndMonthChange}
-                                onChange={handleEndDateChange}
-                              />
-                            </Box>
-                          </Popover>
+                          <DatePickerPopover
+                            selectedDate={endDate}
+                            isModal={true}
+                            onChange={onEndDateChange}
+                            label="End date"
+                          />
                         </BlockStack>
                       </div>
                       <div style={{width: '49%'}}>
