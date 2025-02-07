@@ -13,7 +13,7 @@ import {BackgroundTab} from "app/components/announcement/BackgroundTab";
 import {OtherTab} from "app/components/announcement/OtherTab";
 import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {json, redirect} from "@remix-run/node";
-import {authenticate} from "../shopify.server";
+import {authenticate, unauthenticated} from "../shopify.server";
 import CustomFonts from "../utils/google-fonts";
 import {validateAnnouncement} from "../schemas/announcement";
 import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
@@ -21,13 +21,15 @@ import {getErrorMessage} from "../utils/announcement-form";
 import type {FormState, LoaderData, ValidationState} from "../types/announcement-form";
 import {ZodError} from "zod";
 import type {Size} from "../types/announcement";
+import Storefront from "../services/storefront.server";
+import {AnnouncementAction} from "../services/announcementAction.server";
 
 // Loader
 export const loader = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
-  const fonts = new CustomFonts();
-  const randomFont = fonts.getRandomFont();
-
+  const {storefront} = await unauthenticated.storefront(session.shop)
+  const storeFrontService = new Storefront(storefront)
+  const pages = await storeFrontService.getStorePages();
   const formData: FormState = {
     ...DEFAULT_INITIAL_DATA,
     basic: {
@@ -39,7 +41,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
   return json<LoaderData>({
     initialData: formData,
-    fonts: [{ family: randomFont.family }],
+    pages,
   });
 };
 
@@ -56,7 +58,16 @@ export const action = async ({request}: ActionFunctionArgs) => {
     }
 
     const validatedData = validateAnnouncement(parsedData);
-    return redirect('/app/campaign/banner_type');
+    try {
+      if (validatedData) {
+        const announcementAction = new AnnouncementAction();
+        await announcementAction.createFromFormData(validatedData, "hexsis-test-store")
+        return true
+      }
+    } catch (e) {
+      return true
+    }
+
   } catch (error) {
     if (error instanceof ZodError) {
       return json({
@@ -71,7 +82,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
 // Component
 export default function AnnouncementBanner() {
   const navigate = useNavigate();
-  const {initialData} = useLoaderData<typeof loader>();
+  const {initialData, pages} = useLoaderData<typeof loader>();
   const [selected, setSelected] = useState(0);
   const [formData, setFormData] = useState<FormState>(initialData);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -94,7 +105,7 @@ export default function AnnouncementBanner() {
       },
     }));
     setValidationErrors([]);
-    setFieldErrors({ errors: [], errorFields: new Set() });
+    setFieldErrors({errors: [], errorFields: new Set()});
   }, []);
 
   const validateForm = useCallback(() => {
@@ -109,11 +120,14 @@ export default function AnnouncementBanner() {
       };
 
       validateAnnouncement(dataToValidate);
-      setFieldErrors({ errors: [], errorFields: new Set() });
+      setFieldErrors({errors: [], errorFields: new Set()});
       return true;
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((err: { path: (string | number)[]; message: string }) => getErrorMessage(err));
+        const errorMessages = error.errors.map((err: {
+          path: (string | number)[];
+          message: string
+        }) => getErrorMessage(err));
 
         const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
           const tabName = message.split(' in ')[1].split(' tab')[0];
@@ -126,7 +140,10 @@ export default function AnnouncementBanner() {
           `${tab} tab: ${errors.join(', ')}`
         );
 
-        const errorFields = new Set(error.errors.map((err: { path: (string | number)[]; message: string }) => err.path.join('.')));
+        const errorFields = new Set(error.errors.map((err: {
+          path: (string | number)[];
+          message: string
+        }) => err.path.join('.')));
         setFieldErrors({
           errors: error.errors.map((err: { path: (string | number)[]; message: string }) => ({
             path: err.path,
@@ -252,6 +269,7 @@ export default function AnnouncementBanner() {
         return (
           <OtherTab
             {...formData.other}
+            pagesOptions={pages}
             startDate={new Date(formData.basic.startDate)}
             endDate={new Date(formData.basic.endDate)}
             startTime={formData.basic.startTime}
@@ -301,9 +319,9 @@ export default function AnnouncementBanner() {
               title="Please review the following:"
               tone="warning"
             >
-              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+              <ul style={{margin: 0, paddingLeft: '20px'}}>
                 {validationErrors.map((error, index) => (
-                  <li key={index} style={{ marginBottom: '8px' }}>{error}</li>
+                  <li key={index} style={{marginBottom: '8px'}}>{error}</li>
                 ))}
               </ul>
             </Banner>
@@ -312,7 +330,7 @@ export default function AnnouncementBanner() {
         <Tabs tabs={TABS} selected={selected} onSelect={handleTabChange}>
           <Box padding="200">
             {renderContent()}
-            <input type="hidden" name="formData" value={JSON.stringify(formData)} />
+            <input type="hidden" name="formData" value={JSON.stringify(formData)}/>
           </Box>
         </Tabs>
       </Page>

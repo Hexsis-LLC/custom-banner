@@ -9,7 +9,7 @@ export interface FormState extends Omit<AnnouncementBannerData, 'basic'> {
 
 export interface LoaderData {
   initialData: FormState;
-  fonts: { family: string }[];
+  pages: { title: string; handle: string }[];
 }
 
 export interface FieldError {
@@ -20,4 +20,4 @@ export interface FieldError {
 export interface ValidationState {
   errors: FieldError[];
   errorFields: Set<string>;
-} 
+}

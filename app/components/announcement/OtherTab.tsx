@@ -15,6 +15,7 @@ interface OtherTabProps {
   showAfterClosing: string;
   showAfterCTA: string;
   selectedPages: string[];
+  pagesOptions: { title: string; handle: string }[];
   campaignTiming: string;
   startDate: Date;
   endDate: Date;
@@ -33,35 +34,50 @@ interface OtherTabProps {
 }
 
 export function OtherTab({
-  closeButtonPosition,
-  displayBeforeDelay,
-  showAfterClosing,
-  showAfterCTA,
-  selectedPages,
-  campaignTiming,
-  startDate,
-  endDate,
-  startTime,
-  endTime,
-  onCloseButtonPositionChange,
-  onDisplayBeforeDelayChange,
-  onShowAfterClosingChange,
-  onShowAfterCTAChange,
-  onSelectedPagesChange,
-  onCampaignTimingChange,
-  onStartDateChange,
-  onEndDateChange,
-  onStartTimeChange,
-  onEndTimeChange,
-}: OtherTabProps) {
-  const [pagesOptions] = useState([
-    {label: 'Home page', value: 'home'},
-    {label: 'Products', value: 'products'},
-    {label: 'Collections', value: 'collections'},
-    {label: 'Blog posts', value: 'blog'},
-    {label: 'Pages', value: 'pages'},
-    {label: 'Cart', value: 'cart'},
+                           closeButtonPosition,
+                           displayBeforeDelay,
+                           showAfterClosing,
+                           showAfterCTA,
+                           selectedPages,
+                           pagesOptions,
+                           campaignTiming,
+                           startDate,
+                           endDate,
+                           startTime,
+                           endTime,
+                           onCloseButtonPositionChange,
+                           onDisplayBeforeDelayChange,
+                           onShowAfterClosingChange,
+                           onShowAfterCTAChange,
+                           onSelectedPagesChange,
+                           onCampaignTimingChange,
+                           onStartDateChange,
+                           onEndDateChange,
+                           onStartTimeChange,
+                           onEndTimeChange,
+                         }: OtherTabProps) {
+ /* const [pagesOptionsInComp] = useState([
+    {label: 'All', value: '__global'},
   ]);
+  useEffect(() => {
+    console.log(pagesOptions)
+    pagesOptions.map((page) => {
+      if (pagesOptionsInComp.find((item) => item.value !== page.handle)) {
+        pagesOptionsInComp.push({label: page.title, value: page.handle});
+      }
+    })
+  }, [pagesOptions]);
+*/
+  const pagesOptionsInComp = [
+    { label: "All", value: "__global" },
+    ...pagesOptions
+      .filter((page) => page.title && page.title.trim().length > 0)
+      .map((page) => ({
+        label: page.title,
+        value: page.handle,
+      })),
+  ];
+
 
   const handleCloseButtonChange = useCallback(
     (checked: boolean, newValue: string) => {
@@ -101,7 +117,7 @@ export function OtherTab({
 
   useEffect(() => {
 
-  },[])
+  }, [])
 
 
   const delayOptions = [
@@ -190,14 +206,14 @@ export function OtherTab({
               <Select
                 label=""
                 labelHidden
-                options={pagesOptions}
+                options={pagesOptionsInComp}
                 onChange={(value) => handlePagesChange(value)}
                 value=""
                 placeholder="Select pages"
               />
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
                 {selectedPages.map((page) => {
-                  const label = pagesOptions.find((option) => option.value === page)?.label;
+                  const label = pagesOptionsInComp.find((option) => option.value === page)?.label;
                   return (
                     <Tag key={page} onRemove={() => handlePagesRemove(page)}>
                       {label}

@@ -61,7 +61,7 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
     displayBeforeDelay: 'no-delay',
     showAfterClosing: 'never',
     showAfterCTA: 'no-delay',
-    selectedPages: ['products'],
+    selectedPages: ['__global'],
     campaignTiming: 'immediate',
   },
-}; 
+};
