@@ -3,8 +3,9 @@ import {
   Tabs,
   Box,
   Banner,
+  Spinner,
 } from "@shopify/polaris";
-import {useNavigate, useLoaderData, Form} from "@remix-run/react";
+import {useNavigate, useLoaderData, Form, useSubmit, useNavigation, useActionData} from "@remix-run/react";
 import {useState, useCallback} from "react";
 import {BasicTab} from "app/components/announcement/BasicTab";
 import {CTATab} from "app/components/announcement/CTATab";
@@ -12,7 +13,7 @@ import {AnnouncementTextTab} from "app/components/announcement/AnnouncementTextT
 import {BackgroundTab} from "app/components/announcement/BackgroundTab";
 import {OtherTab} from "app/components/announcement/OtherTab";
 import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
-import {json, redirect} from "@remix-run/node";
+import {json} from "@remix-run/node";
 import {authenticate, unauthenticated} from "../shopify.server";
 import CustomFonts from "../utils/google-fonts";
 import {validateAnnouncement} from "../schemas/announcement";
@@ -23,6 +24,11 @@ import {ZodError} from "zod";
 import type {Size} from "../types/announcement";
 import Storefront from "../services/storefront.server";
 import {AnnouncementAction} from "../services/announcementAction.server";
+import React from "react";
+
+type ActionData = 
+  | { success: true }
+  | { error: string; details?: ZodError['errors'] };
 
 // Loader
 export const loader = async ({request}: LoaderFunctionArgs) => {
@@ -61,27 +67,31 @@ export const action = async ({request}: ActionFunctionArgs) => {
     try {
       if (validatedData) {
         const announcementAction = new AnnouncementAction();
-        await announcementAction.createFromFormData(validatedData, "hexsis-test-store")
-        return true
+        await announcementAction.createFromFormData(validatedData, "hexsis-test-store");
+        return json<ActionData>({ success: true });
       }
     } catch (e) {
-      return true
+      console.log(e);
+      return json<ActionData>({ error: 'Failed to create announcement' }, { status: 500 });
     }
 
   } catch (error) {
     if (error instanceof ZodError) {
-      return json({
+      return json<ActionData>({
         error: 'Validation failed',
         details: error.errors
       }, {status: 400});
     }
-    return json({error: 'Invalid form data'}, {status: 400});
+    return json<ActionData>({error: 'Invalid form data'}, {status: 400});
   }
 };
 
 // Component
 export default function AnnouncementBanner() {
   const navigate = useNavigate();
+  const submit = useSubmit();
+  const navigation = useNavigation();
+  const actionData = useActionData<typeof action>();
   const {initialData, pages} = useLoaderData<typeof loader>();
   const [selected, setSelected] = useState(0);
   const [formData, setFormData] = useState<FormState>(initialData);
@@ -90,6 +100,8 @@ export default function AnnouncementBanner() {
     errors: [],
     errorFields: new Set(),
   });
+
+  const isSubmitting = navigation.state === "submitting";
 
   const handleTabChange = useCallback(
     (selectedTabIndex: number) => setSelected(selectedTabIndex),
@@ -170,10 +182,16 @@ export default function AnnouncementBanner() {
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (validateForm()) {
-      const form = e.currentTarget;
-      form.submit();
+      submit(e.currentTarget, { method: 'post' });
     }
-  }, [validateForm]);
+  }, [validateForm, submit]);
+
+  // Watch for successful submission and navigate
+  React.useEffect(() => {
+    if (navigation.state === "idle" && actionData && 'success' in actionData) {
+      navigate('/app/campaign');
+    }
+  }, [navigation.state, actionData, navigate]);
 
   const renderContent = () => {
     const commonProps = {
@@ -298,18 +316,21 @@ export default function AnnouncementBanner() {
         title="Announcement Bar"
         backAction={{content: "Banner Types", url: "/app/campaign/banner_type"}}
         primaryAction={{
-          content: "Publish",
+          content: isSubmitting ? "Publishing..." : "Publish",
+          loading: isSubmitting,
           onAction: () => {
             const form = document.querySelector('form');
             if (form && validateForm()) {
-              form.submit();
+              form.requestSubmit();
             }
           },
+          disabled: isSubmitting,
         }}
         secondaryActions={[
           {
             content: 'Cancel',
             onAction: () => navigate("/app/campaign/banner_type"),
+            disabled: isSubmitting,
           },
         ]}
       >
@@ -324,6 +345,16 @@ export default function AnnouncementBanner() {
                   <li key={index} style={{marginBottom: '8px'}}>{error}</li>
                 ))}
               </ul>
+            </Banner>
+          </Box>
+        )}
+        {actionData && 'error' in actionData && (
+          <Box padding="400">
+            <Banner
+              title="Error"
+              tone="critical"
+            >
+              {actionData.error}
             </Banner>
           </Box>
         )}
