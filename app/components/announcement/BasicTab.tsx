@@ -17,9 +17,17 @@ interface BasicTabProps {
   endDate: Date;
   startTime: string;
   endTime: string;
+  campaignTitle: string;
+  customHeight: string;
+  customWidth: string;
+  onCampaignCustomHeight: (value: string) => void;
+  onCampaignCustomWidth: (value: string) => void;
+  onCampaignTitleChange: (value: string) => void;
   onSizeChange: (value: string) => void;
   onStartDateChange: (date: Date) => void;
   onEndDateChange: (date: Date) => void;
+  onStartTimeChange: (value: string) => void;
+  onEndTimeChange: (value: string) => void;
 }
 
 export function BasicTab({
@@ -28,9 +36,17 @@ export function BasicTab({
   endDate,
   startTime,
   endTime,
+  campaignTitle,
+  onCampaignTitleChange,
   onSizeChange,
   onStartDateChange,
   onEndDateChange,
+  onStartTimeChange,
+  onEndTimeChange,
+  customHeight,
+  customWidth,
+  onCampaignCustomWidth,
+  onCampaignCustomHeight
 }: BasicTabProps) {
   return (
     <BlockStack gap="300">
@@ -40,6 +56,8 @@ export function BasicTab({
             label="Campaign Title"
             autoComplete="off"
             placeholder="Value"
+            value={campaignTitle}
+            onChange={onCampaignTitleChange}
           />
         </Box>
       </Card>
@@ -87,8 +105,9 @@ export function BasicTab({
               <div style={{width: '49%'}}>
                 <TextField
                   label="Height"
-                  type="text"
-                  value="52"
+                  type="number"
+                  value={customHeight}
+                  onChange={onCampaignCustomHeight}
                   suffix="px"
                   autoComplete="off"
                   disabled={size !== 'custom'}
@@ -97,9 +116,10 @@ export function BasicTab({
               <div style={{width: '49%'}}>
                 <TextField
                   label="Width"
-                  type="text"
-                  value="100"
+                  type="number"
+                  value={customWidth}
                   suffix="%"
+                  onChange={onCampaignCustomWidth}
                   autoComplete="off"
                   disabled={size !== 'custom'}
                 />
@@ -149,6 +169,7 @@ export function BasicTab({
                             label="Start time"
                             labelHidden
                             value={startTime}
+                            onChange={onStartTimeChange}
                             prefix={<Icon source="clock"/>}
                             autoComplete="off"
                           />
@@ -188,6 +209,7 @@ export function BasicTab({
                             label="End time"
                             labelHidden
                             value={endTime}
+                            onChange={onEndTimeChange}
                             prefix={<Icon source="clock"/>}
                             autoComplete="off"
                           />

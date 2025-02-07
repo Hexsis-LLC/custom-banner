@@ -5,14 +5,8 @@ import {
   RadioButton,
   Select,
   Text,
-  Tag,
-  Combobox,
-  Listbox,
-  DatePicker,
-  Modal,
-  Button, Icon, TextField,
+  Tag, Icon, TextField,
 } from "@shopify/polaris";
-import type {Range} from "@shopify/polaris";
 import {useState, useCallback} from "react";
 import {DatePickerPopover} from "../DatePickerPopover";
 
@@ -61,7 +55,6 @@ export function OtherTab({
   onStartTimeChange,
   onEndTimeChange,
 }: OtherTabProps) {
-  const [pagesInputValue, setPagesInputValue] = useState('');
   const [pagesOptions] = useState([
     {label: 'Home page', value: 'home'},
     {label: 'Products', value: 'products'},
@@ -70,16 +63,6 @@ export function OtherTab({
     {label: 'Pages', value: 'pages'},
     {label: 'Cart', value: 'cart'},
   ]);
-
-  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
-  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
-  const [tempStartDate, setTempStartDate] = useState<Date>(startDate);
-  const [tempEndDate, setTempEndDate] = useState<Date>(endDate);
-
-  const [startMonth, setStartMonth] = useState(startDate.getMonth());
-  const [startYear, setStartYear] = useState(startDate.getFullYear());
-  const [endMonth, setEndMonth] = useState(endDate.getMonth());
-  const [endYear, setEndYear] = useState(endDate.getFullYear());
 
   const handleCloseButtonChange = useCallback(
     (checked: boolean, newValue: string) => {
@@ -117,14 +100,6 @@ export function OtherTab({
     [onCampaignTimingChange],
   );
 
-  const timeOptions = [
-    {label: '12:00 AM', value: '00:00'},
-    {label: '12:30 AM', value: '00:30'},
-    {label: '1:00 AM', value: '01:00'},
-    {label: '1:30 AM', value: '01:30'},
-    // Add more time options as needed
-    {label: '11:30 PM', value: '23:30'},
-  ];
 
   const delayOptions = [
     {label: 'No delay', value: 'no-delay'},
@@ -139,60 +114,6 @@ export function OtherTab({
     {label: 'After 24 hours', value: '24h'},
     {label: 'After 7 days', value: '7d'},
   ];
-
-  const formatPagesTitle = useCallback(
-    (selectedPages: string[]) => {
-      return selectedPages.length > 0
-        ? selectedPages
-            .map((page) => pagesOptions.find((option) => option.value === page)?.label)
-            .join(', ')
-        : 'Select pages';
-    },
-    [pagesOptions],
-  );
-
-  const handleStartDateSelect = useCallback(() => {
-    onStartDateChange(tempStartDate);
-    setIsStartDatePickerOpen(false);
-  }, [tempStartDate, onStartDateChange]);
-
-  const handleEndDateSelect = useCallback(() => {
-    onEndDateChange(tempEndDate);
-    setIsEndDatePickerOpen(false);
-  }, [tempEndDate, onEndDateChange]);
-
-  const handleTempStartDateChange = useCallback((range: Range) => {
-    if (range.start) {
-      setTempStartDate(range.start);
-    }
-  }, []);
-
-  const handleTempEndDateChange = useCallback((range: Range) => {
-    if (range.start) {
-      setTempEndDate(range.start);
-    }
-  }, []);
-
-  const handleMonthChange = useCallback(
-    (month: number, year: number, isStart: boolean) => {
-      if (isStart) {
-        setStartMonth(month);
-        setStartYear(year);
-      } else {
-        setEndMonth(month);
-        setEndYear(year);
-      }
-    },
-    [],
-  );
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
   return (
     <BlockStack gap="400">
@@ -346,12 +267,13 @@ export function OtherTab({
                   </div>
                   <div style={{flex: 1}}>
                     <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                    <Select
-                      label=""
+                    <TextField
+                      label="End time"
                       labelHidden
-                      options={timeOptions}
-                      onChange={onStartTimeChange}
                       value={startTime}
+                      onChange={onStartTimeChange}
+                      prefix={<Icon source="clock"/>}
+                      autoComplete="off"
                     />
                   </div>
                   <div style={{flex: 1}}>
@@ -365,12 +287,13 @@ export function OtherTab({
                   </div>
                   <div style={{flex: 1}}>
                     <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                    <Select
-                      label=""
+                    <TextField
+                      label="End time"
                       labelHidden
-                      options={timeOptions}
-                      onChange={onEndTimeChange}
                       value={endTime}
+                      onChange={onEndTimeChange}
+                      prefix={<Icon source="clock"/>}
+                      autoComplete="off"
                     />
                   </div>
                 </InlineStack>

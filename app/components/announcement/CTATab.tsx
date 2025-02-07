@@ -12,31 +12,45 @@ import {
 
 interface CTATabProps {
   ctaType: string;
+  ctaText: string;
+  ctaLink: string;
   paddingTop: number;
   paddingRight: number;
   paddingBottom: number;
   paddingLeft: number;
-  onCtaTypeChange: (value: string) => void;
-  onPaddingChange: (value: number, position: 'top' | 'right' | 'bottom' | 'left') => void;
   fontType: string;
   fontSize: number;
+  ctaButtonFontColor: string;
+  ctaButtonBackgroundColor: string;
+  onCtaButtonFontColorChange: (value: string) => void;
+  onCtaButtonBackgroundColorChange: (value: string) => void;
+  onCtaTypeChange: (value: string) => void;
+  onCtaTextChange: (value: string) => void;
+  onCtaLinkChange: (value: string) => void;
+  onPaddingChange: (value: number, position: 'top' | 'right' | 'bottom' | 'left') => void;
   onFontTypeChange: (value: string) => void;
   onFontSizeChange: (value: number) => void;
 }
 
 export function CTATab({
-                         ctaType,
-                         paddingTop,
-                         paddingRight,
-                         paddingBottom,
-                         paddingLeft,
-                         onCtaTypeChange,
-                         onPaddingChange,
-                         fontType,
-                         fontSize,
-                         onFontTypeChange,
-                         onFontSizeChange,
-                       }: CTATabProps) {
+  ctaType,
+  ctaText,
+  ctaLink,
+  paddingTop,
+  paddingRight,
+  paddingBottom,
+  paddingLeft,
+  fontType,
+  onCtaTypeChange,
+  onCtaTextChange,
+  onCtaLinkChange,
+  onPaddingChange,
+  onFontTypeChange,
+  ctaButtonFontColor,
+  ctaButtonBackgroundColor,
+  onCtaButtonFontColorChange,
+  onCtaButtonBackgroundColorChange,
+}: CTATabProps) {
   return (
     <Card roundedAbove="sm">
       <Box padding="400">
@@ -85,14 +99,16 @@ export function CTATab({
             <div style={{width: '49%'}}>
               <TextField
                 label="Call to action text"
-                value="Go to link"
+                value={ctaText}
                 autoComplete="off"
+                onChange={onCtaTextChange}
               />
             </div>
             <div style={{width: '49%'}}>
               <TextField
                 label="Hyper Link"
-                value="www.google.com"
+                value={ctaLink}
+                onChange={onCtaLinkChange}
                 autoComplete="off"
               />
             </div>
@@ -103,16 +119,18 @@ export function CTATab({
             <div style={{width: '49%'}}>
               <TextField
                 label="Button background"
-                value="#FFFFFF"
                 autoComplete="off"
+                value={ctaButtonFontColor}
+                onChange={onCtaButtonFontColorChange}
                 prefix="#"
               />
             </div>
             <div style={{width: '49%'}}>
               <TextField
                 label="Button text color"
-                value="#FFFFFF"
                 autoComplete="off"
+                value={ctaButtonBackgroundColor}
+                onChange={onCtaButtonBackgroundColorChange}
                 prefix="#"
               />
             </div>

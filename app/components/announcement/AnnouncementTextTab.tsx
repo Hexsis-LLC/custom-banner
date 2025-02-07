@@ -13,6 +13,10 @@ import {
 interface AnnouncementTextTabProps {
   fontType: string;
   fontSize: number;
+  announcementText: string;
+  textColor: string;
+  onAnnouncementTextChange: (value: string) => void;
+  onTextColorChange: (value: string) => void;
   onFontTypeChange: (value: string) => void;
   onFontSizeChange: (value: number) => void;
 }
@@ -20,6 +24,10 @@ interface AnnouncementTextTabProps {
 export function AnnouncementTextTab({
   fontType,
   fontSize,
+  announcementText,
+  textColor,
+  onAnnouncementTextChange,
+  onTextColorChange,
   onFontTypeChange,
   onFontSizeChange,
 }: AnnouncementTextTabProps) {
@@ -40,6 +48,8 @@ export function AnnouncementTextTab({
               multiline={4}
               placeholder="Value"
               autoComplete="off"
+              value={announcementText}
+              onChange={onAnnouncementTextChange}
             />
           </BlockStack>
 
@@ -48,7 +58,8 @@ export function AnnouncementTextTab({
             <div style={{width: '49%'}}>
               <TextField
                 label="Text Color"
-                value="#FFFFFF"
+                value={textColor}
+                onChange={onTextColorChange}
                 autoComplete="off"
                 prefix="#"
               />

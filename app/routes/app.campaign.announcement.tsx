@@ -38,23 +38,36 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 export default function AnnouncementBanner() {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(0);
+
+  // Basic tab state
   const [size, setSize] = useState('large');
+  const [sizeHeight, setSizeHeight] = useState("52");
+  const [sizeWidth, setSizeWidth] = useState("100");
+  const [campaignTitle, setCampaignTitle] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [startTime, setStartTime] = useState('12:30');
   const [endTime, setEndTime] = useState('14:30');
-  const [ctaType, setCtaType] = useState('regular');
+
+  // Announcement text tab state
+  const [announcementText, setAnnouncementText] = useState('');
+  const [textColor, setTextColor] = useState('#FFFFFF');
   const [fontSize, setFontSize] = useState(16);
   const [fontType, setFontType] = useState('site');
+
+  // CTA tab state
+  const [ctaType, setCtaType] = useState('regular');
+  const [ctaText, setCtaText] = useState('');
+  const [ctaLink, setCtaLink] = useState('');
   const [paddingTop, setPaddingTop] = useState(0);
   const [paddingRight, setPaddingRight] = useState(0);
   const [paddingBottom, setPaddingBottom] = useState(0);
   const [paddingLeft, setPaddingLeft] = useState(0);
-
-  const [ctaFontSize, ctaSetFontSize] = useState(16);
   const [ctaFontType, ctaSetFontType] = useState('site');
+  const [ctaButtonFontColor, setCtaButtonFontColor] = useState('#FFFFFF');
+  const [ctaButtonBackgroundColor, setCtaButtonBackgroundColor] = useState('#FFFFFF');
 
-  // New state for background tab
+  // Background tab state
   const [backgroundType, setBackgroundType] = useState('solid');
   const [color1, setColor1] = useState('');
   const [color2, setColor2] = useState('');
@@ -125,9 +138,17 @@ export default function AnnouncementBanner() {
             endDate={endDate}
             startTime={startTime}
             endTime={endTime}
+            customHeight={sizeHeight}
+            customWidth={sizeWidth}
+            campaignTitle={campaignTitle}
+            onCampaignCustomHeight={setSizeHeight}
+            onCampaignCustomWidth={setSizeWidth}
+            onCampaignTitleChange={setCampaignTitle}
             onSizeChange={setSize}
             onStartDateChange={setStartDate}
             onEndDateChange={setEndDate}
+            onStartTimeChange={setStartTime}
+            onEndTimeChange={setEndTime}
           />
         );
       case 1:
@@ -135,6 +156,10 @@ export default function AnnouncementBanner() {
           <AnnouncementTextTab
             fontType={fontType}
             fontSize={fontSize}
+            announcementText={announcementText}
+            textColor={textColor}
+            onAnnouncementTextChange={setAnnouncementText}
+            onTextColorChange={setTextColor}
             onFontTypeChange={setFontType}
             onFontSizeChange={setFontSize}
           />
@@ -143,17 +168,24 @@ export default function AnnouncementBanner() {
         return (
           <CTATab
             ctaType={ctaType}
+            ctaText={ctaText}
+            ctaLink={ctaLink}
             paddingTop={paddingTop}
             paddingRight={paddingRight}
             paddingBottom={paddingBottom}
             paddingLeft={paddingLeft}
             onCtaTypeChange={setCtaType}
+            onCtaTextChange={setCtaText}
+            onCtaLinkChange={setCtaLink}
             onPaddingChange={handlePaddingChange}
             fontType={ctaFontType}
-            fontSize={ctaFontSize}
             onFontTypeChange={ctaSetFontType}
-            onFontSizeChange={ctaSetFontSize}
-          />
+            ctaButtonFontColor={ctaButtonFontColor}
+            ctaButtonBackgroundColor={ctaButtonBackgroundColor}
+            onCtaButtonFontColorChange={setCtaButtonFontColor}
+
+            onCtaButtonBackgroundColorChange={setCtaButtonBackgroundColor} fontSize={0}
+            onFontSizeChange={setFontSize}/>
         );
       case 3:
         return (
