@@ -9,6 +9,7 @@ import {
 } from "@shopify/polaris";
 import {useState, useCallback} from "react";
 import {DatePickerPopover} from "../DatePickerPopover";
+import {TimePickerPopover} from "../TimePickerPopover";
 
 interface OtherTabProps {
   closeButtonPosition: string;
@@ -262,18 +263,14 @@ export function OtherTab({
                       selectedDate={startDate}
                       onChange={onStartDateChange}
                       label="Start date"
-                      isModal
                     />
                   </div>
                   <div style={{flex: 1}}>
                     <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                    <TextField
-                      label="End time"
-                      labelHidden
-                      value={startTime}
+                    <TimePickerPopover
+                      selectedTime={startTime || ''}
                       onChange={onStartTimeChange}
-                      prefix={<Icon source="clock"/>}
-                      autoComplete="off"
+                      label="Start time"
                     />
                   </div>
                   <div style={{flex: 1}}>
@@ -282,18 +279,14 @@ export function OtherTab({
                       selectedDate={endDate}
                       onChange={onEndDateChange}
                       label="End date"
-                      isModal
                     />
                   </div>
                   <div style={{flex: 1}}>
                     <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                    <TextField
-                      label="End time"
-                      labelHidden
-                      value={endTime}
+                    <TimePickerPopover
+                      selectedTime={endTime || ''}
                       onChange={onEndTimeChange}
-                      prefix={<Icon source="clock"/>}
-                      autoComplete="off"
+                      label="Start time"
                     />
                   </div>
                 </InlineStack>

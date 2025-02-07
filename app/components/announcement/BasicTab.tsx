@@ -10,6 +10,7 @@ import {
   Box,
 } from "@shopify/polaris";
 import {DatePickerPopover} from "../DatePickerPopover";
+import {TimePickerPopover} from "../TimePickerPopover";
 
 interface BasicTabProps {
   size: string;
@@ -202,7 +203,7 @@ export function BasicTab({
                             <DatePickerPopover
                               selectedDate={startDate || new Date()}
                               onChange={onStartDateChange}
-                              isModal={true}
+                              isModal={false}
                               label="Start date"
                               error={startDateError}
                             />
@@ -213,17 +214,16 @@ export function BasicTab({
                         </div>
                         <div style={{width: '49%'}}>
                           <BlockStack gap="300">
-                            <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                            <TextField
-                              label="Start time"
-                              labelHidden
-                              value={startTime || ''}
+                            <Text as="p" variant="bodyMd">Time (EST)</Text>
+                            <TimePickerPopover
+                              selectedTime={startTime || ''}
                               onChange={onStartTimeChange}
-                              prefix={<Icon source="clock"/>}
-                              autoComplete="off"
+                              label="Start time"
                               error={startTimeError}
-                              helpText={startTimeError ? startTimeErrorMessage : undefined}
                             />
+                            {startTimeError && startTimeErrorMessage && (
+                              <Text tone="critical" as="span">{startTimeErrorMessage}</Text>
+                            )}
                           </BlockStack>
                         </div>
                       </InlineStack>
@@ -251,7 +251,7 @@ export function BasicTab({
                             <Text as="p" variant="bodyMd">Date</Text>
                             <DatePickerPopover
                               selectedDate={endDate || new Date()}
-                              isModal={true}
+                              isModal={false}
                               onChange={onEndDateChange}
                               label="End date"
                               error={endDateError}
@@ -263,17 +263,16 @@ export function BasicTab({
                         </div>
                         <div style={{width: '49%'}}>
                           <BlockStack gap="300">
-                            <Text as="p" variant="bodyMd">Time (GMT+06:00)</Text>
-                            <TextField
-                              label="End time"
-                              labelHidden
-                              value={endTime || ''}
+                            <Text as="p" variant="bodyMd">Time (EST)</Text>
+                            <TimePickerPopover
+                              selectedTime={endTime || ''}
                               onChange={onEndTimeChange}
-                              prefix={<Icon source="clock"/>}
-                              autoComplete="off"
+                              label="End time"
                               error={endTimeError}
-                              helpText={endTimeError ? endTimeErrorMessage : undefined}
                             />
+                            {endTimeError && endTimeErrorMessage && (
+                              <Text tone="critical" as="span">{endTimeErrorMessage}</Text>
+                            )}
                           </BlockStack>
                         </div>
                       </InlineStack>

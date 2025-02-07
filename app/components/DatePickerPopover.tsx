@@ -5,12 +5,12 @@ import {
   Icon,
   Popover,
   Box,
-  Button,
-  Text,
+  Card,
   BlockStack,
 } from "@shopify/polaris";
-import type {Range} from "@shopify/polaris";
-import {useState, useCallback} from "react";
+import type {PopoverCloseSource} from "@shopify/polaris";
+import {useState, useRef, useEffect} from "react";
+import {CalendarIcon} from "@shopify/polaris-icons";
 
 interface DatePickerPopoverProps {
   selectedDate: Date;
@@ -27,99 +27,90 @@ export function DatePickerPopover({
   isModal = false,
   error,
 }: DatePickerPopoverProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>(selectedDate);
-  const [month, setMonth] = useState(selectedDate.getMonth());
-  const [year, setYear] = useState(selectedDate.getFullYear());
-
-  const handleMonthChange = useCallback(
-    (month: number, year: number) => {
-      setMonth(month);
-      setYear(year);
-    },
-    [],
-  );
-
-  const handleDateChange = useCallback((range: Range) => {
-    if (range.start) {
-      setTempDate(range.start);
-      if (!isModal) {
-        onChange(range.start);
-        setIsOpen(false);
-      }
+  function nodeContainsDescendant(rootNode: any, descendant: any) {
+    if (rootNode === descendant) {
+      return true;
     }
-  }, [isModal, onChange]);
+    let parent = descendant.parentNode;
+    while (parent != null) {
+      if (parent === rootNode) {
+        return true;
+      }
+      parent = parent.parentNode;
+    }
+    return false;
+  }
 
-  const handleConfirm = useCallback(() => {
-    onChange(tempDate);
-    setIsOpen(false);
-  }, [tempDate, onChange]);
+  const [visible, setVisible] = useState(false);
+  const [{month, year}, setDate] = useState({
+    month: selectedDate.getMonth(),
+    year: selectedDate.getFullYear(),
+  });
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formattedValue = selectedDate.toISOString().slice(0, 10);
+  const datePickerRef = useRef(null);
 
-  const dateField = (
+  function isNodeWithinPopover(node: any) {
+    return datePickerRef?.current
+      ? nodeContainsDescendant(datePickerRef.current, node)
+      : false;
+  }
+
+  function handleInputValueChange() {
+    // Read-only field, no need to handle changes
+  }
+
+  function handleOnClose(source: PopoverCloseSource) {
+    setVisible(false);
+  }
+
+  function handleMonthChange(month: number, year: number) {
+    setDate({month, year});
+  }
+
+  function handleDateSelection({end: newSelectedDate}: {end: Date}) {
+    onChange(newSelectedDate);
+    setVisible(false);
+  }
+
+  useEffect(() => {
+    if (selectedDate) {
+      setDate({
+        month: selectedDate.getMonth(),
+        year: selectedDate.getFullYear(),
+      });
+    }
+  }, [selectedDate]);
+
+  const textFieldMarkup = (
     <TextField
       role="combobox"
-      label={label}
-      labelHidden
-      prefix={<Icon source="calendar"/>}
-      value={formatDate(selectedDate)}
-      onFocus={() => setIsOpen(true)}
+      label={"Start date"}
+      labelHidden={true}
+      prefix={<Icon source={CalendarIcon} />}
+      value={formattedValue}
+      onFocus={() => setVisible(true)}
+      onChange={handleInputValueChange}
       autoComplete="off"
-      readOnly
     />
-  );
-
-  const togglePopoverActive = useCallback(
-    () => setIsOpen((isOpen) => !isOpen),
-    [],
-  );
-
-  const handleDateSelection = useCallback(
-    ({end}: {end: Date}) => {
-      onChange(end);
-      togglePopoverActive();
-    },
-    [onChange, togglePopoverActive],
-  );
-
-  const activator = (
-    <BlockStack gap="100">
-      <Button
-        onClick={togglePopoverActive}
-        disclosure
-        fullWidth
-        textAlign="start"
-        icon={<Icon source="calendar" />}
-        tone={error ? "critical" : undefined}
-      >
-        {selectedDate.toLocaleDateString()}
-      </Button>
-    </BlockStack>
   );
 
   if (isModal) {
     return (
       <>
-        {dateField}
+        {textFieldMarkup}
         <Modal
-          open={isOpen}
-          onClose={() => setIsOpen(false)}
+          open={visible}
+          onClose={() => setVisible(false)}
           title={`Select ${label.toLowerCase()}`}
           primaryAction={{
             content: 'Select',
-            onAction: handleConfirm,
+            onAction: () => setVisible(false),
           }}
           secondaryActions={[
             {
               content: 'Cancel',
-              onAction: () => setIsOpen(false),
+              onAction: () => setVisible(false),
             },
           ]}
         >
@@ -127,13 +118,9 @@ export function DatePickerPopover({
             <DatePicker
               month={month}
               year={year}
-              selected={{
-                start: tempDate,
-                end: tempDate,
-              }}
-              onChange={handleDateChange}
+              selected={selectedDate}
               onMonthChange={handleMonthChange}
-              allowRange={false}
+              onChange={handleDateSelection}
             />
           </Modal.Section>
         </Modal>
@@ -143,28 +130,25 @@ export function DatePickerPopover({
 
   return (
     <Popover
-      active={isOpen}
-      activator={activator}
-      onClose={togglePopoverActive}
+      active={visible}
       autofocusTarget="none"
       preferredAlignment="left"
       preferInputActivator={false}
+      preferredPosition="below"
       preventCloseOnChildOverlayClick
-      fullWidth
+      onClose={handleOnClose}
+      activator={textFieldMarkup}
     >
-      <Box padding="400">
+      <Card>
         <DatePicker
           month={month}
           year={year}
-          selected={{
-            start: tempDate,
-            end: tempDate,
-          }}
+          selected={selectedDate}
           onMonthChange={handleMonthChange}
           onChange={handleDateSelection}
-          allowRange={false}
         />
-      </Box>
+      </Card>
     </Popover>
   );
-} 
+}
+

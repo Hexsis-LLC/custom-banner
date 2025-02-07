@@ -58,8 +58,8 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
       endType: 'until_stop',
       startDate: now,
       endDate: now,
-      startTime: '12:30',
-      endTime: '14:30',
+      startTime: '12:30 AM',
+      endTime: '1:30 PM',
     },
     text: {
       announcementText: '',
@@ -85,9 +85,13 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
       backgroundType: 'solid',
       color1: '',
       color2: '',
-      color3: '',
-      pattern: 'stripe-green',
-      paddingRight: 80,
+      pattern: 'none',
+      padding: {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
     },
     other: {
       closeButtonPosition: 'right' as const,
@@ -109,7 +113,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
     },
   };
 
-  return json<LoaderData>({ 
+  return json<LoaderData>({
     initialData: formData,
     fonts: [{ family: randomFont.family }],
   });
@@ -118,7 +122,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 export const action = async ({request}: ActionFunctionArgs) => {
   const formData = await request.formData();
   const rawData = Object.fromEntries(formData);
-  
+
   try {
     const parsedData = JSON.parse(rawData.formData as string);
     // Convert date strings back to Date objects
@@ -227,20 +231,20 @@ const getFieldName = (path: (string | number)[]): string => {
 const getErrorMessage = (error: { path: (string | number)[]; message: string }): string => {
   const tabName = getTabNameFromPath(error.path);
   const fieldName = getFieldName(error.path);
-  
+
   // Handle specific error messages
   if (error.message.includes('Required')) {
     return `${fieldName} is required in ${tabName} tab`;
   }
-  
+
   if (error.message.includes('Invalid url')) {
     return `${fieldName} must be a valid URL in ${tabName} tab`;
   }
-  
+
   if (error.message.includes('min')) {
     return `${fieldName} is too small in ${tabName} tab`;
   }
-  
+
   if (error.message.includes('max')) {
     return `${fieldName} is too large in ${tabName} tab`;
   }
@@ -320,7 +324,7 @@ export default function AnnouncementBanner() {
           endDate: new Date(formData.basic.endDate),
         },
       };
-      
+
       announcementSchema.parse(dataToValidate);
       setFieldErrors({ errors: [], errorFields: new Set() });
       return true;
@@ -328,7 +332,7 @@ export default function AnnouncementBanner() {
       if (error instanceof ZodError) {
         // Transform Zod errors into user-friendly messages
         const errorMessages = error.errors.map(err => getErrorMessage(err));
-        
+
         // Group errors by tab
         const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message) => {
           const tabName = message.split(' in ')[1].split(' tab')[0];
@@ -340,7 +344,7 @@ export default function AnnouncementBanner() {
         }, {});
 
         // Format grouped errors
-        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) => 
+        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
           `${tab} tab: ${errors.join(', ')}`
         );
 
@@ -371,7 +375,7 @@ export default function AnnouncementBanner() {
 
   const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       // If validation passes, submit the form
       const form = e.currentTarget;
@@ -468,9 +472,11 @@ export default function AnnouncementBanner() {
             onBackgroundTypeChange={(value) => handleFormChange('background', {backgroundType: value})}
             onColor1Change={(value) => handleFormChange('background', {color1: value})}
             onColor2Change={(value) => handleFormChange('background', {color2: value})}
-            onColor3Change={(value) => handleFormChange('background', {color3: value})}
             onPatternChange={(value) => handleFormChange('background', {pattern: value})}
-            onPaddingRightChange={(value) => handleFormChange('background', {paddingRight: value})}
+            onPaddingChange={(value, position) => {
+              const newPadding = {...formData.background.padding, [position]: value};
+              handleFormChange('background', {padding: newPadding});
+            }}
           />
         );
       case 4:

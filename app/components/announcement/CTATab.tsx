@@ -269,6 +269,7 @@ export function CTATab({
                   label="Padding top"
                   labelHidden
                   value={paddingTop}
+                  prefix={paddingTop}
                   onChange={(value) => onPaddingChange(value as number, 'top')}
                   output
                   suffix="px"
@@ -284,6 +285,7 @@ export function CTATab({
                   label="Padding right"
                   labelHidden
                   value={paddingRight}
+                  prefix={paddingRight}
                   onChange={(value) => onPaddingChange(value as number, 'right')}
                   output
                   suffix="px"
@@ -302,6 +304,7 @@ export function CTATab({
                   label="Padding bottom"
                   labelHidden
                   value={paddingBottom}
+                  prefix={paddingBottom}
                   onChange={(value) => onPaddingChange(value as number, 'bottom')}
                   output
                   suffix="px"
@@ -317,6 +320,7 @@ export function CTATab({
                   label="Padding left"
                   labelHidden
                   value={paddingLeft}
+                  prefix={paddingLeft}
                   onChange={(value) => onPaddingChange(value as number, 'left')}
                   output
                   suffix="px"

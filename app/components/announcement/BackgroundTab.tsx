@@ -1,138 +1,203 @@
 import {
-  BlockStack,
-  Card,
-  InlineStack,
-  RadioButton,
-  RangeSlider,
-  Select,
-  Text,
   TextField,
+  RadioButton,
+  Icon,
+  Text,
+  BlockStack,
+  InlineStack,
+  RangeSlider,
+  Card,
+  Box,
+  Select,
 } from "@shopify/polaris";
-import {useState, useCallback} from "react";
 
 interface BackgroundTabProps {
   backgroundType: string;
   color1: string;
   color2: string;
-  color3: string;
   pattern: string;
-  paddingRight: number;
+  padding: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
   onBackgroundTypeChange: (value: string) => void;
   onColor1Change: (value: string) => void;
   onColor2Change: (value: string) => void;
-  onColor3Change: (value: string) => void;
   onPatternChange: (value: string) => void;
-  onPaddingRightChange: (value: number) => void;
+  onPaddingChange: (value: number, position: 'top' | 'right' | 'bottom' | 'left') => void;
 }
 
 export function BackgroundTab({
   backgroundType,
   color1,
   color2,
-  color3,
   pattern,
-  paddingRight,
+  padding,
   onBackgroundTypeChange,
   onColor1Change,
   onColor2Change,
-  onColor3Change,
   onPatternChange,
-  onPaddingRightChange,
+  onPaddingChange,
 }: BackgroundTabProps) {
-  const handleBackgroundTypeChange = useCallback(
-    (checked: boolean, newValue: string) => {
-      if (checked) {
-        onBackgroundTypeChange(newValue);
-      }
-    },
-    [onBackgroundTypeChange],
-  );
+
+  const handlePaddingChange = (value: number | [number, number], position: 'top' | 'right' | 'bottom' | 'left') => {
+    onPaddingChange(typeof value === 'number' ? value : value[1], position);
+  };
 
   const patternOptions = [
-    {label: 'Stripe (Green)', value: 'stripe-green'},
-    {label: 'Stripe (Blue)', value: 'stripe-blue'},
-    {label: 'Dots', value: 'dots'},
-    {label: 'Waves', value: 'waves'},
+    {label: 'None', value: 'none'},
+    {label: 'Stripe Green', value: 'stripe-green'},
+    {label: 'Stripe Blue', value: 'stripe-blue'},
   ];
 
   return (
-    <BlockStack gap="400">
-      <Card>
-        <BlockStack gap="400">
-          <Text as="h2" variant="headingMd">
-            Background
-          </Text>
+    <BlockStack gap="300">
+      <Card roundedAbove="sm">
+        <Box padding="400">
+          <BlockStack gap="400">
+            <InlineStack align="start" gap="200">
+              <Text variant="headingMd" as="h6">Background</Text>
+              <Icon source="help"/>
+            </InlineStack>
 
-          <BlockStack gap="200">
-            <Text as="p" variant="bodyMd">
-              Select background color type
-            </Text>
-            <InlineStack gap="400" align="start">
+            <InlineStack gap="300">
               <RadioButton
                 label="Solid"
-                checked={backgroundType === "solid"}
+                checked={backgroundType === 'solid'}
                 id="solid"
-                name="backgroundType"
-                onChange={(checked: boolean) => handleBackgroundTypeChange(checked, "solid")}
+                name="background"
+                onChange={() => onBackgroundTypeChange('solid')}
               />
               <RadioButton
                 label="Gradient"
-                checked={backgroundType === "gradient"}
+                checked={backgroundType === 'gradient'}
                 id="gradient"
-                name="backgroundType"
-                onChange={(checked: boolean) => handleBackgroundTypeChange(checked, "gradient")}
+                name="background"
+                onChange={() => onBackgroundTypeChange('gradient')}
               />
             </InlineStack>
-          </BlockStack>
 
-          <BlockStack gap="400">
-            <InlineStack gap="400">
-              <div style={{flex: 1}}>
+            {backgroundType === 'solid' && (
+              <BlockStack gap="400">
                 <TextField
-                  label="Color 1"
+                  label="Color"
                   value={color1}
                   onChange={onColor1Change}
                   autoComplete="off"
+                  prefix="#"
                 />
+                <Select
+                  label="Pattern"
+                  options={patternOptions}
+                  value={pattern}
+                  onChange={onPatternChange}
+                />
+              </BlockStack>
+            )}
+
+            {backgroundType === 'gradient' && (
+              <InlineStack gap="400" align="space-between">
+                <div style={{width: '49%'}}>
+                  <TextField
+                    label="Color 1"
+                    value={color1}
+                    onChange={onColor1Change}
+                    autoComplete="off"
+                    prefix="#"
+                  />
+                </div>
+                <div style={{width: '49%'}}>
+                  <TextField
+                    label="Color 2"
+                    value={color2}
+                    onChange={onColor2Change}
+                    autoComplete="off"
+                    prefix="#"
+                  />
+                </div>
+              </InlineStack>
+            )}
+          </BlockStack>
+        </Box>
+        <Box padding="400">
+          <BlockStack gap="400">
+            <Text variant="headingMd" as="h6">Padding</Text>
+
+            <InlineStack gap="400" align="space-between">
+              <div style={{width: '49%'}}>
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p">Padding top</Text>
+                  <RangeSlider
+                    label="Padding top"
+                    labelHidden
+                    value={padding.top}
+                    onChange={(value) => handlePaddingChange(value, 'top')}
+                    output
+                    prefix={padding.top}
+                    suffix="px"
+                    min={0}
+                    max={50}
+                  />
+                </BlockStack>
               </div>
-              <div style={{flex: 1}}>
-                <TextField
-                  label="Color 2"
-                  value={color2}
-                  onChange={onColor2Change}
-                  autoComplete="off"
-                />
-              </div>
-              <div style={{flex: 1}}>
-                <TextField
-                  label="Color 3"
-                  value={color3}
-                  onChange={onColor3Change}
-                  autoComplete="off"
-                />
+              <div style={{width: '49%'}}>
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p">Padding right</Text>
+                  <RangeSlider
+                    label="Padding right"
+                    labelHidden
+                    value={padding.right}
+                    onChange={(value) => handlePaddingChange(value, 'right')}
+                    output
+                    prefix={padding.right}
+                    suffix="px"
+                    min={0}
+                    max={50}
+                  />
+                </BlockStack>
               </div>
             </InlineStack>
 
-            <Select
-              label="Pattern"
-              options={patternOptions}
-              onChange={onPatternChange}
-              value={pattern}
-            />
-
-            <RangeSlider
-              label="Padding right"
-              value={paddingRight}
-              onChange={onPaddingRightChange}
-              output
-              min={0}
-              max={100}
-              prefix={paddingRight}
-              suffix="%"
-            />
+            <InlineStack gap="400" align="space-between">
+              <div style={{width: '49%'}}>
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p">Padding bottom</Text>
+                  <RangeSlider
+                    label="Padding bottom"
+                    labelHidden
+                    value={padding.bottom}
+                    onChange={(value) => handlePaddingChange(value, 'bottom')}
+                    output
+                    prefix={padding.bottom}
+                    suffix="px"
+                    min={0}
+                    max={50}
+                  />
+                </BlockStack>
+              </div>
+              <div style={{width: '49%'}}>
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" as="p">Padding left</Text>
+                  <RangeSlider
+                    label="Padding left"
+                    labelHidden
+                    value={padding.left}
+                    onChange={(value) => handlePaddingChange(value, 'left')}
+                    output
+                    prefix={padding.left}
+                    suffix="px"
+                    min={0}
+                    max={50}
+                  />
+                </BlockStack>
+              </div>
+            </InlineStack>
           </BlockStack>
-        </BlockStack>
+        </Box>
       </Card>
+
     </BlockStack>
   );
 }

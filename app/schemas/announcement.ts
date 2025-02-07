@@ -199,12 +199,24 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
 ]);
 
 const backgroundSchema = z.object({
-  backgroundType: z.string(),
-  color1: z.string(),
+  backgroundType: z.enum(['solid', 'gradient']),
+  color1: z.string().min(1, "Background color is required"),
   color2: z.string(),
-  color3: z.string(),
-  pattern: z.string(),
-  paddingRight: z.number().min(0),
+  pattern: z.enum(['none', 'stripe-green', 'stripe-blue']),
+  padding: z.object({
+    top: z.number().min(0, "Top padding must be at least 0"),
+    right: z.number().min(0, "Right padding must be at least 0"),
+    bottom: z.number().min(0, "Bottom padding must be at least 0"),
+    left: z.number().min(0, "Left padding must be at least 0"),
+  }),
+}).superRefine((data, ctx) => {
+  if (data.backgroundType === 'gradient' && !data.color2) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Second color is required for gradient background",
+      path: ['color2'],
+    });
+  }
 });
 
 const otherSchema = z.object({

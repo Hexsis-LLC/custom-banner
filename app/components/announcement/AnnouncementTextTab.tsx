@@ -92,30 +92,32 @@ export function AnnouncementTextTab({
           <BlockStack gap="400">
             <Text variant="headingMd" as="h6">Font</Text>
             <InlineStack gap="300">
-              <RadioButton
-                label={
-                  <BlockStack gap="100">
-                    <Text variant="bodyMd" as="p">Site font</Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
-                  </BlockStack>
-                }
-                checked={fontType === 'site'}
-                id="site-font"
-                name="font"
-                onChange={() => onFontTypeChange('site')}
-              />
-              <RadioButton
-                label={
-                  <BlockStack gap="100">
-                    <Text variant="bodyMd" as="p">Dynamic font</Text>
-                    <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
-                  </BlockStack>
-                }
-                checked={fontType === 'dynamic'}
-                id="dynamic-font"
-                name="font"
-                onChange={() => onFontTypeChange('dynamic')}
-              />
+              <InlineStack blockAlign={'start'}>
+                <RadioButton
+                  label=''
+                  checked={fontType === 'site'}
+                  id="site-font"
+                  name="font"
+                  onChange={() => onFontTypeChange('site')}
+                />
+                <BlockStack gap="100">
+                  <Text variant="bodyMd" as="p">Site font</Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">Use the same font your store uses</Text>
+                </BlockStack>
+              </InlineStack>
+              <InlineStack blockAlign={'start'}>
+                <RadioButton
+                  label=""
+                  checked={fontType === 'dynamic'}
+                  id="dynamic-font"
+                  name="font"
+                  onChange={() => onFontTypeChange('dynamic')}
+                />
+                <BlockStack gap="100">
+                  <Text variant="bodyMd" as="p">Dynamic font</Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">Use the best looking font for all visitors</Text>
+                </BlockStack>
+              </InlineStack>
               <RadioButton
                 label="Custom font"
                 checked={fontType === 'custom'}

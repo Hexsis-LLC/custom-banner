@@ -39,9 +39,13 @@ export interface BackgroundSettings {
   backgroundType: 'solid' | string;
   color1: string;
   color2: string;
-  color3: string;
   pattern: string;
-  paddingRight: number;
+  padding: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
 }
 
 export interface OtherSettings {
