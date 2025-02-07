@@ -6,20 +6,25 @@ embedded = true
 name = "Custom Banner"
 handle = "custom-banner-63"
 
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "hexsis-test-store.myshopify.com"
+include_config_on_deploy = true
+
 [webhooks]
 api_version = "2025-01"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products, read_themes"
+scopes = "read_themes,write_products,read_online_store_pages,unauthenticated_read_content"
 
 [auth]
 redirect_urls = [
@@ -30,8 +35,3 @@ redirect_urls = [
 
 [pos]
 embedded = false
-
-[build]
-dev_store_url = "hexsis-test-store.myshopify.com"
-automatically_update_urls_on_dev = true
-include_config_on_deploy = true
