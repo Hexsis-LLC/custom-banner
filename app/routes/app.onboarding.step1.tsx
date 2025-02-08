@@ -17,7 +17,7 @@ import {useState, useCallback, useEffect} from "react";
 import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {json} from "@remix-run/node";
-import {StepIndicator} from "../component/StepIndicator";
+import {StepIndicator} from "../components/StepIndicator";
 import {
   getShopAndThemeData,
   checkAppEmbed,

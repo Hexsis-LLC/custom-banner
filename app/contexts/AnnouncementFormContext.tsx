@@ -3,9 +3,6 @@ import type { FormState, ValidationState } from '../types/announcement-form';
 import { validateAnnouncement } from '../schemas/announcement';
 import { getErrorMessage } from '../utils/announcement-form';
 import { ZodError } from 'zod';
-import type { Size } from '../types/announcement';
-
-type FormSectionValue<T extends keyof FormState> = FormState[T][keyof FormState[T]];
 
 type FormAction =
   | { type: 'UPDATE_SECTION'; section: keyof FormState; data: Partial<FormState[keyof FormState]> }
@@ -153,4 +150,4 @@ export function useFormContext() {
     throw new Error('useFormContext must be used within a FormProvider');
   }
   return context;
-} 
+}

@@ -1,11 +1,10 @@
 import {Page} from "@shopify/polaris";
-import OnboardingInit from "../component/onbording";
+import OnboardingInit from "../components/onbording";
 import {useActionData, useNavigate, useSubmit} from "@remix-run/react";
 import {json, LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {completeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
-import {StepIndicator} from "../component/StepIndicator";
 
 interface ActionData {
   success: boolean;
@@ -17,7 +16,13 @@ export const action = async ({request}: LoaderFunctionArgs) => {
 
   try {
     const result = await completeOnboarding(session);
-    return json<ActionData>(result);
+    if (result) {
+      return json<ActionData>(result);
+    }
+    return json<ActionData>({
+      success: false,
+      error: "Failed to complete onboarding"
+    });
   } catch (error) {
     console.error("Error completing onboarding:", error);
     return json<ActionData>({

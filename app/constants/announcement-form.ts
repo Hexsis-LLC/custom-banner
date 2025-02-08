@@ -1,12 +1,11 @@
-import type { AnnouncementBannerData } from "../types/announcement";
-import type { Size } from "../types/announcement";
+import type {AnnouncementBannerData, Size} from "../types/announcement";
 
 export const TABS = [
-  { id: 'basic', content: 'Basic' },
-  { id: 'announcement-text', content: 'Announcement text' },
-  { id: 'cta', content: 'CTA' },
-  { id: 'background', content: 'Background' },
-  { id: 'other', content: 'Other' },
+  {id: 'basic', content: 'Basic'},
+  {id: 'announcement-text', content: 'Announcement text'},
+  {id: 'cta', content: 'CTA'},
+  {id: 'background', content: 'Background'},
+  {id: 'other', content: 'Other'},
 ];
 
 export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {

@@ -3,7 +3,7 @@ import {
   Card, Text,
 } from "@shopify/polaris";
 import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation} from "@remix-run/react";
-import OnboardingInit from "../component/onbording";
+import OnboardingInit from "../components/onbording";
 import {json, type LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {initializeOnboarding} from "../services/onboarding.server";
