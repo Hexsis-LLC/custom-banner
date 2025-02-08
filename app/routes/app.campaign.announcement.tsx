@@ -2,31 +2,24 @@ import {
   Page,
   Tabs,
   Box,
-  Banner,
-  Spinner,
 } from "@shopify/polaris";
-import {useNavigate, useLoaderData, Form, useSubmit, useNavigation, useActionData} from "@remix-run/react";
-import {useState, useCallback} from "react";
-import {BasicTab} from "app/components/announcement/BasicTab";
-import {CTATab} from "app/components/announcement/CTATab";
-import {AnnouncementTextTab} from "app/components/announcement/AnnouncementTextTab";
-import {BackgroundTab} from "app/components/announcement/BackgroundTab";
-import {OtherTab} from "app/components/announcement/OtherTab";
+import {useNavigate, useLoaderData, Form} from "@remix-run/react";
+import React, {useState, useCallback} from "react";
 import type {LoaderFunctionArgs, ActionFunctionArgs} from "@remix-run/node";
 import {json} from "@remix-run/node";
 import {authenticate, unauthenticated} from "../shopify.server";
-import CustomFonts from "../utils/google-fonts";
 import {validateAnnouncement} from "../schemas/announcement";
 import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
-import {getErrorMessage} from "../utils/announcement-form";
-import type {FormState, LoaderData, ValidationState} from "../types/announcement-form";
+import type {FormState, LoaderData} from "../types/announcement-form";
 import {ZodError} from "zod";
-import type {Size} from "../types/announcement";
 import Storefront from "../services/storefront.server";
 import {AnnouncementAction} from "../services/announcementAction.server";
-import React from "react";
+import {FormProvider, useFormContext} from "../contexts/AnnouncementFormContext";
+import {AnnouncementTabs} from "../components/announcement/AnnouncementTabs";
+import {ValidationMessages} from "../components/announcement/ValidationMessages";
+import {useAnnouncementSubmit} from "../hooks/useAnnouncementSubmit";
 
-type ActionData = 
+export type ActionData =
   | { success: true }
   | { error: string; details?: ZodError['errors'] };
 
@@ -86,229 +79,17 @@ export const action = async ({request}: ActionFunctionArgs) => {
   }
 };
 
-// Component
-export default function AnnouncementBanner() {
+function AnnouncementForm() {
   const navigate = useNavigate();
-  const submit = useSubmit();
-  const navigation = useNavigation();
-  const actionData = useActionData<typeof action>();
-  const {initialData, pages} = useLoaderData<typeof loader>();
+  const {pages} = useLoaderData<typeof loader>();
   const [selected, setSelected] = useState(0);
-  const [formData, setFormData] = useState<FormState>(initialData);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<ValidationState>({
-    errors: [],
-    errorFields: new Set(),
-  });
-
-  const isSubmitting = navigation.state === "submitting";
+  const {formData, validationErrors, validateForm} = useFormContext();
+  const {handleSubmit, isSubmitting, actionData} = useAnnouncementSubmit(validateForm);
 
   const handleTabChange = useCallback(
     (selectedTabIndex: number) => setSelected(selectedTabIndex),
     [],
   );
-
-  const handleFormChange = useCallback((section: keyof FormState, data: Partial<FormState[keyof FormState]>) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        ...data,
-      },
-    }));
-    setValidationErrors([]);
-    setFieldErrors({errors: [], errorFields: new Set()});
-  }, []);
-
-  const validateForm = useCallback(() => {
-    try {
-      const dataToValidate = {
-        ...formData,
-        basic: {
-          ...formData.basic,
-          startDate: new Date(formData.basic.startDate),
-          endDate: new Date(formData.basic.endDate),
-        },
-      };
-
-      validateAnnouncement(dataToValidate);
-      setFieldErrors({errors: [], errorFields: new Set()});
-      return true;
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((err: {
-          path: (string | number)[];
-          message: string
-        }) => getErrorMessage(err));
-
-        const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
-          const tabName = message.split(' in ')[1].split(' tab')[0];
-          if (!acc[tabName]) acc[tabName] = [];
-          acc[tabName].push(message.split(' in ')[0]);
-          return acc;
-        }, {});
-
-        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
-          `${tab} tab: ${errors.join(', ')}`
-        );
-
-        const errorFields = new Set(error.errors.map((err: {
-          path: (string | number)[];
-          message: string
-        }) => err.path.join('.')));
-        setFieldErrors({
-          errors: error.errors.map((err: { path: (string | number)[]; message: string }) => ({
-            path: err.path,
-            message: err.message,
-          })),
-          errorFields,
-        });
-
-        setValidationErrors(formattedErrors);
-      }
-      return false;
-    }
-  }, [formData]);
-
-  const hasError = useCallback((fieldPath: string) => {
-    return fieldErrors.errorFields.has(fieldPath);
-  }, [fieldErrors.errorFields]);
-
-  const getFieldErrorMessage = useCallback((fieldPath: string) => {
-    const error = fieldErrors.errors.find(err => err.path.join('.') === fieldPath);
-    return error ? error.message : '';
-  }, [fieldErrors.errors]);
-
-  const handleSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (validateForm()) {
-      submit(e.currentTarget, { method: 'post' });
-    }
-  }, [validateForm, submit]);
-
-  // Watch for successful submission and navigate
-  React.useEffect(() => {
-    if (navigation.state === "idle" && actionData && 'success' in actionData) {
-      navigate('/app/campaign');
-    }
-  }, [navigation.state, actionData, navigate]);
-
-  const renderContent = () => {
-    const commonProps = {
-      hasError,
-      getFieldErrorMessage,
-    };
-
-    switch (selected) {
-      case 0:
-        return (
-          <BasicTab
-            size={formData.basic.size as Size}
-            startType={formData.basic.startType}
-            endType={formData.basic.endType}
-            startDate={new Date(formData.basic.startDate)}
-            endDate={new Date(formData.basic.endDate)}
-            startTime={formData.basic.startTime}
-            endTime={formData.basic.endTime}
-            campaignTitle={formData.basic.campaignTitle}
-            customHeight={formData.basic.sizeHeight}
-            customWidth={formData.basic.sizeWidth}
-            onCampaignTitleChange={(value) => handleFormChange('basic', {campaignTitle: value})}
-            onSizeChange={(value) => handleFormChange('basic', {size: value as Size})}
-            onStartTypeChange={(value) => handleFormChange('basic', {startType: value})}
-            onEndTypeChange={(value) => handleFormChange('basic', {endType: value})}
-            onStartDateChange={(value) => handleFormChange('basic', {startDate: value.toISOString()})}
-            onEndDateChange={(value) => handleFormChange('basic', {endDate: value.toISOString()})}
-            onStartTimeChange={(value) => handleFormChange('basic', {startTime: value})}
-            onEndTimeChange={(value) => handleFormChange('basic', {endTime: value})}
-            onCampaignCustomHeight={(value) => handleFormChange('basic', {sizeHeight: value})}
-            onCampaignCustomWidth={(value) => handleFormChange('basic', {sizeWidth: value})}
-            {...commonProps}
-          />
-        );
-      case 1:
-        return (
-          <AnnouncementTextTab
-            {...formData.text}
-            onAnnouncementTextChange={(value) => handleFormChange('text', {announcementText: value})}
-            onTextColorChange={(value) => handleFormChange('text', {textColor: value})}
-            onFontTypeChange={(value) => handleFormChange('text', {fontType: value})}
-            onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
-            onFontUrlChange={(value) => handleFormChange('text', {fontUrl: value})}
-            {...commonProps}
-          />
-        );
-      case 2:
-        return (
-          <CTATab
-            ctaType={formData.cta.ctaType}
-            ctaText={formData.cta.ctaText}
-            ctaLink={formData.cta.ctaLink}
-            paddingTop={formData.cta.padding.top}
-            paddingRight={formData.cta.padding.right}
-            paddingBottom={formData.cta.padding.bottom}
-            paddingLeft={formData.cta.padding.left}
-            fontType={formData.cta.fontType}
-            fontSize={formData.text.fontSize}
-            fontUrl={formData.cta.fontUrl}
-            ctaButtonFontColor={formData.cta.buttonFontColor}
-            ctaButtonBackgroundColor={formData.cta.buttonBackgroundColor}
-            onCtaTypeChange={(value) => handleFormChange('cta', {ctaType: value})}
-            onCtaTextChange={(value) => handleFormChange('cta', {ctaText: value})}
-            onCtaLinkChange={(value) => handleFormChange('cta', {ctaLink: value})}
-            onPaddingChange={(value, position) => {
-              const newPadding = {...formData.cta.padding, [position]: value};
-              handleFormChange('cta', {padding: newPadding});
-            }}
-            onFontTypeChange={(value) => handleFormChange('cta', {fontType: value})}
-            onFontUrlChange={(value) => handleFormChange('cta', {fontUrl: value})}
-            onCtaButtonFontColorChange={(value) => handleFormChange('cta', {buttonFontColor: value})}
-            onCtaButtonBackgroundColorChange={(value) => handleFormChange('cta', {buttonBackgroundColor: value})}
-            onFontSizeChange={(value) => handleFormChange('text', {fontSize: value})}
-            {...commonProps}
-          />
-        );
-      case 3:
-        return (
-          <BackgroundTab
-            {...formData.background}
-            onBackgroundTypeChange={(value) => handleFormChange('background', {backgroundType: value})}
-            onColor1Change={(value) => handleFormChange('background', {color1: value})}
-            onColor2Change={(value) => handleFormChange('background', {color2: value})}
-            onPatternChange={(value) => handleFormChange('background', {pattern: value})}
-            onPaddingChange={(value, position) => {
-              const newPadding = {...formData.background.padding, [position]: value};
-              handleFormChange('background', {padding: newPadding});
-            }}
-            {...commonProps}
-          />
-        );
-      case 4:
-        return (
-          <OtherTab
-            {...formData.other}
-            pagesOptions={pages}
-            startDate={new Date(formData.basic.startDate)}
-            endDate={new Date(formData.basic.endDate)}
-            startTime={formData.basic.startTime}
-            endTime={formData.basic.endTime}
-            onCloseButtonPositionChange={(value) => handleFormChange('other', {closeButtonPosition: value as 'right' | 'left'})}
-            onDisplayBeforeDelayChange={(value) => handleFormChange('other', {displayBeforeDelay: value})}
-            onShowAfterClosingChange={(value) => handleFormChange('other', {showAfterClosing: value})}
-            onShowAfterCTAChange={(value) => handleFormChange('other', {showAfterCTA: value})}
-            onSelectedPagesChange={(value) => handleFormChange('other', {selectedPages: value})}
-            onCampaignTimingChange={(value) => handleFormChange('other', {campaignTiming: value})}
-            onStartDateChange={(value) => handleFormChange('basic', {startDate: value.toISOString()})}
-            onEndDateChange={(value) => handleFormChange('basic', {endDate: value.toISOString()})}
-            onStartTimeChange={(value) => handleFormChange('basic', {startTime: value})}
-            onEndTimeChange={(value) => handleFormChange('basic', {endTime: value})}
-            {...commonProps}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <Form method="post" onSubmit={handleSubmit}>
@@ -334,37 +115,28 @@ export default function AnnouncementBanner() {
           },
         ]}
       >
-        {validationErrors.length > 0 && (
-          <Box padding="400">
-            <Banner
-              title="Please review the following:"
-              tone="warning"
-            >
-              <ul style={{margin: 0, paddingLeft: '20px'}}>
-                {validationErrors.map((error, index) => (
-                  <li key={index} style={{marginBottom: '8px'}}>{error}</li>
-                ))}
-              </ul>
-            </Banner>
-          </Box>
-        )}
-        {actionData && 'error' in actionData && (
-          <Box padding="400">
-            <Banner
-              title="Error"
-              tone="critical"
-            >
-              {actionData.error}
-            </Banner>
-          </Box>
-        )}
+        <ValidationMessages 
+          validationErrors={validationErrors}
+          actionData={actionData}
+        />
         <Tabs tabs={TABS} selected={selected} onSelect={handleTabChange}>
           <Box padding="200">
-            {renderContent()}
+            <AnnouncementTabs selected={selected} pages={pages} />
             <input type="hidden" name="formData" value={JSON.stringify(formData)}/>
           </Box>
         </Tabs>
       </Page>
     </Form>
+  );
+}
+
+// Main component
+export default function AnnouncementBanner() {
+  const {initialData} = useLoaderData<typeof loader>();
+  
+  return (
+    <FormProvider initialData={initialData}>
+      <AnnouncementForm />
+    </FormProvider>
   );
 }
