@@ -14,7 +14,7 @@ export class AnnouncementAction {
     return size;
   }
 
-  async createFromFormData(formData: AnnouncementBannerData, shopId: string) {
+  async createBasicBannerFormData(formData: AnnouncementBannerData, shopId: string) {
     // Transform the form data into the database model
     const announcement: NewAnnouncement = {
       type: 'basic', // Default to basic type for now
@@ -50,7 +50,7 @@ export class AnnouncementAction {
         }
       ],
       background: {
-        backgroundColor: formData.background.backgroundType === 'gradient' 
+        backgroundColor: formData.background.backgroundType === 'gradient'
           ? `linear-gradient(${formData.background.color1}, ${formData.background.color2})`
           : formData.background.color1,
         backgroundPattern: formData.background.pattern !== 'none' ? formData.background.pattern : undefined,
@@ -67,14 +67,14 @@ export class AnnouncementAction {
     if (basic.startType === 'now') {
       return new Date().toISOString();
     }
-    
+
     if (basic.startDate && basic.startTime) {
       const date = new Date(basic.startDate);
       const [hours, minutes] = basic.startTime.split(':').map(Number);
       date.setHours(hours, minutes, 0, 0);
       return date.toISOString();
     }
-    
+
     return new Date().toISOString();
   }
 
@@ -85,14 +85,14 @@ export class AnnouncementAction {
       date.setFullYear(date.getFullYear() + 1);
       return date.toISOString();
     }
-    
+
     if (basic.endDate && basic.endTime) {
       const date = new Date(basic.endDate);
       const [hours, minutes] = basic.endTime.split(':').map(Number);
       date.setHours(hours, minutes, 0, 0);
       return date.toISOString();
     }
-    
+
     // Default to 30 days from now if no valid end date is provided
     const date = new Date();
     date.setDate(date.getDate() + 30);
@@ -114,4 +114,4 @@ export class AnnouncementAction {
   private formatPadding(padding: { top: number; right: number; bottom: number; left: number }): string {
     return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`;
   }
-} 
+}

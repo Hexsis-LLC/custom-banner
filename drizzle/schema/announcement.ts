@@ -138,6 +138,13 @@ export const announcementTextRelations = relations(announcementText, ({ one, man
   ctas: many(callToAction)
 }));
 
+export const callToActionRelations = relations(callToAction, ({ one }) => ({
+  announcementText: one(announcementText, {
+    fields: [callToAction.announcementTextId],
+    references: [announcementText.id],
+  }),
+}));
+
 export const bannerBackgroundRelations = relations(bannerBackground, ({ one }) => ({
   announcement: one(announcements, {
     fields: [bannerBackground.announcementId],

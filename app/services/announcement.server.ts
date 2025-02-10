@@ -9,6 +9,7 @@ import {
   callToAction,
   pagePatterns,
 } from '../../drizzle/schema/announcement';
+import {CloudflareKVService} from "./cloudflareKV.server";
 
 
 export interface NewAnnouncement {
@@ -59,7 +60,74 @@ export interface NewAnnouncement {
 type AnnouncementCallToAction = NonNullable<NewAnnouncement['texts'][number]['callToActions']>[number];
 type AnnouncementFormField = NonNullable<NewAnnouncement['form']>[number];
 
+// Add these types before the AnnouncementService class
+interface GroupedAnnouncements {
+  global: Array<any>; // Using any for now since the announcement type is not fully defined
+  __patterns: string[];
+  [key: string]: Array<any> | string[]; // Index signature to allow dynamic page paths
+}
+
 export class AnnouncementService {
+  private kvService: CloudflareKVService;
+  constructor() {
+    this.kvService = new CloudflareKVService();
+  }
+
+  private async transformActiveAnnouncements(announcements: any[]): Promise<GroupedAnnouncements> {
+    const result: GroupedAnnouncements = {
+      global: [],
+      __patterns: []
+    };
+
+    // First pass: Group announcements and collect patterns that have announcements
+    const patternsWithAnnouncements = new Set<string>();
+
+    for (const announcement of announcements) {
+      const { pagePatternLinks, ...cleanAnnouncement } = announcement;
+      const patterns = pagePatternLinks.map(
+        (link: { pagePattern: { pattern: string } }) => link.pagePattern.pattern
+      );
+
+      // Check if this announcement should be global
+      if (patterns.includes('__global')) {
+        result.global.push(cleanAnnouncement);
+        continue; // Skip adding to other patterns if it's global
+      }
+
+      // Handle each pattern for the announcement
+      for (const pattern of patterns) {
+        const cleanPattern = pattern.replace('/', '_0x2F_').replace('*', '_0x2A_');
+        // Skip global pattern as it's already handled
+        if (cleanPattern === '__global') continue;
+
+        // Initialize the array for this pattern if it doesn't exist
+        if (!result[cleanPattern]) {
+          result[cleanPattern] = [];
+        }
+
+        // Add the announcement to its pattern group if not already there
+        const existingAnnouncement = (result[cleanPattern] as any[]).find(a => a.id === cleanAnnouncement.id);
+        if (!existingAnnouncement) {
+          (result[cleanPattern] as any[]).push(cleanAnnouncement);
+          patternsWithAnnouncements.add(cleanPattern);
+        }
+      }
+    }
+
+    // Only include patterns that have announcements
+    result.__patterns = Array.from(patternsWithAnnouncements).sort();
+
+    return result;
+  }
+
+  async updateKv(shopId: string) {
+    const allLatestAnnouncements = await this.getActiveAnnouncements(shopId);
+    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements);
+    console.log(allLatestAnnouncements)
+    console.log(groupedAnnouncements)
+    await this.kvService.updateAnnouncementsByShop(shopId, groupedAnnouncements);
+  }
+
   async createAnnouncement(data: NewAnnouncement) {
     const {
       texts,
@@ -125,7 +193,7 @@ export class AnnouncementService {
           });
         }
       }
-
+      await this.updateKv(data.shopId)
       return announcement;
     });
   }
@@ -327,14 +395,14 @@ export class AnnouncementService {
       await tx.delete(bannerForm).where(eq(bannerForm.announcementId, id));
 
       // Finally delete the announcement
-      return await tx.delete(announcements).where(eq(announcements.id, id));
+      return tx.delete(announcements).where(eq(announcements.id, id));
     });
   }
 
   async toggleAnnouncementStatus(id: number, isActive: boolean) {
-    return await db
+    return db
       .update(announcements)
-      .set({ isActive })
+      .set({isActive})
       .where(eq(announcements.id, id))
       .returning();
   }

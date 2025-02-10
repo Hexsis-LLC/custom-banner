@@ -37,7 +37,6 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
       endDate: DEFAULT_INITIAL_DATA.basic.endDate.toISOString(),
     },
   };
-
   return json<LoaderData>({
     initialData: formData,
     pages,
@@ -47,6 +46,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 // Action
 export const action = async ({request}: ActionFunctionArgs) => {
   try {
+    const {session} = await authenticate.admin(request);
     const formData = await request.formData();
     const rawData = Object.fromEntries(formData);
     const parsedData = JSON.parse(rawData.formData as string);
@@ -60,7 +60,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
     try {
       if (validatedData) {
         const announcementAction = new AnnouncementAction();
-        await announcementAction.createFromFormData(validatedData, "hexsis-test-store");
+        await announcementAction.createBasicBannerFormData(validatedData, session.shop);
         return json<ActionData>({ success: true });
       }
     } catch (e) {
@@ -115,7 +115,7 @@ function AnnouncementForm() {
           },
         ]}
       >
-        <ValidationMessages 
+        <ValidationMessages
           validationErrors={validationErrors}
           actionData={actionData}
         />
@@ -133,7 +133,7 @@ function AnnouncementForm() {
 // Main component
 export default function AnnouncementBanner() {
   const {initialData} = useLoaderData<typeof loader>();
-  
+
   return (
     <FormProvider initialData={initialData}>
       <AnnouncementForm />
