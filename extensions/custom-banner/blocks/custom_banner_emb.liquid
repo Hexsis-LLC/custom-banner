@@ -1,38 +1,368 @@
-<script>
-  // Check if the announcement bar exists
-  var announcementBar = document.querySelector('.announcement-bar');
+{% comment %}Custom Banner App Block{% endcomment %}
 
-  if (announcementBar) {
-    // If it exists, replace the existing content
-    announcementBar.innerHTML = '<p class="announcement-bar__message center h5"><span>New Announcement Content Here</span></p>';
-  } else {
-    // If it doesn't exist, create a new element and add it to the body
-    announcementBar = document.createElement('div');
-    announcementBar.className = 'announcement-bar color-background-1 gradient';
-    announcementBar.setAttribute('role', 'region');
-    announcementBar.setAttribute('aria-label', 'Announcement');
+<div id="hex-banner-root"></div>
 
-    const pageWidthDiv = document.createElement('div');
-    pageWidthDiv.className = 'page-width';
-
-    pageWidthDiv.innerHTML = '<p class="announcement-bar__message center h5"><span>New Announcement Content Here</span></p>';
-
-    announcementBar.appendChild(pageWidthDiv);
-
-    // Insert the new announcement bar at the top of the body
-    document.body.insertBefore(announcementBar, document.body.firstChild);
+<style>
+  .hex-banner-container {
+    background-color: #000000;
+    padding: 10px 0;
+    width: 100%;
+    z-index: 999999;
   }
+
+  .hex-banner-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    z-index: 999999;
+    transition: transform 0.3s ease;
+  }
+
+  .hex-banner-wrapper.hide {
+    transform: translateY(-100%);
+  }
+
+  .hex-banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    position: relative;
+    min-height: 40px;
+  }
+
+  .hex-banner-text {
+    color: #ffffff !important;
+    font-size: 16px !important;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+    font-family: inherit;
+    line-height: 1.4;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .hex-banner-cta {
+    display: inline-block;
+    text-decoration: none;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+    margin-left: 10px;
+    padding: 5px 15px;
+    border-radius: 4px;
+  }
+
+  .hex-banner-cta:hover {
+    opacity: 0.9;
+  }
+
+  .hex-banner-close {
+    background: none;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 18px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .hex-banner-close:hover {
+    opacity: 1;
+  }
+
+  /* Adjust body padding to prevent banner overlap */
+  body {
+    transition: padding-top 0.3s ease;
+  }
+
+  @media screen and (max-width: 768px) {
+    .hex-banner-text {
+      font-size: 14px !important;
+    }
+    .hex-banner-cta {
+      font-size: 12px;
+      min-width: 60px;
+      padding: 4px 10px;
+    }
+  }
+</style>
+
+<script>
+  (function() {
+    // Constants
+    const CONFIG = {
+      API_URL: 'https://custombanner.hexstore.io',
+      SCROLL_THRESHOLD: 50,
+      DEFAULT_STYLES: {
+        backgroundColor: '#000000',
+        textColor: '#ffffff',
+        fontSize: 16,
+        padding: '10px 0'
+      }
+    };
+
+    // Banner Service - Handles banner data fetching and processing
+    class BannerService {
+      constructor(shop) {
+        this.shop = shop;
+      }
+
+      async fetchBannerData() {
+        try {
+          const response = await fetch(`${CONFIG.API_URL}/${this.shop}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          return await response.json();
+        } catch (error) {
+          console.error('Custom Banner Error:', error);
+          return null;
+        }
+      }
+    }
+
+    // Path Matcher - Handles URL pattern matching
+    class PathMatcher {
+      static normalizePattern(pattern) {
+        return pattern.replace(/^\/|\/$/g, '');
+      }
+
+      static createRegexPattern(pattern) {
+        return pattern
+          .replace(/\//g, '\\/')
+          .replace(/\*/g, '[^/]*');
+      }
+
+      static match(currentPath, pattern) {
+        const normalizedPath = this.normalizePattern(currentPath);
+        const normalizedPattern = this.normalizePattern(pattern);
+        const regexPattern = this.createRegexPattern(normalizedPattern);
+        const regex = new RegExp(`^${regexPattern}$`);
+        return regex.test(normalizedPath);
+      }
+    }
+
+    // Announcement Selector - Handles announcement selection based on priority
+    class AnnouncementSelector {
+      constructor(data, currentPath) {
+        this.data = data;
+        this.currentPath = currentPath;
+      }
+
+      getExactPathAnnouncements() {
+        const exactPath = this.currentPath.replace(/\//g, '_0x2F_');
+        return Array.isArray(this.data[exactPath]) ? this.data[exactPath] : [];
+      }
+
+      getPatternAnnouncements() {
+        if (!Array.isArray(this.data.__patterns)) return [];
+
+        const sortedPatterns = this.getSortedPatterns();
+        for (const pattern of sortedPatterns) {
+          const cleanPattern = pattern.replace('_0x2F_', '/').replace('_0x2A_', '*');
+          if (PathMatcher.match(this.currentPath, cleanPattern)) {
+            if (Array.isArray(this.data[pattern]) && this.data[pattern].length > 0) {
+              return this.data[pattern];
+            }
+          }
+        }
+        return [];
+      }
+
+      getGlobalAnnouncements() {
+        return Array.isArray(this.data.global) ? this.data.global : [];
+      }
+
+      getSortedPatterns() {
+        return [...this.data.__patterns].sort((a, b) => {
+          const aSpecificity = (a.match(/\//g) || []).length + (a.match(/[^*/]+/g) || []).length;
+          const bSpecificity = (b.match(/\//g) || []).length + (b.match(/[^*/]+/g) || []).length;
+          return bSpecificity - aSpecificity;
+        });
+      }
+
+      selectAnnouncements() {
+        // Check in priority order: exact path > pattern > global
+        const exactPathAnnouncements = this.getExactPathAnnouncements();
+        if (exactPathAnnouncements.length > 0) return exactPathAnnouncements;
+
+        const patternAnnouncements = this.getPatternAnnouncements();
+        if (patternAnnouncements.length > 0) return patternAnnouncements;
+
+        return this.getGlobalAnnouncements();
+      }
+    }
+
+    // Banner UI - Handles banner creation and DOM manipulation
+    class BannerUI {
+      constructor() {
+        this.wrapper = this.createWrapper();
+        this.setupScrollBehavior();
+      }
+
+      createWrapper() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'hex-banner-wrapper';
+        document.body.insertBefore(wrapper, document.body.firstChild);
+        return wrapper;
+      }
+
+      setupScrollBehavior() {
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', () => {
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          if (scrollTop > CONFIG.SCROLL_THRESHOLD && scrollTop > lastScrollTop) {
+            this.wrapper.classList.add('hide');
+          } else {
+            this.wrapper.classList.remove('hide');
+          }
+          lastScrollTop = scrollTop;
+        });
+      }
+
+      createBanner(announcement) {
+        const banner = document.createElement('div');
+        banner.className = 'hex-banner-container';
+        
+        const text = announcement.texts[0];
+        const background = announcement.background;
+
+        banner.style.backgroundColor = background?.backgroundColor || CONFIG.DEFAULT_STYLES.backgroundColor;
+        banner.style.padding = background?.padding || CONFIG.DEFAULT_STYLES.padding;
+
+        const content = this.createBannerContent(text);
+        banner.appendChild(content);
+        return banner;
+      }
+
+      createBannerContent(text) {
+        const content = document.createElement('div');
+        content.className = 'hex-banner-content';
+
+        const textElement = this.createTextElement(text);
+        content.appendChild(textElement);
+
+        if (text?.ctas?.length > 0) {
+          text.ctas.forEach(cta => {
+            content.appendChild(this.createCTAButton(cta));
+          });
+        }
+
+        content.appendChild(this.createCloseButton());
+        return content;
+      }
+
+      createTextElement(text) {
+        const textElement = document.createElement('p');
+        textElement.className = 'hex-banner-text';
+        textElement.style.color = text?.textColor || CONFIG.DEFAULT_STYLES.textColor;
+        textElement.style.fontSize = `${text?.fontSize || CONFIG.DEFAULT_STYLES.fontSize}px`;
+        textElement.textContent = text?.textMessage || '';
+        return textElement;
+      }
+
+      createCTAButton(cta) {
+        const ctaButton = document.createElement('a');
+        ctaButton.href = cta.link || '#';
+        ctaButton.className = 'hex-banner-cta';
+        ctaButton.textContent = cta.text || '';
+        ctaButton.style.backgroundColor = cta.bgColor || CONFIG.DEFAULT_STYLES.textColor;
+        ctaButton.style.color = cta.textColor || CONFIG.DEFAULT_STYLES.backgroundColor;
+        ctaButton.style.borderRadius = `${cta.buttonRadius || 4}px`;
+        ctaButton.style.padding = cta.padding || '5px 15px';
+        return ctaButton;
+      }
+
+      createCloseButton() {
+        const closeButton = document.createElement('button');
+        closeButton.className = 'hex-banner-close';
+        closeButton.innerHTML = '✕';
+        closeButton.onclick = (e) => {
+          const banner = e.target.closest('.hex-banner-container');
+          if (banner) banner.remove();
+          this.updateBodyPadding();
+        };
+        return closeButton;
+      }
+
+      updateBodyPadding() {
+        const banners = document.querySelectorAll('.hex-banner-container');
+        let totalHeight = 0;
+        banners.forEach(banner => {
+          totalHeight += banner.offsetHeight;
+        });
+        document.body.style.paddingTop = `${totalHeight}px`;
+      }
+
+      displayAnnouncements(announcements) {
+        const now = new Date();
+        let addedBanners = 0;
+
+        announcements.forEach(announcement => {
+          const start = new Date(announcement.startDate);
+          const end = new Date(announcement.endDate);
+          
+          if (announcement.isActive && now >= start && now <= end) {
+            const banner = this.createBanner(announcement);
+            if (banner) {
+              this.wrapper.appendChild(banner);
+              addedBanners++;
+            }
+          }
+        });
+
+        if (addedBanners > 0) {
+          setTimeout(() => this.updateBodyPadding(), 100);
+        }
+
+        window.addEventListener('resize', () => this.updateBodyPadding());
+      }
+    }
+
+    // Main initialization
+    async function initBanners() {
+      const shop = Shopify.shop;
+      const currentPath = window.location.pathname;
+      
+      const bannerService = new BannerService(shop);
+      const bannerUI = new BannerUI();
+
+      const data = await bannerService.fetchBannerData();
+      if (!data) return;
+
+      const selector = new AnnouncementSelector(data, currentPath);
+      const selectedAnnouncements = selector.selectAnnouncements();
+      
+      bannerUI.displayAnnouncements(selectedAnnouncements);
+    }
+
+    // Start the application
+    initBanners();
+  })();
 </script>
 
 {% schema %}
 {
   "name": "Custom Banner",
   "target": "body",
-  "templates": ["product", "index"],
-  "settings": [
-    { "type": "product", "id": "product", "label": "product", "autofill": true },
-    { "type": "color", "id": "colour", "label": "Star Colour", "default": "#ff0000" }
-  ]
+  "settings": []
 }
 {% endschema %}
 

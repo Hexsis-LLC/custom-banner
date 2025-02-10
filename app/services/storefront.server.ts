@@ -10,7 +10,7 @@ export default class Storefront {
   async getStorePages(){
     const pages = [
       { title: "Cart", handle: "cart" },
-      { title: "Checkout", handle: "checkout" },
+      { title: "Checkout", handle: "checkouts/*" },
       { title: "Search", handle: "search" },
       { title: "Account", handle: "account" },
       { title: "Login", handle: "account/login" },
