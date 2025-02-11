@@ -50,6 +50,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.USER }}@${{ secrets.HOST }} "
             cd ${{ secrets.REMOTE_PATH }} && \
-            npm install --production && \
+            npm install && \
             sudo systemctl restart custombanner
           "
