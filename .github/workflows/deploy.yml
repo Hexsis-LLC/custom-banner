@@ -1,0 +1,55 @@
+name: Deploy Remix App
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Remix App
+        run: npm run build
+
+      - name: Configure SSH Key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+      - name: Transfer Build Files to Server
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./build/ \
+            ./public/ \
+            ./package.json \
+            ./package-lock.json \
+            ${{ secrets.USER }}@${{ secrets.HOST }}:${{ secrets.REMOTE_PATH }}
+
+      - name: Deploy Application
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.USER }}@${{ secrets.HOST }} "
+            cd ${{ secrets.REMOTE_PATH }} && \
+            npm install --production && \
+            sudo systemctl restart custombanner
+          "
