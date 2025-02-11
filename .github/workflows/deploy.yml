@@ -47,9 +47,11 @@ jobs:
             ${{ secrets.USER }}@${{ secrets.HOST }}:${{ secrets.REMOTE_PATH }}
 
       - name: Deploy Application
+        env:
+          SUDO_PASS: ${{ secrets.SUDO_PASSWORD }}
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.USER }}@${{ secrets.HOST }} "
             cd ${{ secrets.REMOTE_PATH }} && \
-            npm install && \
-            sudo systemctl restart custombanner
+            npm install --no-audit && \
+            echo $SUDO_PASS | sudo -S systemctl restart custombanner
           "
