@@ -26,6 +26,7 @@ import {
 } from "../services/onboarding.server";
 import enableAppEmbed from "../assets/enable-app-embed-example.png";
 import {SkeletonLoading} from "../components/SkeletonLoading";
+import * as process from "node:process";
 
 interface LoaderData {
   shop: string;
@@ -149,7 +150,7 @@ export default function AppOnboardingStep1() {
 
   const handleEnableAppEmbed = useCallback(() => {
     const shopName = shop.replace('.myshopify.com', '');
-    window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=e451d624-718c-470b-9466-778747ad40f5`);
+    window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=${process.env.SHOPIFY_CUSTOM_BANNER_ID}`);
     submit({action: 'enable_embed'}, {method: 'post'});
   }, [shop, themeId, submit]);
 
