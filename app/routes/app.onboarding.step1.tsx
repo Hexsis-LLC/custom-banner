@@ -46,25 +46,37 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
   try {
     // Get shop and theme data
     const shopAndThemeData = await getShopAndThemeData(admin);
-    if(shopAndThemeData) {
-      const {shop, themeId} =shopAndThemeData;
-      // Check app embed status and update if needed
-      await checkAppEmbed(admin, session, themeId);
-
-      // Get current onboarding status
-      const status = await getOnboardingStatus(session);
-
+    if(!shopAndThemeData) {
       return json<LoaderData>({
-        shop,
-        themeId,
-        hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
-        hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
+        shop: '',
+        themeId: '',
+        hasCompletedEmbed: false,
+        hasCompletedCreateNewBanner: false,
       });
     }
 
+    const {shop, themeId} = shopAndThemeData;
+    // Check app embed status and update if needed
+    await checkAppEmbed(admin, session, themeId);
+
+    // Get current onboarding status
+    const status = await getOnboardingStatus(session);
+
+    return json<LoaderData>({
+      shop,
+      themeId,
+      hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
+      hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
+    });
+
   } catch (error) {
     console.error("Error loading data:", error);
-    return null;
+    return json<LoaderData>({
+      shop: '',
+      themeId: '',
+      hasCompletedEmbed: false,
+      hasCompletedCreateNewBanner: false,
+    });
   }
 };
 
