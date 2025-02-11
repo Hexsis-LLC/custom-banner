@@ -5,7 +5,6 @@
 <style>
   .hex-banner-container {
     background-color: #000000;
-    padding: 10px 0;
     width: 100%;
     z-index: 999999;
   }
@@ -18,7 +17,7 @@
     display: flex;
     flex-direction: column;
     z-index: 999999;
-    transition: transform 0.3s ease;
+    transition: transform 0.1s ease;
   }
 
   .hex-banner-wrapper.hide {
@@ -28,37 +27,51 @@
   .hex-banner-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 15px;
+    justify-content: space-between;
     position: relative;
     min-height: 40px;
+    padding: 10px 40px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .hex-banner-text {
     color: #ffffff !important;
     font-size: 16px !important;
     margin: 0;
-    flex: 1;
     text-align: center;
     font-family: inherit;
     line-height: 1.4;
     display: block !important;
     visibility: visible !important;
+    flex: 1;
+  }
+
+  .hex-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .hex-banner-cta-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .hex-banner-cta {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     text-decoration: none;
     transition: opacity 0.2s;
     white-space: nowrap;
     min-width: 80px;
     text-align: center;
-    margin-left: 10px;
     padding: 5px 15px;
-    border-radius: 4px;
   }
 
   .hex-banner-cta:hover {
@@ -74,10 +87,19 @@
     font-size: 18px;
     opacity: 0.7;
     transition: opacity 0.2s;
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hex-banner-close.right {
+    right: 5px;
+  }
+
+  .hex-banner-close.left {
+    left: 5px;
   }
 
   .hex-banner-close:hover {
@@ -90,13 +112,56 @@
   }
 
   @media screen and (max-width: 768px) {
+    .hex-banner-content {
+      padding: 8px 35px;
+    }
+
     .hex-banner-text {
       font-size: 14px !important;
     }
+
+    .hex-banner-actions {
+      gap: 15px;
+    }
+
+    .hex-banner-cta-wrapper {
+      gap: 8px;
+    }
+
     .hex-banner-cta {
       font-size: 12px;
       min-width: 60px;
       padding: 4px 10px;
+    }
+
+    .hex-banner-close {
+      font-size: 16px;
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+  @media screen and (max-width: 480px) {
+    .hex-banner-content {
+      flex-direction: column;
+      padding: 10px 35px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hex-banner-text {
+      text-align: center;
+      width: 100%;
+    }
+
+    .hex-banner-actions {
+      width: 100%;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .hex-banner-cta-wrapper {
+      justify-content: center;
     }
   }
 </style>
@@ -161,6 +226,8 @@
 
     // Announcement Selector - Handles announcement selection based on priority
     class AnnouncementSelector {
+      data;
+      currentPath;
       constructor(data, currentPath) {
         this.data = data;
         this.currentPath = currentPath;
@@ -212,6 +279,7 @@
 
     // Banner UI - Handles banner creation and DOM manipulation
     class BannerUI {
+      wrapper;
       constructor() {
         this.wrapper = this.createWrapper();
         this.setupScrollBehavior();
@@ -240,32 +308,48 @@
       createBanner(announcement) {
         const banner = document.createElement('div');
         banner.className = 'hex-banner-container';
-        
+
         const text = announcement.texts[0];
         const background = announcement.background;
 
         banner.style.backgroundColor = background?.backgroundColor || CONFIG.DEFAULT_STYLES.backgroundColor;
-        banner.style.padding = background?.padding || CONFIG.DEFAULT_STYLES.padding;
+        
+        // Apply padding from API if available
+        if (background?.padding) {
+          banner.style.padding = background.padding;
+        }
 
-        const content = this.createBannerContent(text);
+        const content = this.createBannerContent(text, announcement);
         banner.appendChild(content);
         return banner;
       }
 
-      createBannerContent(text) {
+      createBannerContent(text, announcement) {
         const content = document.createElement('div');
         content.className = 'hex-banner-content';
 
         const textElement = this.createTextElement(text);
         content.appendChild(textElement);
 
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'hex-banner-actions';
+
         if (text?.ctas?.length > 0) {
+          const ctaWrapper = document.createElement('div');
+          ctaWrapper.className = 'hex-banner-cta-wrapper';
+          
           text.ctas.forEach(cta => {
-            content.appendChild(this.createCTAButton(cta));
+            ctaWrapper.appendChild(this.createCTAButton(cta));
           });
+          
+          actionsDiv.appendChild(ctaWrapper);
         }
 
-        content.appendChild(this.createCloseButton());
+        if (announcement.showCloseButton) {
+          actionsDiv.appendChild(this.createCloseButton(announcement.closeButtonPosition));
+        }
+
+        content.appendChild(actionsDiv);
         return content;
       }
 
@@ -275,6 +359,12 @@
         textElement.style.color = text?.textColor || CONFIG.DEFAULT_STYLES.textColor;
         textElement.style.fontSize = `${text?.fontSize || CONFIG.DEFAULT_STYLES.fontSize}px`;
         textElement.textContent = text?.textMessage || '';
+        
+        // Apply custom font if available
+        if (text?.customFont) {
+          textElement.style.fontFamily = text.customFont;
+        }
+        
         return textElement;
       }
 
@@ -283,16 +373,25 @@
         ctaButton.href = cta.link || '#';
         ctaButton.className = 'hex-banner-cta';
         ctaButton.textContent = cta.text || '';
+        
+        // Apply CTA styles from API
         ctaButton.style.backgroundColor = cta.bgColor || CONFIG.DEFAULT_STYLES.textColor;
         ctaButton.style.color = cta.textColor || CONFIG.DEFAULT_STYLES.backgroundColor;
         ctaButton.style.borderRadius = `${cta.buttonRadius || 4}px`;
-        ctaButton.style.padding = cta.padding || '5px 15px';
+        
+        // Apply padding from API if available
+        if (cta.padding && cta.padding !== '0px 0px 0px 0px') {
+          ctaButton.style.padding = cta.padding;
+        } else {
+          ctaButton.style.padding = '5px 15px';
+        }
+        
         return ctaButton;
       }
 
-      createCloseButton() {
+      createCloseButton(position = 'right') {
         const closeButton = document.createElement('button');
-        closeButton.className = 'hex-banner-close';
+        closeButton.className = `hex-banner-close ${position}`;
         closeButton.innerHTML = '✕';
         closeButton.onclick = (e) => {
           const banner = e.target.closest('.hex-banner-container');
@@ -318,7 +417,7 @@
         announcements.forEach(announcement => {
           const start = new Date(announcement.startDate);
           const end = new Date(announcement.endDate);
-          
+
           if (announcement.isActive && now >= start && now <= end) {
             const banner = this.createBanner(announcement);
             if (banner) {
@@ -340,7 +439,7 @@
     async function initBanners() {
       const shop = Shopify.shop;
       const currentPath = window.location.pathname;
-      
+
       const bannerService = new BannerService(shop);
       const bannerUI = new BannerUI();
 
@@ -349,7 +448,7 @@
 
       const selector = new AnnouncementSelector(data, currentPath);
       const selectedAnnouncements = selector.selectAnnouncements();
-      
+
       bannerUI.displayAnnouncements(selectedAnnouncements);
     }
 
