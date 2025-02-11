@@ -31,6 +31,7 @@ import * as process from "node:process";
 interface LoaderData {
   shop: string;
   themeId: string;
+  appEmbedId: string;
   hasCompletedEmbed: boolean;
   hasCompletedCreateNewBanner: boolean;
 }
@@ -51,6 +52,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
       return json<LoaderData>({
         shop: '',
         themeId: '',
+        appEmbedId: '',
         hasCompletedEmbed: false,
         hasCompletedCreateNewBanner: false,
       });
@@ -62,10 +64,11 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
     // Get current onboarding status
     const status = await getOnboardingStatus(session);
-
+    const appEmbedId = process.env.SHOPIFY_CUSTOM_BANNER_ID!;
     return json<LoaderData>({
       shop,
       themeId,
+      appEmbedId,
       hasCompletedEmbed: status?.hasCompletedEmbed ?? false,
       hasCompletedCreateNewBanner: status?.hasCompletedCreateNewBanner ?? false,
     });
@@ -75,6 +78,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
     return json<LoaderData>({
       shop: '',
       themeId: '',
+      appEmbedId: '',
       hasCompletedEmbed: false,
       hasCompletedCreateNewBanner: false,
     });
@@ -122,7 +126,7 @@ export default function AppOnboardingStep1() {
   const navigate = useNavigate();
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
-  const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner} = useLoaderData<LoaderData>();
+  const {shop, themeId, hasCompletedEmbed, hasCompletedCreateNewBanner, appEmbedId} = useLoaderData<LoaderData>();
   const navigation = useNavigation();
 
   const [selected, setSelected] = useState<string | null>(() => {
@@ -150,7 +154,8 @@ export default function AppOnboardingStep1() {
 
   const handleEnableAppEmbed = useCallback(() => {
     const shopName = shop.replace('.myshopify.com', '');
-    window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=${process.env.SHOPIFY_CUSTOM_BANNER_ID}`);
+
+    window.open(`https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=${appEmbedId}`);
     submit({action: 'enable_embed'}, {method: 'post'});
   }, [shop, themeId, submit]);
 
