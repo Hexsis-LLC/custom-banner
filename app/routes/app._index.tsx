@@ -2,13 +2,13 @@ import {
   Page,
   Card, Text,
 } from "@shopify/polaris";
-import {useOutletContext, useNavigate, useSubmit, useActionData} from "@remix-run/react";
-import OnboardingInit from "../component/onbording";
-import {json, LoaderFunctionArgs} from "@remix-run/node";
+import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation} from "@remix-run/react";
+import OnboardingInit from "../components/onbording";
+import {json, type LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
-import {db} from "../db.server";
-import {onboardingTable} from "../../drizzle/schema/onboarding";
+import {initializeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
+import {SkeletonLoading} from "../components/SkeletonLoading";
 
 interface ActionData {
   success: boolean;
@@ -19,24 +19,17 @@ export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
 
   try {
-    // Insert or update onboarding record
-    await db.insert(onboardingTable).values({
-      shop: session.shop,
-      hasCompletedOnboarding: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }).onConflictDoUpdate({
-      target: onboardingTable.shop,
-      set: {
-        hasCompletedOnboarding: false,
-        updatedAt: new Date().toISOString()
-      }
-    }).run();
-
-    return json<ActionData>({success: true});
+    await initializeOnboarding(session);
+    return json<ActionData>({
+      success: true,
+      error: "Successfully initialized onboarding"
+    });
   } catch (error) {
-    console.error("Database error:", error);
-    return json<ActionData>({success: false, error: "Failed to initialize onboarding"});
+    console.error("Error initializing onboarding:", error);
+    return json<ActionData>({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to initialize onboarding"
+    });
   }
 };
 
@@ -45,6 +38,7 @@ export default function Index() {
   const navigate = useNavigate();
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
+  const navigation = useNavigation();
 
   // Handle navigation after successful form submission
   useEffect(() => {
@@ -57,6 +51,11 @@ export default function Index() {
     // Only submit the form - navigation will happen after success
     submit({}, {method: "post", action: "?index"});
   };
+
+  // Show skeleton loading during navigation or form submission
+  if (navigation.state !== "idle") {
+    return <SkeletonLoading type="home" />;
+  }
 
   return (
     <Page>

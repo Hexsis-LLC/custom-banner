@@ -5,15 +5,22 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1737522225554,
-      "tag": "0000_great_kronos",
+      "when": 1738309604649,
+      "tag": "0000_brave_ink",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1737661527322,
-      "tag": "0001_low_star_brand",
+      "when": 1738616658223,
+      "tag": "0001_lame_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1738824413430,
+      "tag": "0002_white_arachne",
       "breakpoints": true
     }
   ]

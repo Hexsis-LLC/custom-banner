@@ -7,8 +7,10 @@ import {sessionTable} from 'packages/shopify-drizzle-sqlite/sqlite.schema';
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
+
   apiSecretKey: process.env.SHOPIFY_API_SECRET || '',
   apiVersion: ApiVersion.October24,
+  privateAppStorefrontAccessToken: process.env.PRIVATE_APP_STOREFRONT_ACCESS_TOKEN,
   scopes: process.env.SCOPES?.split(','),
   appUrl: process.env.SHOPIFY_APP_URL || '',
   authPathPrefix: '/auth',

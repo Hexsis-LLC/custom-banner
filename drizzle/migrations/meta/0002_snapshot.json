@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6a242dad-0dc0-48f4-a5f5-779064e0dc49",
-  "prevId": "3a486afa-5b09-4c0b-9ebc-f65d0f5dc0b8",
+  "id": "15f13afd-ccc2-4718-854a-190dd128a95d",
+  "prevId": "6a242dad-0dc0-48f4-a5f5-779064e0dc49",
   "tables": {
     "session": {
       "name": "session",
@@ -232,8 +232,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "shop": {
-          "name": "shop",
+        "shop_id": {
+          "name": "shop_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -289,13 +289,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "specific_page": {
-          "name": "specific_page",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "countdown_end_time": {
           "name": "countdown_end_time",
           "type": "text",
@@ -335,10 +328,91 @@
             "end_date"
           ],
           "isUnique": false
+        },
+        "announcements_shop_idx": {
+          "name": "announcements_shop_idx",
+          "columns": [
+            "shop_id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "announcements_X_page_patterns": {
+      "name": "announcements_X_page_patterns",
+      "columns": {
+        "page_patterns_id": {
+          "name": "page_patterns_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "announcements_id": {
+          "name": "announcements_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "page_patterns_idx": {
+          "name": "page_patterns_idx",
+          "columns": [
+            "page_patterns_id"
+          ],
+          "isUnique": false
+        },
+        "announcements_idx": {
+          "name": "announcements_idx",
+          "columns": [
+            "announcements_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "announcements_X_page_patterns_page_patterns_id_page_patterns_id_fk": {
+          "name": "announcements_X_page_patterns_page_patterns_id_page_patterns_id_fk",
+          "tableFrom": "announcements_X_page_patterns",
+          "tableTo": "page_patterns",
+          "columnsFrom": [
+            "page_patterns_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "announcements_X_page_patterns_announcements_id_announcements_id_fk": {
+          "name": "announcements_X_page_patterns_announcements_id_announcements_id_fk",
+          "tableFrom": "announcements_X_page_patterns",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcements_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "announcements_X_page_patterns_page_patterns_id_announcements_id_pk": {
+          "columns": [
+            "page_patterns_id",
+            "announcements_id"
+          ],
+          "name": "announcements_X_page_patterns_page_patterns_id_announcements_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -382,7 +456,15 @@
           "default": "'10px 15px'"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "banner_background_announcement_id_unique": {
+          "name": "banner_background_announcement_id_unique",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "banner_background_announcement_id_announcements_id_fk": {
           "name": "banner_background_announcement_id_announcements_id_fk",
@@ -564,6 +646,31 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
+    },
+    "page_patterns": {
+      "name": "page_patterns",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'__global'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "views": {},
@@ -571,7 +678,9 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {}
+    "columns": {
+      "\"announcements\".\"shop\"": "\"announcements\".\"shop_id\""
+    }
   },
   "internal": {
     "indexes": {}

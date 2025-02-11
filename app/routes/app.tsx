@@ -1,5 +1,5 @@
 import type {HeadersFunction, LoaderFunctionArgs} from "@remix-run/node";
-import {Link, Outlet, useLoaderData, useRouteError} from "@remix-run/react";
+import {Link, Outlet, useLoaderData, useRouteError, useNavigation} from "@remix-run/react";
 import {boundary} from "@shopify/shopify-app-remix/server";
 import {AppProvider} from "@shopify/shopify-app-remix/react";
 import {NavMenu} from "@shopify/app-bridge-react";
@@ -8,12 +8,13 @@ import {authenticate} from "app/shopify.server";
 import {db} from "app/db.server";
 import {onboardingTable} from "drizzle/schemas";
 import {eq} from "drizzle-orm/sql";
+import {SkeletonLoading} from "../components/SkeletonLoading";
 
 export const links = () => [{rel: "stylesheet", href: polarisStyles}];
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-  const {admin,session} = await authenticate.admin(request);
+  const {session} = await authenticate.admin(request);
 
 // Check onboarding status
   const onboarding = await db.select()
@@ -28,6 +29,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
 export default function App() {
   const {apiKey, hideNav} = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
@@ -44,7 +46,11 @@ export default function App() {
         </Link>
         <Link to="/app/">Onboarding</Link>
       </NavMenu>}
-      <Outlet context={{hideNav}}/>
+      {navigation.state !== "idle" ? (
+        <SkeletonLoading type="default" title="Loading..." />
+      ) : (
+        <Outlet context={{hideNav}}/>
+      )}
     </AppProvider>
   );
 }

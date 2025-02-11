@@ -1,14 +1,14 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
-application_url = "https://custombanner.ishaf.info"
+client_id = "5a23de560b18560427806c288b5f5b0d"
+application_url = "https://banner-staging.hexstore.io/"
 embedded = true
-name = "Custom Banner"
-handle = "custom-banner-63"
+name = "Custom Banner Test"
+handle = "custom-banner-test-1"
 
 [build]
 automatically_update_urls_on_dev = true
-dev_store_url = "hexsis-test-store.myshopify.com"
+dev_store_url = "cuatom-banner-test.myshopify.com"
 include_config_on_deploy = true
 
 [webhooks]
@@ -24,13 +24,13 @@ api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_themes,write_products,read_online_store_pages,unauthenticated_read_content"
+scopes = "read_themes,write_products"
 
 [auth]
 redirect_urls = [
-  "https://custombanner.ishaf.info/auth/callback",
-  "https://custombanner.ishaf.info/auth/shopify/callback",
-  "https://custombanner.ishaf.info/api/auth/callback"
+  "https://banner-staging.hexstore.io/auth/callback",
+  "https://banner-staging.hexstore.io/auth/shopify/callback",
+  "https://banner-staging.hexstore.io/api/auth/callback"
 ]
 
 [pos]
