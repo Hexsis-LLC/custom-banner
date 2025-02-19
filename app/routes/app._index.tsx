@@ -14,6 +14,7 @@ import image from "../assets/onboarding.png";
 import EmptyHome from "../components/home/empty_screen";
 import BannerList from "../components/home/banner_list";
 import {AnnouncementService} from "../services/announcement.server";
+import { Announcement } from "app/types/announcement";
 
 interface ActionData {
   success: boolean;
@@ -52,7 +53,7 @@ export default function Index() {
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
-  const {data} = useLoaderData<typeof loader>();
+  const {data} = useLoaderData<{data: Announcement[]}>();
 
   // Handle navigation after successful form submission
   useEffect(() => {

@@ -21,68 +21,8 @@ import {useNavigate} from "@remix-run/react";
 import EmptyHome from "./empty_screen";
 import {useState, useCallback} from 'react';
 import illustration from "../../assets/svg/Illustration.svg";
+import type { Announcement } from "../../types/announcement";
 
-interface CallToAction {
-  id: number;
-  type: 'button' | 'text';
-  text: string;
-  link: string;
-  bgColor: string;
-  textColor: string;
-  buttonRadius?: number;
-  padding?: string;
-  announcementTextId: number;
-}
-
-interface AnnouncementText {
-  id: number;
-  textMessage: string;
-  textColor: string;
-  fontSize: number;
-  customFont?: string;
-  languageCode?: string;
-  announcementId: number;
-  ctas: CallToAction[];
-}
-
-interface Background {
-  id: number;
-  backgroundColor: string;
-  backgroundPattern?: string;
-  padding?: string;
-  announcementId: number;
-}
-
-interface PagePattern {
-  id: number;
-  pattern: string;
-}
-
-interface PagePatternLink {
-  pagePatternsID: number;
-  announcementsID: number;
-  pagePattern: PagePattern;
-}
-
-interface Announcement {
-  id: number;
-  type: 'basic' | 'countdown' | 'email_signup' | 'multi_text';
-  title: string;
-  shopId: string;
-  size: 'small' | 'mid' | 'large' | 'custom';
-  heightPx?: number;
-  widthPercent?: number;
-  startDate: string;
-  endDate: string;
-  showCloseButton?: boolean;
-  closeButtonPosition: 'left' | 'right' | 'center';
-  countdownEndTime?: string;
-  timezone?: string;
-  isActive: boolean;
-  texts: AnnouncementText[];
-  background?: Background;
-  pagePatternLinks: PagePatternLink[];
-}
 
 interface BannerListProps {
   data: Announcement[];
