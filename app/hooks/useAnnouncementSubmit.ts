@@ -17,10 +17,10 @@ export function useAnnouncementSubmit(validateForm: () => boolean) {
     }
   }, [validateForm, submit]);
 
-  // Watch for successful submission and navigate
+  // Watch for successful submission and navigate only if redirectTo is present
   useEffect(() => {
-    if (navigation.state === "idle" && actionData && 'success' in actionData) {
-      navigate('/app/campaign');
+    if (navigation.state === "idle" && actionData && 'success' in actionData && actionData.redirectTo) {
+      navigate(actionData.redirectTo);
     }
   }, [navigation.state, actionData, navigate]);
 

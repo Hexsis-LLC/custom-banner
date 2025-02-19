@@ -6,6 +6,10 @@ const basicInfoSchema = z.object({
   sizeHeight: z.string(),
   sizeWidth: z.string(),
   campaignTitle: z.string().min(1, "Campaign title is required"),
+  status: z.enum(['draft', 'published']).default('draft'),
+  type: z.literal('basic'),
+  isActive: z.boolean().default(true),
+  closeButtonPosition: z.enum(['right', 'left', 'center']).default('right'),
 }).superRefine((data, ctx) => {
   if (data.size === 'custom') {
     // Validate height
@@ -168,53 +172,37 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
     ctaText: z.string().optional(),
     ctaLink: z.string().optional(),
   }),
-  // Clickable link type - requires text and link
+  // Button type - requires all fields
   z.object({
-    ctaType: z.literal('link'),
-    ctaText: z.string().min(1, "CTA text is required for link type"),
-    ctaLink: z.string().url("Please enter a valid URL"),
-    padding: z.object({
-      top: z.number(),
-      right: z.number(),
-      bottom: z.number(),
-      left: z.number(),
-    }),
-    fontType: z.string(),
-    fontUrl: z.string().optional(),
-    buttonFontColor: z.string().optional(),
-    buttonBackgroundColor: z.string().optional(),
-  }),
-  // Clickable bar type - requires only link
-  z.object({
-    ctaType: z.literal('bar'),
-    ctaLink: z.string().url("Please enter a valid URL"),
-    padding: z.object({
-      top: z.number(),
-      right: z.number(),
-      bottom: z.number(),
-      left: z.number(),
-    }),
-    fontType: z.string(),
-    fontUrl: z.string().optional(),
-    buttonFontColor: z.string().optional(),
-    buttonBackgroundColor: z.string().optional(),
-    ctaText: z.string().optional(),
-  }),
-  // Regular button type - requires all fields
-  z.object({
-    ctaType: z.literal('regular'),
+    ctaType: z.literal('button'),
     ctaText: z.string().min(1, "CTA text is required for button type"),
     ctaLink: z.string().url("Please enter a valid URL"),
     padding: z.object({
-      top: z.number().min(0, "Top padding must be at least 0"),
-      right: z.number().min(0, "Right padding must be at least 0"),
-      bottom: z.number().min(0, "Bottom padding must be at least 0"),
-      left: z.number().min(0, "Left padding must be at least 0"),
+      top: z.number().min(0),
+      right: z.number().min(0),
+      bottom: z.number().min(0),
+      left: z.number().min(0),
     }),
     fontType: z.string(),
     fontUrl: z.string().optional(),
     buttonFontColor: z.string(),
     buttonBackgroundColor: z.string(),
+  }),
+  // Text type - requires text and link
+  z.object({
+    ctaType: z.literal('text'),
+    ctaText: z.string().min(1, "CTA text is required for text type"),
+    ctaLink: z.string().url("Please enter a valid URL"),
+    padding: z.object({
+      top: z.number(),
+      right: z.number(),
+      bottom: z.number(),
+      left: z.number(),
+    }),
+    fontType: z.string(),
+    fontUrl: z.string().optional(),
+    buttonFontColor: z.string().optional(),
+    buttonBackgroundColor: z.string().optional(),
   }),
 ]).superRefine((data, ctx) => {
   if (data.fontType !== 'site' && !data.fontUrl) {
@@ -230,17 +218,6 @@ const ctaSchema = z.discriminatedUnion('ctaType', [
       message: "Font URL must be a valid URL starting with http",
       path: ['fontUrl'],
     });
-  }
-
-  // Add padding validation only for regular button type
-  if (data.ctaType === 'regular') {
-    if (data.padding.top < 0 || data.padding.right < 0 || data.padding.bottom < 0 || data.padding.left < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Padding values must be non-negative for regular button type",
-        path: ['padding'],
-      });
-    }
   }
 });
 

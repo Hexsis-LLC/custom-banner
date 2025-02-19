@@ -8,7 +8,8 @@ type FormAction =
   | { type: 'UPDATE_SECTION'; section: keyof FormState; data: Partial<FormState[keyof FormState]> }
   | { type: 'RESET_VALIDATION' }
   | { type: 'SET_VALIDATION_ERRORS'; errors: string[] }
-  | { type: 'SET_FIELD_ERRORS'; errors: ValidationState };
+  | { type: 'SET_FIELD_ERRORS'; errors: ValidationState }
+  | { type: 'SET_FORM_DATA'; data: FormState };
 
 interface FormReducerState {
   formData: FormState;
@@ -24,6 +25,7 @@ interface FormContextType extends FormReducerState {
   validateForm: () => boolean;
   hasError: (fieldPath: string) => boolean;
   getFieldErrorMessage: (fieldPath: string) => string;
+  setFormData: (data: FormState) => void;
 }
 
 const FormContext = createContext<FormContextType | undefined>(undefined);
@@ -57,6 +59,11 @@ function formReducer(state: FormReducerState, action: FormAction): FormReducerSt
         ...state,
         fieldErrors: action.errors,
       };
+    case 'SET_FORM_DATA':
+      return {
+        ...state,
+        formData: action.data,
+      };
     default:
       return state;
   }
@@ -75,6 +82,10 @@ export function FormProvider({ children, initialData }: { children: React.ReactN
   ) => {
     dispatch({ type: 'UPDATE_SECTION', section, data });
     dispatch({ type: 'RESET_VALIDATION' });
+  }, []);
+
+  const setFormData = useCallback((data: FormState) => {
+    dispatch({ type: 'SET_FORM_DATA', data });
   }, []);
 
   const validateForm = useCallback(() => {
@@ -139,6 +150,7 @@ export function FormProvider({ children, initialData }: { children: React.ReactN
     validateForm,
     hasError,
     getFieldErrorMessage,
+    setFormData,
   };
 
   return <FormContext.Provider value={value}>{children}</FormContext.Provider>;

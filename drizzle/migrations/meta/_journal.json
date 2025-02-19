@@ -22,6 +22,13 @@
       "when": 1738824413430,
       "tag": "0002_white_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1739978494347,
+      "tag": "0003_sharp_dracula",
+      "breakpoints": true
     }
   ]
 }

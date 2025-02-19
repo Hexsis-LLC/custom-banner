@@ -24,11 +24,13 @@ export const announcements = sqliteTable('announcements', {
   }).notNull(),
   countdownEndTime: text('countdown_end_time'),
   timezone: text('timezone').default('UTC'),
-  isActive: integer('is_active', { mode: 'boolean' }).default(true)
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  status: text('status', { enum: ['draft', 'published', 'paused', 'ended'] }).notNull().default('draft'),
 }, (table) => ({
   typeIdx: index('announcements_type_idx').on(table.type),
   dateIdx: index('announcements_date_idx').on(table.startDate, table.endDate),
-  shopIdIdx: index('announcements_shop_idx').on(table.shopId) // Added index for shopId
+  shopIdIdx: index('announcements_shop_idx').on(table.shopId), // Added index for shopId
+  statusIdx: index('announcements_status_idx').on(table.status), // Added index for status
 }));
 
 export const pagePatterns = sqliteTable('page_patterns', {

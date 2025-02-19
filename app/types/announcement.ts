@@ -1,9 +1,11 @@
 export type Size = 'large' | 'medium' | 'small' | 'custom';
 export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
 export type CloseButtonPosition = 'right' | 'left' | 'center';
+export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
 
 // Base settings interfaces
 export interface BasicSettings {
+  id?: number;
   size: Size;
   sizeHeight: string;
   sizeWidth: string;
@@ -20,6 +22,7 @@ export interface BasicSettings {
   closeButtonPosition: CloseButtonPosition;
   countdownEndTime?: string;
   timezone?: string;
+  status: AnnouncementStatus;
 }
 
 export interface TextSettings {
@@ -35,7 +38,7 @@ export interface TextSettings {
 
 export interface CTASettings {
   id?: number;
-  ctaType: 'button' | 'text';
+  ctaType: 'regular' | 'bar' | 'link' | 'none';
   ctaText: string;
   ctaLink: string;
   padding: {
@@ -111,6 +114,7 @@ export interface Announcement {
   countdownEndTime?: string;
   timezone?: string;
   isActive: boolean;
+  status: AnnouncementStatus;
   texts: TextSettings[];
   background?: BackgroundSettings;
   pagePatternLinks: PagePatternLink[];

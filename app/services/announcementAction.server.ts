@@ -29,6 +29,7 @@ export class AnnouncementAction {
       closeButtonPosition: formData.other.closeButtonPosition,
       timezone: 'UTC', // Default to UTC, can be made configurable
       isActive: true,
+      status: formData.basic.status,
       texts: [
         {
           textMessage: formData.text.announcementText,
@@ -113,5 +114,56 @@ export class AnnouncementAction {
 
   private formatPadding(padding: { top: number; right: number; bottom: number; left: number }): string {
     return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`;
+  }
+
+  async updateBasicBannerFormData(id: number, formData: AnnouncementBannerData, shopId: string) {
+    // Transform the form data into the database model
+    const announcement: Partial<NewAnnouncement> = {
+      type: 'basic',
+      title: formData.basic.campaignTitle,
+      size: this.mapSize(formData.basic.size),
+      heightPx: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeHeight) : undefined,
+      widthPercent: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeWidth) : undefined,
+      startDate: this.getStartDate(formData.basic),
+      endDate: this.getEndDate(formData.basic),
+      showCloseButton: true,
+      closeButtonPosition: formData.other.closeButtonPosition,
+      timezone: 'UTC',
+      isActive: true,
+      status: formData.basic.status,
+      texts: [
+        {
+          textMessage: formData.text.announcementText,
+          textColor: formData.text.textColor,
+          fontSize: formData.text.fontSize,
+          customFont: formData.text.fontType !== 'site' ? formData.text.fontUrl : undefined,
+          languageCode: 'en',
+          callToActions: formData.cta.ctaType !== 'none' ? [
+            {
+              type: this.mapCtaType(formData.cta.ctaType),
+              text: formData.cta.ctaText || '',
+              link: formData.cta.ctaLink || '',
+              bgColor: formData.cta.buttonBackgroundColor || '#000000',
+              textColor: formData.cta.buttonFontColor || '#FFFFFF',
+              buttonRadius: 4, // Default value, can be made configurable
+              padding: this.formatPadding(formData.cta.padding),
+            }
+          ] : undefined,
+        }
+      ],
+      background: {
+        backgroundColor: formData.background.backgroundType === 'gradient'
+          ? `linear-gradient(${formData.background.color1}, ${formData.background.color2})`
+          : formData.background.color1,
+        backgroundPattern: formData.background.pattern !== 'none' ? formData.background.pattern : undefined,
+        padding: this.formatPadding(formData.background.padding),
+      },
+      pagePatterns: formData.other.selectedPages,
+    };
+
+    // Update the announcement using the service
+    const result = await this.announcementService.updateAnnouncement(id, announcement);
+    await this.announcementService.updateKv(shopId);
+    return result;
   }
 }

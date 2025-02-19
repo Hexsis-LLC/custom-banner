@@ -26,6 +26,7 @@ export interface NewAnnouncement {
   countdownEndTime?: string;
   timezone?: string;
   isActive?: boolean;
+  status: 'draft' | 'published' | 'paused' | 'ended';
   texts: Array<{
     textMessage: string;
     textColor: string;
@@ -83,6 +84,11 @@ export class AnnouncementService {
     const patternsWithAnnouncements = new Set<string>();
 
     for (const announcement of announcements) {
+      // Skip non-published or inactive announcements
+      if (announcement.status !== 'published' || !announcement.isActive) {
+        continue;
+      }
+
       const { pagePatternLinks, ...cleanAnnouncement } = announcement;
       const patterns = pagePatternLinks.map(
         (link: { pagePattern: { pattern: string } }) => link.pagePattern.pattern
@@ -225,6 +231,7 @@ export class AnnouncementService {
       where: and(
         eq(announcements.shopId, shopId),
         eq(announcements.isActive, true),
+        eq(announcements.status, 'published'),
         lte(announcements.startDate, now),
         gte(announcements.endDate, now)
       ),

@@ -64,22 +64,22 @@ export default function BannerList({data}: BannerListProps) {
       panelID: 'all-announcements',
     },
     {
-      id: 'active',
-      content: 'Active',
-      accessibilityLabel: 'Active announcements',
-      panelID: 'active-announcements',
+      id: 'published',
+      content: 'Published',
+      accessibilityLabel: 'Published announcements',
+      panelID: 'published-announcements',
+    },
+    {
+      id: 'draft',
+      content: 'Draft',
+      accessibilityLabel: 'Draft announcements',
+      panelID: 'draft-announcements',
     },
     {
       id: 'paused',
-      content: 'Pause',
+      content: 'Paused',
       accessibilityLabel: 'Paused announcements',
       panelID: 'paused-announcements',
-    },
-    {
-      id: 'scheduled',
-      content: 'Scheduled',
-      accessibilityLabel: 'Scheduled announcements',
-      panelID: 'scheduled-announcements',
     },
     {
       id: 'ended',
@@ -92,23 +92,10 @@ export default function BannerList({data}: BannerListProps) {
   // Updated filter logic to include search
   const filteredData = data.filter(item => {
     // First apply tab filter
-    const now = new Date();
-    const startDate = new Date(item.startDate);
-    const endDate = new Date(item.endDate);
-
     const matchesTab = (() => {
-      switch (tabs[selectedTab].id) {
-        case 'active':
-          return item.isActive && startDate <= now && endDate >= now;
-        case 'paused':
-          return !item.isActive;
-        case 'scheduled':
-          return startDate > now;
-        case 'ended':
-          return endDate < now;
-        default:
-          return true;
-      }
+      const tabId = tabs[selectedTab].id;
+      if (tabId === 'all') return true;
+      return item.status === tabId;
     })();
 
     // Then apply search filter
@@ -139,7 +126,7 @@ export default function BannerList({data}: BannerListProps) {
     ({
        id,
        title,
-       isActive,
+       status,
        startDate,
        endDate,
        type
@@ -156,8 +143,13 @@ export default function BannerList({data}: BannerListProps) {
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Badge tone={isActive ? "success" : "warning"}>
-            {isActive ? "Active" : "Paused"}
+          <Badge tone={
+            status === 'published' ? "success" :
+            status === 'draft' ? "info" :
+            status === 'paused' ? "warning" :
+            "critical"
+          }>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </IndexTable.Cell>
         <IndexTable.Cell>
