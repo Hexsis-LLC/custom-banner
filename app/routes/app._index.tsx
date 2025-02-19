@@ -1,19 +1,32 @@
 import {
   Page,
-  Card, Text,
+  Card, Text, Button,
 } from "@shopify/polaris";
-import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation} from "@remix-run/react";
+import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation, useLoaderData} from "@remix-run/react";
 import OnboardingInit from "../components/onbording";
 import {json, type LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {initializeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
 import {SkeletonLoading} from "../components/SkeletonLoading";
+import {TitleBar} from "@shopify/app-bridge-react";
+import image from "../assets/onboarding.png";
+import EmptyHome from "../components/home/empty_screen";
+import BannerList from "../components/home/banner_list";
+import {AnnouncementService} from "../services/announcement.server";
 
 interface ActionData {
   success: boolean;
   error?: string;
 }
+
+export const loader = async ({request}: LoaderFunctionArgs) => {
+  const announcetService = new AnnouncementService();
+  const {session} = await authenticate.admin(request);
+  const data = await announcetService.getAnnouncementsByShop(session.shop)
+
+  return json({data});
+};
 
 export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
@@ -39,6 +52,7 @@ export default function Index() {
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
+  const {data} = useLoaderData<typeof loader>();
 
   // Handle navigation after successful form submission
   useEffect(() => {
@@ -54,16 +68,20 @@ export default function Index() {
 
   // Show skeleton loading during navigation or form submission
   if (navigation.state !== "idle") {
-    return <SkeletonLoading type="home" />;
+    return <SkeletonLoading type="home"/>;
   }
 
   return (
-    <Page>
+
+    <>
+
       {outletContext.hideNav ? (
-        <Card><Text as={'h3'}>Home</Text></Card>
+        <>
+          <BannerList data={data} />
+        </>
       ) : (
         <OnboardingInit onStart={handleStart}></OnboardingInit>
       )}
-    </Page>
+    </>
   );
 }
