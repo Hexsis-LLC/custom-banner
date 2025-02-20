@@ -21,13 +21,6 @@ interface ActionData {
   error?: string;
 }
 
-export const loader = async ({request}: LoaderFunctionArgs) => {
-  const announcetService = new AnnouncementService();
-  const {session} = await authenticate.admin(request);
-  const data = await announcetService.getAnnouncementsByShop(session.shop)
-
-  return json({data});
-};
 
 export const action = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
@@ -53,7 +46,6 @@ export default function Index() {
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
-  const {data} = useLoaderData<{data: Announcement[]}>();
 
   // Handle navigation after successful form submission
   useEffect(() => {
@@ -78,7 +70,7 @@ export default function Index() {
 
       {outletContext.hideNav ? (
         <>
-          <BannerList data={data} />
+          <BannerList />
         </>
       ) : (
         <OnboardingInit onStart={handleStart}></OnboardingInit>

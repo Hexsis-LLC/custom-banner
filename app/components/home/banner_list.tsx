@@ -11,30 +11,57 @@ import {
   IndexFiltersProps,
   IndexFilters,
   useSetIndexFiltersMode,
-  ChoiceList, TextField, RangeSlider,
   Card,
   BlockStack,
   InlineGrid,
-  Box
+  Box,
+  SkeletonDisplayText,
+  SkeletonBodyText,
 } from "@shopify/polaris";
-import {useNavigate} from "@remix-run/react";
+import { useFetcher, useNavigate } from "@remix-run/react";
 import EmptyHome from "./empty_screen";
-import {useState, useCallback} from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import illustration from "../../assets/svg/Illustration.svg";
 import type { Announcement } from "../../types/announcement";
 
-
-interface BannerListProps {
+interface BannerListResponse {
   data: Announcement[];
+  totalPages: number;
+  currentPage: number;
 }
 
-export default function BannerList({data}: BannerListProps) {
+export default function BannerList() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTab, setSelectedTab] = useState(0);
   const [queryValue, setQueryValue] = useState('');
   const [sortSelected, setSortSelected] = useState(['date desc']);
-  const itemsPerPage = 10;
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetcher = useFetcher<BannerListResponse>();
+
+  // Load initial data and when filters change
+  useEffect(() => {
+    const queryParams = new URLSearchParams({
+      page: currentPage.toString(),
+      tab: tabs[selectedTab].id,
+      sort: sortSelected[0],
+      search: queryValue,
+    });
+
+    fetcher.load(`/api/announcements?${queryParams}`);
+  }, [currentPage, selectedTab, sortSelected, queryValue]);
+
+  // Update state when data is received
+  useEffect(() => {
+    if (fetcher.data) {
+      setAnnouncements(fetcher.data.data);
+      setTotalPages(fetcher.data.totalPages);
+      setIsLoading(false);
+    }
+  }, [fetcher.data]);
 
   const resourceName = {
     singular: 'announcement',
@@ -43,18 +70,18 @@ export default function BannerList({data}: BannerListProps) {
 
   const {mode, setMode} = useSetIndexFiltersMode();
 
-  // Updated sort options to only include ascending and descending by date
   const sortOptions: IndexFiltersProps['sortOptions'] = [
     {label: 'Date', value: 'date asc', directionLabel: 'Oldest first'},
     {label: 'Date', value: 'date desc', directionLabel: 'Newest first'},
   ];
 
   const handleFiltersQueryChange = useCallback(
-    (value: string) => setQueryValue(value),
+    (value: string) => {
+      setCurrentPage(1); // Reset to first page when search changes
+      setQueryValue(value);
+    },
     [],
   );
-
-
 
   const tabs = [
     {
@@ -89,47 +116,26 @@ export default function BannerList({data}: BannerListProps) {
     },
   ];
 
-  // Updated filter logic to include search
-  const filteredData = data.filter(item => {
-    // First apply tab filter
-    const matchesTab = (() => {
-      const tabId = tabs[selectedTab].id;
-      if (tabId === 'all') return true;
-      return item.status === tabId;
-    })();
+  const handleTabChange = useCallback((selectedTabIndex: number) => {
+    setCurrentPage(1); // Reset to first page when tab changes
+    setSelectedTab(selectedTabIndex);
+  }, []);
 
-    // Then apply search filter
-    const matchesSearch = !queryValue ||
-      item.title.toLowerCase().includes(queryValue.toLowerCase()) ||
-      item.type.toLowerCase().includes(queryValue.toLowerCase());
+  const handleSortChange = useCallback((values: string[]) => {
+    setCurrentPage(1); // Reset to first page when sort changes
+    setSortSelected(values);
+  }, []);
 
-    return matchesTab && matchesSearch;
-  }).sort((a, b) => {
-    // Apply sorting
-    const [, direction] = sortSelected[0].split(' ');
-    return direction === 'asc'
-      ? new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-      : new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-  });
-
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPageData = filteredData.slice(startIndex, endIndex);
-
-  // Fix for bulk selection by using filteredData instead of currentPageData
   const {selectedResources, allResourcesSelected, handleSelectionChange} =
-    useIndexResourceState(filteredData.map(item => ({id: item.id.toString()})));
+    useIndexResourceState(announcements.map(item => ({id: item.id.toString()})));
 
-  const rowMarkup = currentPageData.map(
+  const rowMarkup = announcements.map(
     ({
        id,
        title,
        status,
        startDate,
        endDate,
-       type
      }, index) => (
       <IndexTable.Row
         id={id.toString()}
@@ -181,10 +187,39 @@ export default function BannerList({data}: BannerListProps) {
     ),
   );
 
-  const condensed =useBreakpoints().smDown
-  if (data.length === 0) {
-    return <EmptyHome/>
+  const condensed = useBreakpoints().smDown;
+
+  const renderSkeletonRows = () => {
+    return Array.from({ length: 5 }).map((_, index) => (
+      <IndexTable.Row id={`skeleton-${index}`} key={`skeleton-${index}`} position={index}>
+        <IndexTable.Cell>
+          <SkeletonDisplayText size="small" />
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Box maxWidth="100px">
+            <SkeletonDisplayText size="small" />
+          </Box>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <SkeletonBodyText lines={1} />
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <SkeletonBodyText lines={1} />
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Box maxWidth="100px">
+            <SkeletonDisplayText size="small" />
+          </Box>
+        </IndexTable.Cell>
+      </IndexTable.Row>
+    ));
+  };
+
+  // Only show EmptyHome when "all" tab is selected and there's no data
+  if (tabs[selectedTab].id === 'all' && announcements.length === 0 && !isLoading) {
+    return <EmptyHome/>;
   }
+
   return (
     <Page
       title="Welcome to HexStore - Announcement Bar"
@@ -205,7 +240,7 @@ export default function BannerList({data}: BannerListProps) {
               queryPlaceholder="Search announcements..."
               onQueryChange={handleFiltersQueryChange}
               onQueryClear={() => setQueryValue('')}
-              onSort={setSortSelected}
+              onSort={handleSortChange}
               cancelAction={{
                 onAction: () => {
                   setQueryValue('');
@@ -216,7 +251,7 @@ export default function BannerList({data}: BannerListProps) {
               }}
               tabs={tabs}
               selected={selectedTab}
-              onSelect={setSelectedTab}
+              onSelect={handleTabChange}
               canCreateNewView={false}
               mode={mode}
               setMode={setMode}
@@ -227,23 +262,9 @@ export default function BannerList({data}: BannerListProps) {
               }}
             />
             <IndexTable
-              promotedBulkActions={[
-                {
-                  content: 'Pause',
-                  onAction: () => console.log('Todo: implement bulk edit'),
-                },
-                {
-                  content: 'Delete',
-                  onAction: () => console.log('Todo: implement bulk edit'),
-                },
-                {
-                  content: 'Duplicate',
-                  onAction: () => console.log('Todo: implement bulk edit'),
-                },
-              ]}
               condensed={condensed}
               resourceName={resourceName}
-              itemCount={filteredData.length}
+              itemCount={isLoading ? 5 : announcements.length}
               selectedItemsCount={
                 allResourcesSelected ? 'All' : selectedResources.length
               }
@@ -256,14 +277,14 @@ export default function BannerList({data}: BannerListProps) {
                 {title: 'Action'},
               ]}
               selectable
-              pagination={totalPages > 1 ? {
+              pagination={isLoading ? undefined : {
                 hasNext: currentPage < totalPages,
                 hasPrevious: currentPage > 1,
-                onNext: () => setCurrentPage(prev => Math.min(prev + 1, totalPages)),
-                onPrevious: () => setCurrentPage(prev => Math.max(prev - 1, 1)),
-              } : undefined}
+                onNext: () => setCurrentPage(prev => prev + 1),
+                onPrevious: () => setCurrentPage(prev => prev - 1),
+              }}
             >
-              {rowMarkup}
+              {isLoading ? renderSkeletonRows() : rowMarkup}
             </IndexTable>
           </LegacyCard>
         </Layout.Section>
@@ -293,7 +314,6 @@ export default function BannerList({data}: BannerListProps) {
           </Card>
         </Layout.Section>
       </Layout>
-
     </Page>
-  )
+  );
 }

@@ -27,8 +27,8 @@ export const getFieldName = (path: (string | number)[]): string => {
     fontSize: 'Font Size',
     fontType: 'Font Type',
     ctaType: 'CTA Type',
-    ctaText: 'CTA Text',
-    ctaLink: 'CTA Link',
+    ctaText: 'Button Text',
+    ctaLink: 'Link URL',
     buttonFontColor: 'Button Text Color',
     buttonBackgroundColor: 'Button Background Color',
     backgroundType: 'Background Type',
@@ -50,16 +50,19 @@ export const getErrorMessage = (error: FieldError): string => {
   const tabName = getTabNameFromPath(error.path);
   const fieldName = getFieldName(error.path);
   
-  if (error.message.includes('Required')) {
+  if (error.message.includes('Required') || error.message.includes('required')) {
     return `${fieldName} is required in ${tabName} tab`;
   }
   
-  if (error.message.includes('Invalid url')) {
+  if (error.message.includes('Invalid url') || error.message.includes('valid URL')) {
     return `${fieldName} must be a valid URL in ${tabName} tab`;
   }
   
   if (error.message.includes('min')) {
-    return `${fieldName} is too small in ${tabName} tab`;
+    if (error.path.includes('padding')) {
+      return `${fieldName} cannot be negative in ${tabName} tab`;
+    }
+    return `${fieldName} is required in ${tabName} tab`;
   }
   
   if (error.message.includes('max')) {
