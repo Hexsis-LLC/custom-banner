@@ -49,35 +49,8 @@ function AnnouncementForm() {
   const [selected, setSelected] = useState(0);
   const {formData, setFormData, validationErrors, validateForm} = useFormContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [actionData, setActionData] = useState<any>(null);
   const [showSuccessChip, setShowSuccessChip] = useState(false);
   const [actionType, setActionType] = useState<'draft' | 'publish' | null>(null);
-
-  // Handle form updates after submission
-  useEffect(() => {
-    if (actionData?.success) {
-      if (actionData.forAction === 'publish') {
-        // Only redirect on publish
-        navigate('/app', { replace: true });
-        return;
-      }
-
-      // For draft, just update the form data and show success message
-      setShowSuccessChip(true);
-      if (actionData.data) {
-        const updatedFormData: FormState = {
-          ...formData,
-          basic: {
-            ...formData.basic,
-            id: actionData.data.id,
-            status: actionData.forAction === 'publish' ? 'published' : 'draft'
-          }
-        };
-        setFormData(updatedFormData);
-      }
-      setActionType(null);
-    }
-  }, [actionData, navigate, setFormData, formData]);
 
   // Hide success message after 3 seconds
   useEffect(() => {
@@ -120,14 +93,30 @@ function AnnouncementForm() {
       });
 
       const result = await response.json();
-      setActionData(result);
+      
+      if (result.success) {
+        if (action === 'publish') {
+          navigate('/app', { replace: true });
+        } else {
+          // Update form data directly here
+          if (result.data?.id) {
+            setFormData({
+              ...formData,
+              basic: {
+                ...formData.basic,
+                id: result.data.id,
+                status: 'draft'
+              }
+            });
+          }
+          setShowSuccessChip(true);
+        }
+      }
     } catch (error) {
-      setActionData({
-        success: false,
-        error: 'Failed to submit form',
-      });
+      console.error('Failed to submit form:', error);
     } finally {
       setIsSubmitting(false);
+      setActionType(null);
     }
   };
 
@@ -182,7 +171,7 @@ function AnnouncementForm() {
         <BlockStack gap="400">
           <ValidationMessages
             validationErrors={validationErrors}
-            actionData={actionData}
+            actionData={null}
           />
           <Tabs tabs={TABS} selected={selected} onSelect={handleTabChange}>
             <Box padding="200">
