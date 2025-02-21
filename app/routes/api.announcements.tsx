@@ -24,7 +24,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   // Filter announcements based on tab and search
   const filteredAnnouncements = allAnnouncements.filter(item => {
     // Apply tab filter
-    const matchesTab = tab === "all" || item.status === tab;
+    const now = new Date();
+    const matchesTab = tab === "all" ? true :
+      tab === "active" ? (
+        item.status === 'published' &&
+        new Date(item.endDate) >= now
+      ) :
+      tab === "ended" ? (
+        new Date(item.endDate) < now
+      ) :
+      item.status === tab;
 
     // Apply search filter
     const matchesSearch = !search ||
@@ -62,8 +71,32 @@ export async function action({ request }: ActionFunctionArgs) {
   if (request.method === 'POST') {
     try {
       const body = await request.json();
-      const { action, data, id } = body;
+      const { action, data, id, ids } = body;
 
+      // Handle bulk actions
+      if (ids && Array.isArray(ids)) {
+        const announcementService = new AnnouncementService();
+
+        switch (action) {
+          case 'bulk_delete':
+            await announcementService.bulkDeleteAnnouncements(ids);
+            return json({ success: true, message: 'Announcements deleted successfully' });
+
+          case 'bulk_pause':
+            await announcementService.bulkUpdateAnnouncementStatus(ids, 'paused');
+            return json({ success: true, message: 'Announcements paused successfully' });
+
+          case 'bulk_duplicate':
+            const duplicatedAnnouncements = await announcementService.bulkDuplicateAnnouncements(ids);
+            return json({
+              success: true,
+              message: 'Announcements duplicated successfully',
+              data: duplicatedAnnouncements
+            });
+        }
+      }
+
+      // Handle single announcement actions
       try {
         const validatedData = validateAnnouncement(data);
         if (!validatedData) {

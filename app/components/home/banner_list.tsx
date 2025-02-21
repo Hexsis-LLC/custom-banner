@@ -8,7 +8,6 @@ import {
   LegacyCard,
   Layout,
   useBreakpoints,
-  IndexFiltersProps,
   IndexFilters,
   useSetIndexFiltersMode,
   Card,
@@ -17,119 +16,76 @@ import {
   Box,
   SkeletonDisplayText,
   SkeletonBodyText,
+  ButtonGroup,
 } from "@shopify/polaris";
-import { useFetcher, useNavigate } from "@remix-run/react";
+import { ChartVerticalIcon, EditIcon, DuplicateIcon, DisabledIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { useNavigate } from "@remix-run/react";
 import EmptyHome from "./empty_screen";
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import illustration from "../../assets/svg/Illustration.svg";
-import type { Announcement } from "../../types/announcement";
-
-interface BannerListResponse {
-  data: Announcement[];
-  totalPages: number;
-  currentPage: number;
-}
+import { useBannerList } from './use-banner-list';
+import type { IndexTableSelectionType } from '@shopify/polaris';
 
 export default function BannerList() {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [queryValue, setQueryValue] = useState('');
-  const [sortSelected, setSortSelected] = useState(['date desc']);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetcher = useFetcher<BannerListResponse>();
-
-  // Load initial data and when filters change
-  useEffect(() => {
-    const queryParams = new URLSearchParams({
-      page: currentPage.toString(),
-      tab: tabs[selectedTab].id,
-      sort: sortSelected[0],
-      search: queryValue,
-    });
-
-    fetcher.load(`/api/announcements?${queryParams}`);
-  }, [currentPage, selectedTab, sortSelected, queryValue]);
-
-  // Update state when data is received
-  useEffect(() => {
-    if (fetcher.data) {
-      setAnnouncements(fetcher.data.data);
-      setTotalPages(fetcher.data.totalPages);
-      setIsLoading(false);
-    }
-  }, [fetcher.data]);
-
-  const resourceName = {
-    singular: 'announcement',
-    plural: 'announcements',
-  };
+  const {
+    state,
+    tabs,
+    sortOptions,
+    handleFiltersQueryChange,
+    handleTabChange,
+    handleSortChange,
+    handleBulkAction,
+    setPage,
+  } = useBannerList();
 
   const {mode, setMode} = useSetIndexFiltersMode();
 
-  const sortOptions: IndexFiltersProps['sortOptions'] = [
-    {label: 'Date', value: 'date asc', directionLabel: 'Oldest first'},
-    {label: 'Date', value: 'date desc', directionLabel: 'Newest first'},
-  ];
-
-  const handleFiltersQueryChange = useCallback(
-    (value: string) => {
-      setCurrentPage(1); // Reset to first page when search changes
-      setQueryValue(value);
-    },
-    [],
-  );
-
-  const tabs = [
-    {
-      id: 'all',
-      content: 'All',
-      accessibilityLabel: 'All announcements',
-      panelID: 'all-announcements',
-    },
-    {
-      id: 'published',
-      content: 'Published',
-      accessibilityLabel: 'Published announcements',
-      panelID: 'published-announcements',
-    },
-    {
-      id: 'draft',
-      content: 'Draft',
-      accessibilityLabel: 'Draft announcements',
-      panelID: 'draft-announcements',
-    },
-    {
-      id: 'paused',
-      content: 'Paused',
-      accessibilityLabel: 'Paused announcements',
-      panelID: 'paused-announcements',
-    },
-    {
-      id: 'ended',
-      content: 'Ended',
-      accessibilityLabel: 'Ended announcements',
-      panelID: 'ended-announcements',
-    },
-  ];
-
-  const handleTabChange = useCallback((selectedTabIndex: number) => {
-    setCurrentPage(1); // Reset to first page when tab changes
-    setSelectedTab(selectedTabIndex);
-  }, []);
-
-  const handleSortChange = useCallback((values: string[]) => {
-    setCurrentPage(1); // Reset to first page when sort changes
-    setSortSelected(values);
-  }, []);
-
   const {selectedResources, allResourcesSelected, handleSelectionChange} =
-    useIndexResourceState(announcements.map(item => ({id: item.id.toString()})));
+    useIndexResourceState(state.announcements.map(item => ({id: item.id.toString()})));
 
-  const rowMarkup = announcements.map(
+  const clearSelection = useCallback(() => {
+    handleSelectionChange('page' as IndexTableSelectionType, false);
+  }, [handleSelectionChange]);
+
+  const handleBulkDelete = useCallback(async () => {
+    const success = await handleBulkAction('delete', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const handleBulkPause = useCallback(async () => {
+    const success = await handleBulkAction('pause', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const handleBulkDuplicate = useCallback(async () => {
+    const success = await handleBulkAction('duplicate', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const bulkActions = [
+    {
+      content: state.bulkActionLoading === 'delete' ? 'Deleting...' : 'Delete',
+      icon: DeleteIcon,
+      destructive: true,
+      onAction: handleBulkDelete,
+      disabled: state.bulkActionLoading !== null,
+    },
+    {
+      content: state.bulkActionLoading === 'pause' ? 'Pausing...' : 'Pause',
+      icon: DisabledIcon,
+      onAction: handleBulkPause,
+      disabled: state.bulkActionLoading !== null,
+    },
+    {
+      content: state.bulkActionLoading === 'duplicate' ? 'Duplicating...' : 'Duplicate',
+      icon: DuplicateIcon,
+      onAction: handleBulkDuplicate,
+      disabled: state.bulkActionLoading !== null,
+    },
+  ];
+
+  const rowMarkup = state.announcements.map(
     ({
        id,
        title,
@@ -150,12 +106,14 @@ export default function BannerList() {
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Badge tone={
+            tabs[state.selectedTab].id === 'active' ? "success" :
             status === 'published' ? "success" :
             status === 'draft' ? "info" :
             status === 'paused' ? "warning" :
             "critical"
           }>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {tabs[state.selectedTab].id === 'active' ? "Active" :
+             status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -179,9 +137,24 @@ export default function BannerList() {
           })}
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Button onClick={() => {}}>
-            View Analytics
-          </Button>
+          <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <ButtonGroup>
+              <Button
+                icon={ChartVerticalIcon}
+                onClick={() => {
+                  console.log("hello")
+                }}
+                variant="tertiary"
+                accessibilityLabel="View Analytics"
+              />
+              <Button
+                icon={EditIcon}
+                onClick={() => navigate(`/app/campaign/announcement/${id}`)}
+                variant="tertiary"
+                accessibilityLabel="Edit Announcement"
+              />
+            </ButtonGroup>
+          </div>
         </IndexTable.Cell>
       </IndexTable.Row>
     ),
@@ -216,9 +189,14 @@ export default function BannerList() {
   };
 
   // Only show EmptyHome when "all" tab is selected and there's no data
-  if (tabs[selectedTab].id === 'all' && announcements.length === 0 && !isLoading) {
+  if (tabs[state.selectedTab].id === 'all' && state.announcements.length === 0 && !state.isLoading) {
     return <EmptyHome/>;
   }
+
+  const resourceName = {
+    singular: 'announcement',
+    plural: 'announcements',
+  };
 
   return (
     <Page
@@ -235,36 +213,36 @@ export default function BannerList() {
           <LegacyCard>
             <IndexFilters
               sortOptions={sortOptions}
-              sortSelected={sortSelected}
-              queryValue={queryValue}
+              sortSelected={state.sortSelected}
+              queryValue={state.queryValue}
               queryPlaceholder="Search announcements..."
               onQueryChange={handleFiltersQueryChange}
-              onQueryClear={() => setQueryValue('')}
+              onQueryClear={() => handleFiltersQueryChange('')}
               onSort={handleSortChange}
               cancelAction={{
                 onAction: () => {
-                  setQueryValue('');
-                  setSortSelected(['date desc']);
+                  handleFiltersQueryChange('');
+                  handleSortChange(['date desc']);
                 },
                 disabled: false,
                 loading: false,
               }}
               tabs={tabs}
-              selected={selectedTab}
+              selected={state.selectedTab}
               onSelect={handleTabChange}
               canCreateNewView={false}
               mode={mode}
               setMode={setMode}
               filters={[]}
               onClearAll={() => {
-                setQueryValue('');
-                setSortSelected(['date desc']);
+                handleFiltersQueryChange('');
+                handleSortChange(['date desc']);
               }}
             />
             <IndexTable
               condensed={condensed}
               resourceName={resourceName}
-              itemCount={isLoading ? 5 : announcements.length}
+              itemCount={state.isLoading ? 5 : state.announcements.length}
               selectedItemsCount={
                 allResourcesSelected ? 'All' : selectedResources.length
               }
@@ -277,14 +255,16 @@ export default function BannerList() {
                 {title: 'Action'},
               ]}
               selectable
-              pagination={isLoading ? undefined : {
-                hasNext: currentPage < totalPages,
-                hasPrevious: currentPage > 1,
-                onNext: () => setCurrentPage(prev => prev + 1),
-                onPrevious: () => setCurrentPage(prev => prev - 1),
+              hasZebraStriping
+              promotedBulkActions={bulkActions}
+              pagination={state.isLoading ? undefined : {
+                hasNext: state.currentPage < state.totalPages,
+                hasPrevious: state.currentPage > 1,
+                onNext: () => setPage(state.currentPage + 1),
+                onPrevious: () => setPage(state.currentPage - 1),
               }}
             >
-              {isLoading ? renderSkeletonRows() : rowMarkup}
+              {state.isInitialLoad ? renderSkeletonRows() : rowMarkup}
             </IndexTable>
           </LegacyCard>
         </Layout.Section>

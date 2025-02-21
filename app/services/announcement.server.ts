@@ -1,4 +1,5 @@
 import {and, eq, gte, lte, sql} from 'drizzle-orm';
+import {inArray} from 'drizzle-orm/sql';
 import {db} from '../db.server';
 import {
   announcements,
@@ -10,56 +11,11 @@ import {
   pagePatterns,
 } from '../../drizzle/schema/announcement';
 import {CloudflareKVService} from "./cloudflareKV.server";
-
-
-export interface NewAnnouncement {
-  type: 'basic' | 'countdown' | 'email_signup' | 'multi_text';
-  title: string;
-  shopId: string;
-  size: 'small' | 'mid' | 'large' | 'custom';
-  heightPx?: number;
-  widthPercent?: number;
-  startDate: string;
-  endDate: string;
-  showCloseButton?: boolean;
-  closeButtonPosition: 'left' | 'right' | 'center';
-  countdownEndTime?: string;
-  timezone?: string;
-  isActive?: boolean;
-  status: 'draft' | 'published' | 'paused' | 'ended';
-  texts: Array<{
-    textMessage: string;
-    textColor: string;
-    fontSize: number;
-    customFont?: string;
-    languageCode?: string;
-    callToActions?: Array<{
-      type: 'button' | 'text';
-      text: string;
-      link: string;
-      bgColor: string;
-      textColor: string;
-      buttonRadius?: number;
-      padding?: string;
-    }>;
-  }>;
-  background?: {
-    backgroundColor: string;
-    backgroundPattern?: string;
-    padding?: string;
-  };
-  form?: Array<{
-    inputType: 'email' | 'text' | 'checkbox';
-    placeholder?: string;
-    label?: string;
-    isRequired?: boolean;
-    validationRegex?: string;
-  }>;
-  pagePatterns?: string[];
-}
-
-type AnnouncementCallToAction = NonNullable<NewAnnouncement['texts'][number]['callToActions']>[number];
-type AnnouncementFormField = NonNullable<NewAnnouncement['form']>[number];
+import {
+  CreateAnnouncementInput,
+  AnnouncementCallToAction,
+  AnnouncementFormField
+} from '../types/announcement';
 
 // Add these types before the AnnouncementService class
 interface GroupedAnnouncements {
@@ -134,7 +90,7 @@ export class AnnouncementService {
     await this.kvService.updateAnnouncementsByShop(shopId, groupedAnnouncements);
   }
 
-  async createAnnouncement(data: NewAnnouncement) {
+  async createAnnouncement(data: CreateAnnouncementInput) {
     const {
       texts,
       background,
@@ -142,8 +98,8 @@ export class AnnouncementService {
       pagePatterns: patterns,
       ...announcementData
     } = data;
-
-    return await db.transaction(async (tx) => {
+    console.log("logging status", announcementData.status)
+    const result = await db.transaction(async (tx) => {
       // Create the announcement
       const [announcement] = await tx
         .insert(announcements)
@@ -199,9 +155,13 @@ export class AnnouncementService {
           });
         }
       }
-      await this.updateKv(data.shopId)
       return announcement;
     });
+    console.log("---------------- Status: ", announcementData.status)
+    if (announcementData.status === 'published') {
+      await this.updateKv(announcementData.shopId);
+    }
+    return result;
   }
 
   async getAnnouncement(id: number) {
@@ -273,7 +233,7 @@ export class AnnouncementService {
     });
   }
 
-  async updateAnnouncement(id: number, data: Partial<NewAnnouncement>) {
+  async updateAnnouncement(id: number, data: Partial<CreateAnnouncementInput>) {
     const {
       texts,
       background,
@@ -432,6 +392,148 @@ export class AnnouncementService {
         },
       },
       orderBy: sql`${announcements.startDate} DESC`,
+    });
+  }
+
+  async bulkDeleteAnnouncements(ids: number[]) {
+    return await db.transaction(async (tx) => {
+      // Delete all related records in a single query for each table
+      await tx
+        .delete(announcementsXPagePatterns)
+        .where(inArray(announcementsXPagePatterns.announcementsID, ids));
+
+      const texts = await tx
+        .select()
+        .from(announcementText)
+        .where(inArray(announcementText.announcementId, ids));
+
+      const textIds = texts.map(t => t.id);
+      if (textIds.length) {
+        await tx
+          .delete(callToAction)
+          .where(inArray(callToAction.announcementTextId, textIds));
+      }
+
+      await tx
+        .delete(announcementText)
+        .where(inArray(announcementText.announcementId, ids));
+
+      await tx
+        .delete(bannerBackground)
+        .where(inArray(bannerBackground.announcementId, ids));
+
+      await tx
+        .delete(bannerForm)
+        .where(inArray(bannerForm.announcementId, ids));
+
+      // Finally delete the announcements
+      return tx.delete(announcements).where(inArray(announcements.id, ids));
+    });
+  }
+
+  async bulkUpdateAnnouncementStatus(ids: number[], status: 'draft' | 'published' | 'paused' | 'ended') {
+    return await db.transaction(async (tx) => {
+      return tx
+        .update(announcements)
+        .set({ status })
+        .where(inArray(announcements.id, ids))
+        .returning();
+    });
+  }
+
+  async bulkDuplicateAnnouncements(ids: number[]) {
+    return await db.transaction(async (tx) => {
+      const originals = await Promise.all(
+        ids.map(id => this.getAnnouncement(id))
+      );
+
+      const duplicatedAnnouncements = await Promise.all(
+        originals
+          .filter((original): original is NonNullable<typeof original> => original !== null)
+          .map(async (original) => {
+            // Create the base announcement
+            const [newAnnouncement] = await tx
+              .insert(announcements)
+              .values({
+                type: original.type,
+                title: `${original.title} (copy)`,
+                shopId: original.shopId,
+                size: original.size,
+                heightPx: original.heightPx ?? undefined,
+                widthPercent: original.widthPercent ?? undefined,
+                startDate: original.startDate,
+                endDate: original.endDate,
+                showCloseButton: Boolean(original.showCloseButton),
+                closeButtonPosition: original.closeButtonPosition,
+                countdownEndTime: original.countdownEndTime ?? undefined,
+                timezone: original.timezone ?? undefined,
+                isActive: original.isActive ?? undefined,
+                status: 'draft'
+              })
+              .returning();
+
+            // Duplicate texts and CTAs
+            for (const text of original.texts) {
+              const [newText] = await tx
+                .insert(announcementText)
+                .values({
+                  textMessage: text.textMessage,
+                  textColor: text.textColor,
+                  fontSize: text.fontSize,
+                  customFont: text.customFont ?? undefined,
+                  languageCode: text.languageCode ?? undefined,
+                  announcementId: newAnnouncement.id
+                })
+                .returning();
+
+              if (text.ctas?.length) {
+                await tx
+                  .insert(callToAction)
+                  .values(text.ctas.map(cta => ({
+                    type: cta.type,
+                    text: cta.text,
+                    link: cta.link,
+                    bgColor: cta.bgColor,
+                    textColor: cta.textColor,
+                    buttonRadius: cta.buttonRadius ?? undefined,
+                    padding: cta.padding ?? undefined,
+                    announcementTextId: newText.id
+                  })));
+              }
+            }
+
+            // Duplicate background
+            if (original.background) {
+              await tx
+                .insert(bannerBackground)
+                .values({
+                  backgroundColor: original.background.backgroundColor,
+                  backgroundPattern: original.background.backgroundPattern ?? undefined,
+                  padding: original.background.padding ?? undefined,
+                  announcementId: newAnnouncement.id
+                });
+            }
+
+            // Duplicate page patterns
+            for (const link of original.pagePatternLinks) {
+              const [pagePattern] = await tx
+                .insert(pagePatterns)
+                .values({ pattern: link.pagePattern.pattern })
+                .returning();
+
+              await tx
+                .insert(announcementsXPagePatterns)
+                .values({
+                  pagePatternsID: pagePattern.id,
+                  announcementsID: newAnnouncement.id
+                });
+            }
+
+            return newAnnouncement;
+          })
+      );
+
+      return duplicatedAnnouncements;
     });
   }
 }

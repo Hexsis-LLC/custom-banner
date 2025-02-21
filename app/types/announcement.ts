@@ -1,4 +1,4 @@
-export type Size = 'large' | 'medium' | 'small' | 'custom';
+export type Size = 'large' | 'mid' | 'small' | 'custom';
 export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
 export type CloseButtonPosition = 'right' | 'left' | 'center';
 export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
@@ -34,6 +34,7 @@ export interface TextSettings {
   fontUrl?: string;
   languageCode?: string;
   announcementId?: number;
+  ctas?: CTASettings[];
 }
 
 export interface CTASettings {
@@ -141,4 +142,53 @@ export interface FieldError {
 export interface ValidationState {
   errors: FieldError[];
   errorFields: Set<string>;
-} 
+}
+
+export interface CreateAnnouncementInput {
+  type: BannerType;
+  title: string;
+  shopId: string;
+  size: Size;
+  heightPx?: number;
+  widthPercent?: number;
+  startDate: string;
+  endDate: string;
+  showCloseButton?: boolean;
+  closeButtonPosition: CloseButtonPosition;
+  countdownEndTime?: string;
+  timezone?: string;
+  isActive?: boolean;
+  status: AnnouncementStatus;
+  texts: Array<{
+    textMessage: string;
+    textColor: string;
+    fontSize: number;
+    customFont?: string;
+    languageCode?: string;
+    callToActions?: Array<{
+      type: 'button' | 'text';
+      text: string;
+      link: string;
+      bgColor: string;
+      textColor: string;
+      buttonRadius?: number;
+      padding?: string;
+    }>;
+  }>;
+  background?: {
+    backgroundColor: string;
+    backgroundPattern?: string;
+    padding?: string;
+  };
+  form?: Array<{
+    inputType: 'email' | 'text' | 'checkbox';
+    placeholder?: string;
+    label?: string;
+    isRequired?: boolean;
+    validationRegex?: string;
+  }>;
+  pagePatterns?: string[];
+}
+
+export type AnnouncementCallToAction = NonNullable<CreateAnnouncementInput['texts'][number]['callToActions']>[number];
+export type AnnouncementFormField = NonNullable<CreateAnnouncementInput['form']>[number]; 
