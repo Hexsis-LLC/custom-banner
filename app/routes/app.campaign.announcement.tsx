@@ -3,24 +3,24 @@ import {
   Tabs,
   Box,
   Badge,
-  InlineStack,
-  Text,
-  Spinner,
   BlockStack,
+  ActionList,
+  Button,
+  ButtonGroup,
+  Popover,
 } from "@shopify/polaris";
 import {useNavigate, useLoaderData, Form} from "@remix-run/react";
 import React, {useState, useCallback, useEffect} from "react";
 import type {LoaderFunctionArgs} from "@remix-run/node";
 import {json} from "@remix-run/node";
 import {authenticate, unauthenticated} from "../shopify.server";
-import {validateAnnouncement} from "../schemas/announcement";
 import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
 import type {FormState, LoaderData} from "../types/announcement-form";
-import {ZodError} from "zod";
 import Storefront from "../services/storefront.server";
 import {FormProvider, useFormContext} from "../contexts/AnnouncementFormContext";
 import {AnnouncementTabs} from "../components/announcement/AnnouncementTabs";
 import {ValidationMessages} from "../components/announcement/ValidationMessages";
+import {AdjustIcon, ChevronDownIcon} from "@shopify/polaris-icons";
 
 // Loader
 export const loader = async ({request}: LoaderFunctionArgs) => {
@@ -66,7 +66,11 @@ function AnnouncementForm() {
     (selectedTabIndex: number) => setSelected(selectedTabIndex),
     [],
   );
+  const [active, setActive] = React.useState<string | null>(null);
 
+  const toggleActive = (id: string) => () => {
+    setActive((activeId) => (activeId !== id ? id : null));
+  };
   const handleFormSubmit = async (action: 'draft' | 'publish') => {
     if (!validateForm()) return;
 
@@ -93,10 +97,10 @@ function AnnouncementForm() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         if (action === 'publish') {
-          navigate('/app', { replace: true });
+          navigate('/app', {replace: true});
         } else {
           // Update form data directly here
           if (result.data?.id) {
@@ -125,49 +129,65 @@ function AnnouncementForm() {
   const isDraft = formData.basic.status === 'draft';
   const isSaved = !isNewAnnouncement && isDraft;
 
-  // Define primary action based on state
-  const primaryAction = isSaved ? {
-    content: "Publish",
-    loading: isSubmitting && actionType === 'publish',
-    onAction: () => handleFormSubmit('publish'),
-    disabled: isSubmitting,
-  } : undefined;
-
   // Define secondary actions based on state
   const secondaryActions = [
     {
       content: 'Cancel',
       onAction: () => navigate("/app/campaign/banner_type"),
       disabled: isSubmitting,
-    },
-    {
-      content: isNewAnnouncement ? 'Save as Draft' : 'Save Changes',
-      onAction: () => handleFormSubmit('draft'),
-      disabled: isSubmitting,
-      loading: isSubmitting && actionType === 'draft',
-    },
+    }
   ];
 
   return (
-    <Form method="post" action="/api/announcements" onSubmit={(e) => { 
-      e.preventDefault(); 
-      handleFormSubmit(actionType || 'draft'); 
+    <Form method="post" action="/api/announcements" onSubmit={(e) => {
+      e.preventDefault();
+      handleFormSubmit(actionType || 'draft');
     }}>
       <Page
         title="Announcement Bar"
         backAction={{content: "Banner Types", url: "/app/campaign/banner_type"}}
-        primaryAction={primaryAction}
+        primaryAction={(
+          <ButtonGroup variant="segmented">
+            <Button
+              variant="primary"
+              loading={isSubmitting}
+              disabled={isSubmitting}
+              onClick={async () => {
+              await handleFormSubmit('publish')
+            }}>
+              Publish
+            </Button>
+
+            <Popover
+              active={active === 'popover1'}
+              preferredAlignment="right"
+              activator={
+                <Button
+                  variant="primary"
+                  onClick={toggleActive('popover1')}
+                  icon={ChevronDownIcon}
+                  disabled={isSubmitting}
+                  accessibilityLabel="Other save actions"
+                />
+              }
+              autofocusTarget="first-node"
+              onClose={toggleActive('popover1')}
+            >
+              <ActionList
+                actionRole="menuitem"
+                items={[{content: 'Save as draft', onAction: () => handleFormSubmit('draft')}]}
+              />
+            </Popover>
+          </ButtonGroup>
+        )}
+        titleMetadata={(showSuccessChip || isSaved) && !isSubmitting && (
+          <Badge tone="new">
+            {"Draft"}
+          </Badge>
+        )}
+
         secondaryActions={secondaryActions}
       >
-        {(showSuccessChip || isSaved) && !isSubmitting && (
-          <Box paddingBlockEnd="400">
-            <InlineStack gap="200" align="start">
-              <Badge tone="success">
-                {showSuccessChip ? 'Changes saved' : 'Draft saved'}
-              </Badge>
-            </InlineStack>
-          </Box>
-        )}
         <BlockStack gap="400">
           <ValidationMessages
             validationErrors={validationErrors}
