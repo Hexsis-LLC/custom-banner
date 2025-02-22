@@ -191,4 +191,58 @@ export interface CreateAnnouncementInput {
 }
 
 export type AnnouncementCallToAction = NonNullable<CreateAnnouncementInput['texts'][number]['callToActions']>[number];
-export type AnnouncementFormField = NonNullable<CreateAnnouncementInput['form']>[number]; 
+export type AnnouncementFormField = NonNullable<CreateAnnouncementInput['form']>[number];
+
+
+export interface KVAnnouncement {
+  id: number;
+  type: BannerType;
+  title: string;
+  shopId: string;
+  size: Size;
+  heightPx: number | null;
+  widthPercent: number | null;
+  startDate: string;
+  endDate: string;
+  showCloseButton: boolean | null;
+  closeButtonPosition: CloseButtonPosition;
+  countdownEndTime: string | null;
+  timezone: string | null;
+  isActive: boolean | null;
+  texts: Array<{
+    id: number;
+    announcementId: number;
+    textMessage: string;
+    textColor: string;
+    fontSize: number;
+    customFont: string | null;
+    languageCode: string | null;
+    ctas: Array<{
+      id: number;
+      announcementTextId: number;
+      type: 'text' | 'button';
+      text: string;
+      link: string;
+      bgColor: string;
+      textColor: string;
+      buttonRadius: number | null;
+      padding: string | null;
+    }>;
+  }>;
+  background: {
+    id: number;
+    announcementId: number;
+    backgroundColor: string;
+    backgroundPattern: string | null;
+    padding: string | null;
+  } | null;
+  form: Array<{
+    id: number;
+    announcementId: number;
+    inputType: 'text' | 'email' | 'checkbox';
+    placeholder: string | null;
+    label: string | null;
+    isRequired: boolean | null;
+    validationRegex: string | null;
+  }>;
+}

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { AnnouncementBannerData } from "../types/announcement";
 
 const basicInfoSchema = z.object({
-  size: z.enum(['large', 'medium', 'small', 'custom']),
+  size: z.enum(['large', 'mid', 'small', 'custom']),
   sizeHeight: z.string(),
   sizeWidth: z.string(),
   campaignTitle: z.string().min(1, "Campaign title is required"),

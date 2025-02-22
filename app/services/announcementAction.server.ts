@@ -8,10 +8,6 @@ export class AnnouncementAction {
     this.announcementService = new AnnouncementService();
   }
 
-  private mapSize(size: 'large' | 'medium' | 'small' | 'custom'): 'large' | 'small' | 'custom' {
-    if (size === 'medium') return 'small';
-    return size;
-  }
 
   private formatPadding(padding: { top: number; right: number; bottom: number; left: number }): string {
     return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`;
@@ -19,12 +15,15 @@ export class AnnouncementAction {
 
   private getBackgroundData(formData: AnnouncementBannerData) {
     return {
-      backgroundColor: formData.background.backgroundType === 'gradient'
-        ? `linear-gradient(${formData.background.color1}, ${formData.background.color2})`
-        : formData.background.color1,
-      backgroundPattern: formData.background.pattern !== 'none' ? formData.background.pattern : undefined,
-      padding: this.formatPadding(formData.background.padding),
+      backgroundColor: formData.background.color1,
+      backgroundPattern: formData.background.pattern === 'none' ? undefined : formData.background.pattern,
+      padding: undefined,
     };
+  }
+
+  private mapCtaType(ctaType: string): 'button' | 'text' {
+    if (ctaType === 'regular') return 'button';
+    return 'text';
   }
 
   private getTextData(formData: AnnouncementBannerData) {
@@ -32,24 +31,27 @@ export class AnnouncementAction {
       textMessage: formData.text.announcementText,
       textColor: formData.text.textColor,
       fontSize: formData.text.fontSize,
-      customFont: formData.text.fontType !== 'site' ? formData.text.fontUrl : undefined,
-      languageCode: 'en',
-      callToActions: this.getCallToActions(formData.cta),
+      customFont: formData.text.fontType === 'site' ? undefined : formData.text.fontUrl,
+      languageCode: undefined,
+      callToActions: formData.cta.ctaType === 'none' ? [] : [{
+        type: this.mapCtaType(formData.cta.ctaType),
+        text: formData.cta.ctaText,
+        link: formData.cta.ctaLink,
+        bgColor: formData.cta.buttonBackgroundColor,
+        textColor: formData.cta.buttonFontColor,
+        buttonRadius: undefined,
+        padding: undefined,
+      }]
     };
   }
 
-  private getCallToActions(cta: AnnouncementBannerData['cta']) {
-    if (cta.ctaType === 'none') return undefined;
 
-    return [{
-      type: this.mapCtaType(cta.ctaType),
-      text: cta.ctaText || '',
-      link: cta.ctaLink || '',
-      bgColor: cta.buttonBackgroundColor || '#000000',
-      textColor: cta.buttonFontColor || '#FFFFFF',
-      buttonRadius: 4,
-      padding: this.formatPadding(cta.padding),
-    }];
+  private getStartDate(basic: AnnouncementBannerData['basic']) {
+    return basic.startType === 'now' ? new Date().toISOString() : new Date(basic.startDate).toISOString();
+  }
+
+  private getEndDate(basic: AnnouncementBannerData['basic']) {
+    return basic.endType === 'until_stop' ? new Date('2099-12-31').toISOString() : new Date(basic.endDate).toISOString();
   }
 
   private getCreateAnnouncementData(formData: AnnouncementBannerData, shopId: string) {
@@ -57,7 +59,7 @@ export class AnnouncementAction {
       type: 'basic' as const,
       title: formData.basic.campaignTitle,
       shopId,
-      size: this.mapSize(formData.basic.size),
+      size: formData.basic.size,
       heightPx: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeHeight) : undefined,
       widthPercent: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeWidth) : undefined,
       startDate: this.getStartDate(formData.basic),
@@ -69,7 +71,7 @@ export class AnnouncementAction {
       status: formData.basic.status,
       texts: [this.getTextData(formData)],
       background: this.getBackgroundData(formData),
-      pagePatternLinks: [],
+      pagePatterns: formData.other.selectedPages || ['__global']
     };
   }
 
@@ -77,7 +79,7 @@ export class AnnouncementAction {
     return {
       type: 'basic' as const,
       title: formData.basic.campaignTitle,
-      size: this.mapSize(formData.basic.size),
+      size: formData.basic.size,
       heightPx: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeHeight) : undefined,
       widthPercent: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeWidth) : undefined,
       startDate: this.getStartDate(formData.basic),
@@ -90,44 +92,6 @@ export class AnnouncementAction {
       texts: [this.getTextData(formData)],
       background: this.getBackgroundData(formData),
     };
-  }
-
-  private getStartDate(basic: AnnouncementBannerData['basic']): string {
-    if (basic.startType === 'now') {
-      return new Date().toISOString();
-    }
-
-    if (basic.startDate && basic.startTime) {
-      const date = new Date(basic.startDate);
-      const [hours, minutes] = basic.startTime.split(':').map(Number);
-      date.setHours(hours, minutes, 0, 0);
-      return date.toISOString();
-    }
-
-    return new Date().toISOString();
-  }
-
-  private getEndDate(basic: AnnouncementBannerData['basic']): string {
-    if (basic.endType === 'until_stop') {
-      const date = new Date();
-      date.setFullYear(date.getFullYear() + 1);
-      return date.toISOString();
-    }
-
-    if (basic.endDate && basic.endTime) {
-      const date = new Date(basic.endDate);
-      const [hours, minutes] = basic.endTime.split(':').map(Number);
-      date.setHours(hours, minutes, 0, 0);
-      return date.toISOString();
-    }
-
-    const date = new Date();
-    date.setDate(date.getDate() + 30);
-    return date.toISOString();
-  }
-
-  private mapCtaType(ctaType: string): 'button' | 'text' {
-    return ctaType === 'text' ? 'text' : 'button';
   }
 
   async createBasicBannerFormData(formData: AnnouncementBannerData, shopId: string) {

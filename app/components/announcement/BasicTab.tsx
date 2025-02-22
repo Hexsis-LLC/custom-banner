@@ -95,10 +95,10 @@ export function BasicTab({
               />
               <RadioButton
                 label="Medium"
-                checked={size === 'medium'}
-                id="medium"
+                checked={size === 'mid'}
+                id="mid"
                 name="size"
-                onChange={() => onSizeChange('medium')}
+                onChange={() => onSizeChange('mid')}
               />
               <RadioButton
                 label="Large"

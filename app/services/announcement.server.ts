@@ -10,18 +10,71 @@ import {
   callToAction,
   pagePatterns,
 } from '../../drizzle/schema/announcement';
-import {CloudflareKVService} from "./cloudflareKV.server";
-import {
+import {CloudflareKVService, type AnnouncementKVData} from "./cloudflareKV.server";
+import type {
   CreateAnnouncementInput,
   AnnouncementCallToAction,
-  AnnouncementFormField
+  AnnouncementFormField,
+  Announcement,
 } from '../types/announcement';
 
-// Add these types before the AnnouncementService class
+
+interface DatabaseTextSettings {
+  id: number;
+  announcementId: number;
+  textMessage: string;
+  textColor: string;
+  fontSize: number;
+  customFont: string | null;
+  languageCode: string | null;
+  ctas: Array<{
+    id: number;
+    type: 'text' | 'button';
+    text: string;
+    link: string;
+    bgColor: string;
+    textColor: string;
+    buttonRadius: number | null;
+    padding: string | null;
+  }>;
+}
+
+interface DatabaseBackgroundSettings {
+  id: number;
+  announcementId: number;
+  padding: string | null;
+  backgroundColor: string;
+  backgroundPattern: string | null;
+}
+
+interface DatabaseFormField {
+  id: number;
+  announcementId: number;
+  inputType: 'text' | 'email' | 'checkbox';
+  placeholder: string | null;
+  label: string | null;
+  isRequired: boolean | null;
+  validationRegex: string | null;
+}
+
+type DatabaseAnnouncement = Omit<Announcement, 'heightPx' | 'widthPercent' | 'showCloseButton' | 'countdownEndTime' | 'timezone' | 'isActive' | 'texts' | 'background'> & {
+  heightPx: number | null;
+  widthPercent: number | null;
+  showCloseButton: boolean | null;
+  countdownEndTime: string | null;
+  timezone: string | null;
+  isActive: boolean | null;
+  texts: DatabaseTextSettings[];
+  background: DatabaseBackgroundSettings | null;
+  form: DatabaseFormField[];
+};
+
+type TransformedAnnouncement = Omit<DatabaseAnnouncement, 'pagePatternLinks'>;
+
 interface GroupedAnnouncements {
-  global: Array<any>; // Using any for now since the announcement type is not fully defined
+  global: TransformedAnnouncement[];
   __patterns: string[];
-  [key: string]: Array<any> | string[]; // Index signature to allow dynamic page paths
+  [key: string]: TransformedAnnouncement[] | string[];
 }
 
 export class AnnouncementService {
@@ -30,7 +83,17 @@ export class AnnouncementService {
     this.kvService = new CloudflareKVService();
   }
 
-  private async transformActiveAnnouncements(announcements: any[]): Promise<GroupedAnnouncements> {
+  private async transformActiveAnnouncements(announcements: DatabaseAnnouncement[]): Promise<GroupedAnnouncements> {
+    console.log('Starting transformation with announcements:', announcements.map(a => ({
+      id: a.id,
+      status: a.status,
+      isActive: a.isActive,
+      startDate: a.startDate,
+      endDate: a.endDate,
+      hasPagePatternLinks: Array.isArray(a.pagePatternLinks),
+      pagePatternLinksCount: a.pagePatternLinks?.length
+    })));
+
     const result: GroupedAnnouncements = {
       global: [],
       __patterns: []
@@ -40,18 +103,45 @@ export class AnnouncementService {
     const patternsWithAnnouncements = new Set<string>();
 
     for (const announcement of announcements) {
-      // Skip non-published or inactive announcements
-      if (announcement.status !== 'published' || !announcement.isActive) {
+      // Ensure pagePatternLinks is an array
+      if (!Array.isArray(announcement.pagePatternLinks)) {
+        console.warn('Announcement has no pagePatternLinks:', announcement.id);
         continue;
       }
 
+      // Skip non-published or inactive announcements
+      if (announcement.status !== 'published' || announcement.isActive !== true) {
+        console.log('Skipping announcement:', {
+          id: announcement.id,
+          status: announcement.status,
+          isActive: announcement.isActive,
+          reason: announcement.status !== 'published' ? 'not published' : 'not active'
+        });
+        continue;
+      }
+
+      // Create a clean announcement object without pagePatternLinks
       const { pagePatternLinks, ...cleanAnnouncement } = announcement;
-      const patterns = pagePatternLinks.map(
-        (link: { pagePattern: { pattern: string } }) => link.pagePattern.pattern
-      );
+
+      // Extract patterns from pagePatternLinks and ensure they're valid
+      const patterns = pagePatternLinks
+        .filter(link => link?.pagePattern?.pattern) // Filter out invalid patterns
+        .map(link => link.pagePattern.pattern);
+
+      console.log('Processing patterns for announcement:', {
+        id: announcement.id,
+        patternsFound: patterns.length,
+        patterns
+      });
+
+      if (patterns.length === 0) {
+        console.warn('No valid patterns found for announcement:', announcement.id);
+        continue;
+      }
 
       // Check if this announcement should be global
       if (patterns.includes('__global')) {
+        console.log('Adding to global:', announcement.id);
         result.global.push(cleanAnnouncement);
         continue; // Skip adding to other patterns if it's global
       }
@@ -62,15 +152,27 @@ export class AnnouncementService {
         // Skip global pattern as it's already handled
         if (cleanPattern === '__global') continue;
 
+        console.log('Processing pattern:', {
+          announcementId: announcement.id,
+          original: pattern,
+          cleaned: cleanPattern
+        });
+
         // Initialize the array for this pattern if it doesn't exist
         if (!result[cleanPattern]) {
           result[cleanPattern] = [];
+          console.log('Created new pattern array:', cleanPattern);
         }
 
         // Add the announcement to its pattern group if not already there
-        const existingAnnouncement = (result[cleanPattern] as any[]).find(a => a.id === cleanAnnouncement.id);
+        const announcementArray = result[cleanPattern] as TransformedAnnouncement[];
+        const existingAnnouncement = announcementArray.find(a => a.id === cleanAnnouncement.id);
         if (!existingAnnouncement) {
-          (result[cleanPattern] as any[]).push(cleanAnnouncement);
+          console.log('Adding to pattern:', {
+            pattern: cleanPattern,
+            announcementId: cleanAnnouncement.id
+          });
+          announcementArray.push(cleanAnnouncement);
           patternsWithAnnouncements.add(cleanPattern);
         }
       }
@@ -79,93 +181,61 @@ export class AnnouncementService {
     // Only include patterns that have announcements
     result.__patterns = Array.from(patternsWithAnnouncements).sort();
 
+    console.log('Transformation complete. Final result:', {
+      globalCount: result.global.length,
+      globalAnnouncements: result.global.map(a => a.id),
+      patternCount: result.__patterns.length,
+      patterns: result.__patterns,
+      allPatterns: Object.keys(result).filter(k => k !== 'global' && k !== '__patterns').map(pattern => ({
+        pattern,
+        count: (result[pattern] as TransformedAnnouncement[]).length,
+        announcements: (result[pattern] as TransformedAnnouncement[]).map(a => a.id)
+      }))
+    });
+
     return result;
   }
 
   async updateKv(shopId: string) {
+    console.log('Starting KV update for shop:', shopId);
+
     const allLatestAnnouncements = await this.getActiveAnnouncements(shopId);
-    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements);
-    console.log(allLatestAnnouncements)
-    console.log(groupedAnnouncements)
-    await this.kvService.updateAnnouncementsByShop(shopId, groupedAnnouncements);
-  }
+    console.log('Retrieved announcements:', allLatestAnnouncements.length);
 
-  async createAnnouncement(data: CreateAnnouncementInput) {
-    const {
-      texts,
-      background,
-      form,
-      pagePatterns: patterns,
-      ...announcementData
-    } = data;
-    console.log("logging status", announcementData.status)
-    const result = await db.transaction(async (tx) => {
-      // Create the announcement
-      const [announcement] = await tx
-        .insert(announcements)
-        .values(announcementData)
-        .returning();
-
-      // Create texts and CTAs
-      for (const text of texts) {
-        const { callToActions, ...textData } = text;
-        const [createdText] = await tx
-          .insert(announcementText)
-          .values({ ...textData, announcementId: announcement.id })
-          .returning();
-
-        if (callToActions?.length) {
-          await tx.insert(callToAction).values(
-            callToActions.map((cta: AnnouncementCallToAction) => ({
-              ...cta,
-              announcementTextId: createdText.id,
-            }))
-          );
-        }
-      }
-
-      // Create background
-      if (background) {
-        await tx
-          .insert(bannerBackground)
-          .values({ ...background, announcementId: announcement.id });
-      }
-
-      // Create form fields if they exist
-      if (form?.length) {
-        await tx.insert(bannerForm).values(
-          form.map((f: AnnouncementFormField) => ({
-            ...f,
-            announcementId: announcement.id,
-          }))
-        );
-      }
-
-      // Handle page patterns
-      if (patterns?.length) {
-        for (const pattern of patterns) {
-          const [pagePattern] = await tx
-            .insert(pagePatterns)
-            .values({ pattern })
-            .returning();
-
-          await tx.insert(announcementsXPagePatterns).values({
-            pagePatternsID: pagePattern.id,
-            announcementsID: announcement.id,
-          });
-        }
-      }
-      return announcement;
-    });
-    console.log("---------------- Status: ", announcementData.status)
-    if (announcementData.status === 'published') {
-      await this.updateKv(announcementData.shopId);
+    if (!allLatestAnnouncements.length) {
+      console.log('No active announcements found');
+      // Even if there are no announcements, we should update KV to clear any old data
+      await this.kvService.updateAnnouncementsByShop(shopId, {
+        global: [],
+        __patterns: [],
+      });
+      return;
     }
-    return result;
+
+    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements);
+    console.log('Grouped announcements:', {
+      globalCount: groupedAnnouncements.global.length,
+      patterns: groupedAnnouncements.__patterns,
+    });
+
+    const kvData = this.convertToKVData(groupedAnnouncements);
+    console.log('Converted KV data:', {
+      globalCount: kvData.global.length,
+      patterns: kvData.__patterns,
+    });
+
+    const result = await this.kvService.updateAnnouncementsByShop(shopId, kvData);
+    console.log('KV update result:', result);
+
+    if (!result) {
+      console.error('Failed to update KV store');
+      throw new Error('Failed to update KV store');
+    }
   }
 
   async getAnnouncement(id: number) {
-    return await db.query.announcements.findFirst({
+    console.log('Fetching announcement by id:', id);
+    const announcement = await db.query.announcements.findFirst({
       where: eq(announcements.id, id),
       with: {
         texts: {
@@ -182,11 +252,193 @@ export class AnnouncementService {
         }
       }
     });
+
+    console.log('Fetched announcement:', {
+      found: !!announcement,
+      id: announcement?.id,
+      status: announcement?.status,
+      isActive: announcement?.isActive,
+      pagePatterns: announcement?.pagePatternLinks?.map(p => p.pagePattern.pattern)
+    });
+
+    return announcement;
+  }
+
+  async createAnnouncement(data: CreateAnnouncementInput) {
+    console.log('Received announcement data:', JSON.stringify(data, null, 2));
+
+    const {
+      texts,
+      background,
+      form,
+      pagePatterns: patterns = ['__global'], // Default to global if no patterns provided
+      ...announcementData
+    } = data;
+
+    console.log('Creating announcement with data:', {
+      status: announcementData.status,
+      isActive: announcementData.isActive,
+      startDate: announcementData.startDate,
+      endDate: announcementData.endDate,
+      patterns
+    });
+
+    // Validate required data
+    if (!patterns?.length) {
+      console.warn('No patterns provided, defaulting to __global');
+      patterns.push('__global');
+    }
+
+    // Create the announcement first to get the ID
+    const [createdAnnouncement] = await db
+      .insert(announcements)
+      .values({
+        ...announcementData,
+        // Ensure isActive is a boolean
+        isActive: announcementData.isActive === true,
+      })
+      .returning();
+
+    console.log('Created base announcement:', {
+      id: createdAnnouncement.id,
+      status: createdAnnouncement.status,
+      isActive: createdAnnouncement.isActive
+    });
+
+    // Now create all related data in a transaction
+    await db.transaction(async (tx) => {
+      // Create texts and CTAs
+      for (const text of texts) {
+        const { callToActions, ...textData } = text;
+        const [createdText] = await tx
+          .insert(announcementText)
+          .values({
+            textMessage: textData.textMessage,
+            textColor: textData.textColor,
+            fontSize: textData.fontSize,
+            customFont: textData.customFont,
+            languageCode: textData.languageCode,
+            announcementId: createdAnnouncement.id
+          })
+          .returning();
+
+        if (callToActions?.length) {
+          await tx.insert(callToAction).values(
+            callToActions.map((cta: AnnouncementCallToAction) => ({
+              type: cta.type,
+              text: cta.text,
+              link: cta.link,
+              bgColor: cta.bgColor,
+              textColor: cta.textColor,
+              buttonRadius: cta.buttonRadius,
+              padding: cta.padding,
+              announcementTextId: createdText.id,
+            }))
+          );
+        }
+      }
+
+      // Create background
+      if (background) {
+        await tx
+          .insert(bannerBackground)
+          .values({
+            backgroundColor: background.backgroundColor,
+            backgroundPattern: background.backgroundPattern,
+            padding: background.padding,
+            announcementId: createdAnnouncement.id
+          });
+      }
+
+      // Create form fields if they exist
+      if (form?.length) {
+        await tx.insert(bannerForm).values(
+          form.map((f: AnnouncementFormField) => ({
+            inputType: f.inputType,
+            placeholder: f.placeholder,
+            label: f.label,
+            isRequired: f.isRequired,
+            validationRegex: f.validationRegex,
+            announcementId: createdAnnouncement.id,
+          }))
+        );
+      }
+
+      // Always create at least one page pattern
+      console.log('Creating page patterns:', patterns);
+      for (const pattern of patterns) {
+        // First try to find an existing pattern
+        let pagePattern = await tx
+          .select()
+          .from(pagePatterns)
+          .where(eq(pagePatterns.pattern, pattern))
+          .then(rows => rows[0]);
+
+        // If pattern doesn't exist, create it
+        if (!pagePattern) {
+          [pagePattern] = await tx
+            .insert(pagePatterns)
+            .values({ pattern })
+            .returning();
+        }
+
+        console.log('Using page pattern:', {
+          id: pagePattern.id,
+          pattern: pagePattern.pattern
+        });
+
+        // Create the link
+        await tx.insert(announcementsXPagePatterns).values({
+          pagePatternsID: pagePattern.id,
+          announcementsID: createdAnnouncement.id,
+        });
+      }
+    });
+
+    // Fetch the complete announcement after all data is created
+    console.log('Fetching complete announcement after creation');
+    const completeAnnouncement = await this.getAnnouncement(createdAnnouncement.id);
+
+    if (!completeAnnouncement) {
+      console.error('Failed to fetch complete announcement after creation:', createdAnnouncement.id);
+      throw new Error('Failed to fetch complete announcement after creation');
+    }
+
+    console.log('Complete announcement:', {
+      id: completeAnnouncement.id,
+      status: completeAnnouncement.status,
+      isActive: completeAnnouncement.isActive,
+      pagePatterns: completeAnnouncement.pagePatternLinks.map(p => p.pagePattern.pattern)
+    });
+
+    // Only update KV if the announcement was created successfully and is published
+    if (completeAnnouncement.status === 'published') {
+      try {
+        console.log('Updating KV for published announcement');
+        await this.updateKv(announcementData.shopId);
+      } catch (error) {
+        console.error('Failed to update KV after creating announcement:', error);
+        // Don't throw here as the announcement was created successfully
+      }
+    } else {
+      console.log('Skipping KV update:', {
+        status: completeAnnouncement.status
+      });
+    }
+
+    return completeAnnouncement;
   }
 
   async getActiveAnnouncements(shopId: string, currentPath?: string) {
     const now = new Date().toISOString();
 
+    console.log('Fetching active announcements with criteria:', {
+      shopId,
+      currentTime: now,
+      currentPath
+    });
+
+    // First get all announcements that match the basic criteria
     const activeAnnouncements = await db.query.announcements.findMany({
       where: and(
         eq(announcements.shopId, shopId),
@@ -211,26 +463,83 @@ export class AnnouncementService {
       }
     });
 
+    console.log('Database query returned announcements:', activeAnnouncements.map(a => ({
+      id: a.id,
+      status: a.status,
+      isActive: a.isActive,
+      startDate: a.startDate,
+      endDate: a.endDate,
+      hasPagePatterns: a.pagePatternLinks?.length > 0,
+      pagePatterns: a.pagePatternLinks?.map(p => p.pagePattern.pattern)
+    })));
+
+    // Validate each announcement has the required data
+    const validAnnouncements = activeAnnouncements.filter(announcement => {
+      const isValid = (
+        announcement &&
+        Array.isArray(announcement.pagePatternLinks) &&
+        announcement.pagePatternLinks.length > 0 &&
+        announcement.pagePatternLinks.every(link => link?.pagePattern?.pattern)
+      );
+
+      if (!isValid) {
+        console.warn('Found invalid announcement:', {
+          id: announcement.id,
+          hasPagePatternLinks: Array.isArray(announcement.pagePatternLinks),
+          pagePatternLinksCount: announcement.pagePatternLinks?.length,
+          hasInvalidPatterns: announcement.pagePatternLinks?.some(link => !link?.pagePattern?.pattern)
+        });
+      }
+
+      return isValid;
+    });
+
+    console.log('Valid announcements after filtering:', validAnnouncements.length);
+
     if (!currentPath) {
-      return activeAnnouncements;
+      return validAnnouncements;
     }
 
     // Filter announcements based on page patterns if currentPath is provided
-    return activeAnnouncements.filter((announcement: any) => {
+    const pathFilteredAnnouncements = validAnnouncements.filter(announcement => {
       const patterns = announcement.pagePatternLinks.map(
-        (link: { pagePattern: { pattern: string } }) => link.pagePattern.pattern
+        link => link.pagePattern.pattern
       );
-      return (
-        patterns.includes('__global') ||
-        patterns.some((pattern: string) => {
+
+      const matches = patterns.includes('__global') ||
+        patterns.some(pattern => {
           try {
-            return new RegExp(pattern).test(currentPath);
-          } catch {
+            const regex = new RegExp(pattern);
+            const matches = regex.test(currentPath);
+            console.log('Testing pattern:', {
+              announcementId: announcement.id,
+              pattern,
+              path: currentPath,
+              matches
+            });
+            return matches;
+          } catch (error: any) { // Handle error as any since it's from RegExp
+            console.warn('Invalid regex pattern:', {
+              announcementId: announcement.id,
+              pattern,
+              error: error.message || String(error)
+            });
             return false;
           }
-        })
-      );
+        });
+
+      console.log('Path matching result:', {
+        announcementId: announcement.id,
+        patterns,
+        path: currentPath,
+        matches
+      });
+
+      return matches;
     });
+
+    console.log('Announcements after path filtering:', pathFilteredAnnouncements.length);
+    return pathFilteredAnnouncements;
   }
 
   async updateAnnouncement(id: number, data: Partial<CreateAnnouncementInput>) {
@@ -535,5 +844,70 @@ export class AnnouncementService {
 
       return duplicatedAnnouncements;
     });
+  }
+
+  // Helper method to convert GroupedAnnouncements to AnnouncementKVData
+  private convertToKVData(groupedAnnouncements: GroupedAnnouncements): AnnouncementKVData {
+    // Convert each announcement to the expected format
+    const convertAnnouncement = (announcement: TransformedAnnouncement) => {
+      return {
+        id: announcement.id,
+        type: announcement.type,
+        title: announcement.title,
+        shopId: announcement.shopId,
+        size: announcement.size,
+        heightPx: announcement.heightPx,
+        widthPercent: announcement.widthPercent,
+        startDate: announcement.startDate,
+        endDate: announcement.endDate,
+        showCloseButton: announcement.showCloseButton,
+        closeButtonPosition: announcement.closeButtonPosition,
+        countdownEndTime: announcement.countdownEndTime,
+        timezone: announcement.timezone,
+        isActive: announcement.isActive,
+        texts: announcement.texts.map(text => ({
+          id: text.id,
+          announcementId: text.announcementId,
+          textMessage: text.textMessage,
+          textColor: text.textColor,
+          fontSize: text.fontSize,
+          customFont: text.customFont,
+          languageCode: text.languageCode || 'en',
+          ctas: text.ctas.map(cta => ({
+            id: cta.id,
+            announcementTextId: text.id,
+            type: cta.type,
+            text: cta.text,
+            link: cta.link,
+            bgColor: cta.bgColor,
+            textColor: cta.textColor,
+            buttonRadius: cta.buttonRadius,
+            padding: cta.padding
+          }))
+        })),
+        background: announcement.background ? {
+          id: announcement.background.id,
+          announcementId: announcement.background.announcementId,
+          backgroundColor: announcement.background.backgroundColor,
+          backgroundPattern: announcement.background.backgroundPattern,
+          padding: announcement.background.padding
+        } : null,
+        form: announcement.form
+      };
+    };
+
+    // Convert each group of announcements
+    return {
+      global: groupedAnnouncements.global.map(convertAnnouncement),
+      __patterns: groupedAnnouncements.__patterns,
+      ...Object.fromEntries(
+        Object.entries(groupedAnnouncements)
+          .filter(([key]) => key !== 'global' && key !== '__patterns')
+          .map(([key, value]) => [
+            key,
+            (value as TransformedAnnouncement[]).map(convertAnnouncement)
+          ])
+      )
+    };
   }
 }
