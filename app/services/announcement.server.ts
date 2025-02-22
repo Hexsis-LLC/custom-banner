@@ -138,7 +138,7 @@ export class AnnouncementService {
     return result;
   }
 
-  async updateKv(shopId: string) {
+  private async updateKv(shopId: string) {
     console.log('Starting KV update for shop:', shopId);
 
     const allLatestAnnouncements = await this.getActiveAnnouncements(shopId);
@@ -493,7 +493,7 @@ export class AnnouncementService {
       ...announcementData
     } = data;
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       // Update main announcement data
       if (Object.keys(announcementData).length > 0) {
         await tx
@@ -584,10 +584,27 @@ export class AnnouncementService {
 
       return this.getAnnouncement(id);
     });
+
+    // Get the updated announcement to check if we need to update KV
+    const updatedAnnouncement = await this.getAnnouncement(id);
+    if (updatedAnnouncement?.status === 'published') {
+      try {
+        await this.updateKv(updatedAnnouncement.shopId);
+      } catch (error) {
+        console.error('Failed to update KV after updating announcement:', error);
+        // Don't throw here as the announcement was updated successfully
+      }
+    }
+
+    return result;
   }
 
   async deleteAnnouncement(id: number) {
-    return await db.transaction(async (tx) => {
+    // Get the announcement before deletion to get the shopId
+    const announcement = await this.getAnnouncement(id);
+    const shopId = announcement?.shopId;
+
+    const result = await db.transaction(async (tx) => {
       // Delete related records first
       await tx
         .delete(announcementsXPagePatterns)
@@ -615,6 +632,18 @@ export class AnnouncementService {
       // Finally delete the announcement
       return tx.delete(announcements).where(eq(announcements.id, id));
     });
+
+    // Update KV after successful deletion if we have the shopId
+    if (shopId) {
+      try {
+        await this.updateKv(shopId);
+      } catch (error) {
+        console.error('Failed to update KV after deleting announcement:', error);
+        // Don't throw here as the announcement was deleted successfully
+      }
+    }
+
+    return result;
   }
 
   async toggleAnnouncementStatus(id: number, isActive: boolean) {
@@ -647,7 +676,11 @@ export class AnnouncementService {
   }
 
   async bulkDeleteAnnouncements(ids: number[]) {
-    return await db.transaction(async (tx) => {
+    // Get the announcements before deletion to get their shopIds
+    const existingAnnouncements = await Promise.all(ids.map(id => this.getAnnouncement(id)));
+    const shopIds = [...new Set(existingAnnouncements.filter(a => a !== null).map(a => a!.shopId))];
+
+    const result = await db.transaction(async (tx) => {
       // Delete all related records in a single query for each table
       await tx
         .delete(announcementsXPagePatterns)
@@ -677,19 +710,46 @@ export class AnnouncementService {
         .delete(bannerForm)
         .where(inArray(bannerForm.announcementId, ids));
 
-      // Finally delete the announcements
+      // Finally delete the announcements using the correct table reference
       return tx.delete(announcements).where(inArray(announcements.id, ids));
     });
+
+    // Update KV for all affected shops
+    await Promise.all(shopIds.map(async shopId => {
+      try {
+        await this.updateKv(shopId);
+      } catch (error) {
+        console.error('Failed to update KV after bulk deleting announcements for shop:', shopId, error);
+        // Don't throw here as the announcements were deleted successfully
+      }
+    }));
+
+    return result;
   }
 
   async bulkUpdateAnnouncementStatus(ids: number[], status: 'draft' | 'published' | 'paused' | 'ended') {
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       return tx
         .update(announcements)
         .set({ status })
         .where(inArray(announcements.id, ids))
         .returning();
     });
+
+    // If status is published, we need to update KV for all affected shops
+    if (status === 'published') {
+      const shopIds = [...new Set(result.map(a => a.shopId))];
+      await Promise.all(shopIds.map(async shopId => {
+        try {
+          await this.updateKv(shopId);
+        } catch (error) {
+          console.error('Failed to update KV after bulk updating announcement status for shop:', shopId, error);
+          // Don't throw here as the announcements were updated successfully
+        }
+      }));
+    }
+
+    return result;
   }
 
   async bulkDuplicateAnnouncements(ids: number[]) {
