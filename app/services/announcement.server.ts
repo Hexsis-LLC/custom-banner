@@ -13,69 +13,17 @@ import {
 import {CloudflareKVService, type AnnouncementKVData} from "./cloudflareKV.server";
 import type {
   CreateAnnouncementInput,
-  AnnouncementCallToAction,
-  AnnouncementFormField,
-  Announcement,
+  DatabaseAnnouncement,
+  DatabaseTextSettings,
+  DatabaseBackgroundSettings,
+  DatabaseFormField,
+  DatabaseCTASettings,
+  GroupedAnnouncements,
+  TransformedAnnouncement,
+  KVAnnouncement,
 } from '../types/announcement';
 
-
-interface DatabaseTextSettings {
-  id: number;
-  announcementId: number;
-  textMessage: string;
-  textColor: string;
-  fontSize: number;
-  customFont: string | null;
-  languageCode: string | null;
-  ctas: Array<{
-    id: number;
-    type: 'text' | 'button';
-    text: string;
-    link: string;
-    bgColor: string;
-    textColor: string;
-    buttonRadius: number | null;
-    padding: string | null;
-  }>;
-}
-
-interface DatabaseBackgroundSettings {
-  id: number;
-  announcementId: number;
-  padding: string | null;
-  backgroundColor: string;
-  backgroundPattern: string | null;
-}
-
-interface DatabaseFormField {
-  id: number;
-  announcementId: number;
-  inputType: 'text' | 'email' | 'checkbox';
-  placeholder: string | null;
-  label: string | null;
-  isRequired: boolean | null;
-  validationRegex: string | null;
-}
-
-type DatabaseAnnouncement = Omit<Announcement, 'heightPx' | 'widthPercent' | 'showCloseButton' | 'countdownEndTime' | 'timezone' | 'isActive' | 'texts' | 'background'> & {
-  heightPx: number | null;
-  widthPercent: number | null;
-  showCloseButton: boolean | null;
-  countdownEndTime: string | null;
-  timezone: string | null;
-  isActive: boolean | null;
-  texts: DatabaseTextSettings[];
-  background: DatabaseBackgroundSettings | null;
-  form: DatabaseFormField[];
-};
-
-type TransformedAnnouncement = Omit<DatabaseAnnouncement, 'pagePatternLinks'>;
-
-interface GroupedAnnouncements {
-  global: TransformedAnnouncement[];
-  __patterns: string[];
-  [key: string]: TransformedAnnouncement[] | string[];
-}
+// Database-specific text settings
 
 export class AnnouncementService {
   private kvService: CloudflareKVService;
@@ -324,7 +272,7 @@ export class AnnouncementService {
 
         if (callToActions?.length) {
           await tx.insert(callToAction).values(
-            callToActions.map((cta: AnnouncementCallToAction) => ({
+            callToActions.map((cta) => ({
               type: cta.type,
               text: cta.text,
               link: cta.link,
@@ -353,7 +301,7 @@ export class AnnouncementService {
       // Create form fields if they exist
       if (form?.length) {
         await tx.insert(bannerForm).values(
-          form.map((f: AnnouncementFormField) => ({
+          form.map((f) => ({
             inputType: f.inputType,
             placeholder: f.placeholder,
             label: f.label,
@@ -587,7 +535,7 @@ export class AnnouncementService {
 
           if (callToActions?.length) {
             await tx.insert(callToAction).values(
-              callToActions.map((cta: AnnouncementCallToAction) => ({
+              callToActions.map((cta) => ({
                 ...cta,
                 announcementTextId: newText.id,
               }))
@@ -611,7 +559,7 @@ export class AnnouncementService {
         await tx.delete(bannerForm).where(eq(bannerForm.announcementId, id));
         if (form.length > 0) {
           await tx.insert(bannerForm).values(
-            form.map((f: AnnouncementFormField) => ({
+            form.map((f) => ({
               ...f,
               announcementId: id,
             }))

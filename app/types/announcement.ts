@@ -2,8 +2,54 @@ export type Size = 'large' | 'mid' | 'small' | 'custom';
 export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
 export type CloseButtonPosition = 'right' | 'left' | 'center';
 export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
+export type CTAType = 'text' | 'button';
 
-// Base settings interfaces
+// Base interfaces for common fields
+interface BaseEntity {
+  id: number;
+}
+
+interface BaseNullableFields {
+  heightPx: number | null;
+  widthPercent: number | null;
+  showCloseButton: boolean | null;
+  countdownEndTime: string | null;
+  timezone: string | null;
+  isActive: boolean | null;
+}
+
+interface BaseText {
+  textMessage: string;
+  textColor: string;
+  fontSize: number;
+  customFont: string | null;
+  languageCode: string | null;
+}
+
+interface BaseCTA {
+  type: CTAType;
+  text: string;
+  link: string;
+  bgColor: string;
+  textColor: string;
+  buttonRadius: number | null;
+  padding: string | null;
+}
+
+interface BaseBackground {
+  backgroundColor: string;
+  backgroundPattern: string | null;
+}
+
+interface BaseForm {
+  inputType: 'text' | 'email' | 'checkbox';
+  placeholder: string | null;
+  label: string | null;
+  isRequired: boolean | null;
+  validationRegex: string | null;
+}
+
+// Form-specific interfaces
 export interface BasicSettings {
   id?: number;
   size: Size;
@@ -23,6 +69,8 @@ export interface BasicSettings {
   countdownEndTime?: string;
   timezone?: string;
   status: AnnouncementStatus;
+  heightPx?: number;
+  widthPercent?: number;
 }
 
 export interface TextSettings {
@@ -35,6 +83,7 @@ export interface TextSettings {
   languageCode?: string;
   announcementId?: number;
   ctas?: CTASettings[];
+  customFont?: string;
 }
 
 export interface CTASettings {
@@ -54,9 +103,14 @@ export interface CTASettings {
   buttonBackgroundColor: string;
   buttonRadius?: number;
   announcementTextId?: number;
+  type: CTAType;
+  text: string;
+  link: string;
+  bgColor: string;
+  textColor: string;
 }
 
-export interface BackgroundSettings {
+export interface BackgroundSettings extends BaseBackground {
   id?: number;
   backgroundType: 'solid' | string;
   color1: string;
@@ -71,24 +125,23 @@ export interface BackgroundSettings {
   announcementId?: number;
 }
 
-export interface PagePattern {
-  id: number;
-  pattern: string;
+// Database-specific interfaces
+export interface DatabaseTextSettings extends BaseEntity, BaseText {
+  announcementId: number;
+  ctas: Array<DatabaseCTASettings>;
 }
 
-export interface PagePatternLink {
-  pagePatternsID: number;
-  announcementsID: number;
-  pagePattern: PagePattern;
+export interface DatabaseCTASettings extends BaseEntity, BaseCTA {
+  announcementTextId: number;
 }
 
-export interface OtherSettings {
-  closeButtonPosition: CloseButtonPosition;
-  displayBeforeDelay: string;
-  showAfterClosing: string;
-  showAfterCTA: string;
-  selectedPages: string[];
-  campaignTiming: string;
+export interface DatabaseBackgroundSettings extends BaseEntity, BaseBackground {
+  announcementId: number;
+  padding: string | null;
+}
+
+export interface DatabaseFormField extends BaseEntity, BaseForm {
+  announcementId: number;
 }
 
 // Main announcement interfaces
@@ -100,25 +153,38 @@ export interface AnnouncementBannerData {
   other: OtherSettings;
 }
 
-export interface Announcement {
-  id: number;
+export interface Announcement extends BaseEntity, BaseNullableFields {
   type: BannerType;
   title: string;
   shopId: string;
   size: Size;
-  heightPx?: number;
-  widthPercent?: number;
   startDate: string;
   endDate: string;
-  showCloseButton?: boolean;
   closeButtonPosition: CloseButtonPosition;
-  countdownEndTime?: string;
-  timezone?: string;
-  isActive: boolean;
   status: AnnouncementStatus;
-  texts: TextSettings[];
-  background?: BackgroundSettings;
+  texts: DatabaseTextSettings[];
+  background?: DatabaseBackgroundSettings;
   pagePatternLinks: PagePatternLink[];
+}
+
+// KV Store types
+export interface KVAnnouncement extends BaseEntity, BaseNullableFields {
+  type: BannerType;
+  title: string;
+  shopId: string;
+  size: Size;
+  startDate: string;
+  endDate: string;
+  closeButtonPosition: CloseButtonPosition;
+  texts: Array<DatabaseTextSettings>;
+  background: DatabaseBackgroundSettings | null;
+  form: Array<DatabaseFormField>;
+}
+
+export interface AnnouncementKVData {
+  global: KVAnnouncement[];
+  __patterns: string[];
+  [key: string]: KVAnnouncement[] | string[];
 }
 
 // Form-specific types
@@ -166,7 +232,7 @@ export interface CreateAnnouncementInput {
     customFont?: string;
     languageCode?: string;
     callToActions?: Array<{
-      type: 'button' | 'text';
+      type: CTAType;
       text: string;
       link: string;
       bgColor: string;
@@ -180,69 +246,45 @@ export interface CreateAnnouncementInput {
     backgroundPattern?: string;
     padding?: string;
   };
-  form?: Array<{
-    inputType: 'email' | 'text' | 'checkbox';
-    placeholder?: string;
-    label?: string;
-    isRequired?: boolean;
-    validationRegex?: string;
-  }>;
+  form?: Array<BaseForm>;
   pagePatterns?: string[];
 }
 
-export type AnnouncementCallToAction = NonNullable<CreateAnnouncementInput['texts'][number]['callToActions']>[number];
-export type AnnouncementFormField = NonNullable<CreateAnnouncementInput['form']>[number];
-
-
-export interface KVAnnouncement {
-  id: number;
-  type: BannerType;
-  title: string;
-  shopId: string;
-  size: Size;
+export type DatabaseAnnouncement = Omit<Announcement, 'heightPx' | 'widthPercent' | 'showCloseButton' | 'countdownEndTime' | 'timezone' | 'isActive' | 'texts' | 'background'> & {
   heightPx: number | null;
   widthPercent: number | null;
-  startDate: string;
-  endDate: string;
   showCloseButton: boolean | null;
-  closeButtonPosition: CloseButtonPosition;
   countdownEndTime: string | null;
   timezone: string | null;
   isActive: boolean | null;
-  texts: Array<{
-    id: number;
-    announcementId: number;
-    textMessage: string;
-    textColor: string;
-    fontSize: number;
-    customFont: string | null;
-    languageCode: string | null;
-    ctas: Array<{
-      id: number;
-      announcementTextId: number;
-      type: 'text' | 'button';
-      text: string;
-      link: string;
-      bgColor: string;
-      textColor: string;
-      buttonRadius: number | null;
-      padding: string | null;
-    }>;
-  }>;
-  background: {
-    id: number;
-    announcementId: number;
-    backgroundColor: string;
-    backgroundPattern: string | null;
-    padding: string | null;
-  } | null;
-  form: Array<{
-    id: number;
-    announcementId: number;
-    inputType: 'text' | 'email' | 'checkbox';
-    placeholder: string | null;
-    label: string | null;
-    isRequired: boolean | null;
-    validationRegex: string | null;
-  }>;
+  texts: DatabaseTextSettings[];
+  background: DatabaseBackgroundSettings | null;
+  form: DatabaseFormField[];
+};
+
+export type TransformedAnnouncement = Omit<DatabaseAnnouncement, 'pagePatternLinks'>;
+
+export interface GroupedAnnouncements {
+  global: TransformedAnnouncement[];
+  __patterns: string[];
+  [key: string]: TransformedAnnouncement[] | string[];
+}
+
+export interface OtherSettings {
+  closeButtonPosition: CloseButtonPosition;
+  displayBeforeDelay: string;
+  showAfterClosing: string;
+  showAfterCTA: string;
+  selectedPages: string[];
+  campaignTiming: string;
+}
+
+export interface PagePattern extends BaseEntity {
+  pattern: string;
+}
+
+export interface PagePatternLink {
+  pagePatternsID: number;
+  announcementsID: number;
+  pagePattern: PagePattern;
 }
