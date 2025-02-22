@@ -8,10 +8,10 @@ export interface AnnouncementKVData {
 }
 
 export class CloudflareKVService {
-  private accountId: string;
-  private namespaceId: string;
-  private authToken: string;
-  private baseUrl: string;
+  private readonly accountId: string;
+  private readonly namespaceId: string;
+  private readonly authToken: string;
+  private readonly baseUrl: string;
 
   constructor() {
     this.accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';

@@ -1,5 +1,5 @@
-import { AnnouncementService } from './announcement.server';
-import type { AnnouncementBannerData } from '../types/announcement';
+import {AnnouncementService} from './announcement.server';
+import type {AnnouncementBannerData} from '../types/announcement';
 
 export class AnnouncementAction {
   private announcementService: AnnouncementService;
@@ -101,8 +101,6 @@ export class AnnouncementAction {
 
   async updateBasicBannerFormData(id: number, formData: AnnouncementBannerData, shopId: string) {
     const announcement = this.getUpdateAnnouncementData(formData);
-    const result = await this.announcementService.updateAnnouncement(id, announcement);
-    await this.announcementService.updateKv(shopId);
-    return result;
+    return await this.announcementService.updateAnnouncement(id, announcement);
   }
 }
