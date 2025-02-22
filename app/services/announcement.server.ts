@@ -10,21 +10,15 @@ import {
   callToAction,
   pagePatterns,
 } from '../../drizzle/schema/announcement';
-import {CloudflareKVService, type AnnouncementKVData} from "./cloudflareKV.server";
+import {type AnnouncementKVData, CloudflareKVService} from "./cloudflareKV.server";
 import type {
   CreateAnnouncementInput,
   DatabaseAnnouncement,
-  DatabaseTextSettings,
-  DatabaseBackgroundSettings,
-  DatabaseFormField,
-  DatabaseCTASettings,
   GroupedAnnouncements,
   TransformedAnnouncement,
-  KVAnnouncement,
 } from '../types/announcement';
 
 // Database-specific text settings
-
 export class AnnouncementService {
   private kvService: CloudflareKVService;
   constructor() {
@@ -704,7 +698,7 @@ export class AnnouncementService {
         ids.map(id => this.getAnnouncement(id))
       );
 
-      const duplicatedAnnouncements = await Promise.all(
+      return await Promise.all(
         originals
           .filter((original): original is NonNullable<typeof original> => original !== null)
           .map(async (original) => {
@@ -775,7 +769,7 @@ export class AnnouncementService {
             for (const link of original.pagePatternLinks) {
               const [pagePattern] = await tx
                 .insert(pagePatterns)
-                .values({ pattern: link.pagePattern.pattern })
+                .values({pattern: link.pagePattern.pattern})
                 .returning();
 
               await tx
@@ -789,8 +783,6 @@ export class AnnouncementService {
             return newAnnouncement;
           })
       );
-
-      return duplicatedAnnouncements;
     });
   }
 
