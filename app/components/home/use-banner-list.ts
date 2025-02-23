@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useFetcher } from '@remix-run/react';
-import type { IndexTableSelectionType } from '@shopify/polaris';
 import type { IndexFiltersProps } from '@shopify/polaris';
 import { bannerListReducer, initialState, ANNOUNCEMENT_TABS } from './banner-list.state';
 import type { Announcement } from '../../types/announcement';
@@ -101,4 +100,4 @@ export const useBannerList = () => {
     handleBulkAction,
     setPage: (page: number) => dispatch({ type: 'SET_PAGE', payload: page }),
   };
-}; 
+};

@@ -2,36 +2,36 @@ import { Outlet, useNavigate } from "@remix-run/react";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { Page, Layout, Card, Text, BlockStack, Button, InlineStack, Icon, Grid } from "@shopify/polaris";
 import { ExternalIcon } from "@shopify/polaris-icons";
+import type { BannerType } from "../types/announcement";
 
 export default function AppCampaign() {
   const navigate = useNavigate();
 
-  const bannerTypes = [
+  const bannerTypes: Array<{
+    id: BannerType;
+    title: string;
+    description: string;
+  }> = [
     {
       id: 'basic',
-      title: 'Announcement Bar',
-      description: 'Display announcements, offers and special events',
+      title: 'Basic Announcement Bar',
+      description: 'Create a simple announcement bar with text and optional call-to-action button.',
     },
     {
-      id: 'multi',
-      title: 'Multi Announcements Bar',
-      description: 'Display rotating multiple message types on the same bar',
+      id: 'multi_text',
+      title: 'Multi-text Announcements Bar',
+      description: 'Create an announcement bar with multiple text messages that rotate.',
     },
     {
       id: 'countdown',
       title: 'Countdown Timer Bar',
-      description: 'Display announcements and offers with a countdown timer',
+      description: 'Create an announcement bar with a countdown timer for sales or events.',
     },
     {
-      id: 'shipping',
-      title: 'Free Shipping Bar',
-      description: 'Display a free shipping offer with updated card goals',
-    },
-    {
-      id: 'email',
+      id: 'email_signup',
       title: 'Email Signup Bar',
-      description: 'Display an expandable/collapsible email signup form',
-    }
+      description: 'Create an announcement bar with an email signup form.',
+    },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default function AppCampaign() {
                           {type.description}
                         </Text>
                         <InlineStack gap="300">
-                          <Button onClick={() => navigate("/app/campaign/announcement")}>
+                          <Button onClick={() => navigate(`/app/campaign/announcement?type=${type.id}`)}>
                             Select
                           </Button>
                           <Button

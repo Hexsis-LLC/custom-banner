@@ -6,10 +6,10 @@ const basicInfoSchema = z.object({
   sizeHeight: z.string(),
   sizeWidth: z.string(),
   campaignTitle: z.string().min(1, "Campaign title is required"),
-  status: z.enum(['draft', 'published']).default('draft'),
+  status: z.enum(['draft', 'published', 'paused', 'ended']).default('draft'),
   type: z.literal('basic'),
   isActive: z.boolean().default(true),
-  closeButtonPosition: z.enum(['right', 'left', 'center']).default('right'),
+  closeButtonPosition: z.enum(['right', 'left', 'center', 'none']).default('right'),
 }).superRefine((data, ctx) => {
   if (data.size === 'custom') {
     // Validate height
@@ -259,10 +259,9 @@ const backgroundSchema = z.object({
 });
 
 const otherSchema = z.object({
-  closeButtonPosition: z.enum(['right', 'left']),
-  displayBeforeDelay: z.string(),
-  showAfterClosing: z.string(),
-  showAfterCTA: z.string(),
+  displayBeforeDelay: z.string().default('none'),
+  showAfterClosing: z.string().default('none'),
+  showAfterCTA: z.string().default('none'),
   selectedPages: z.array(z.string()).default(["__global"]).transform(pages => 
     pages.length === 0 ? ["__global"] : pages
   ),

@@ -16,16 +16,21 @@ export const announcements = sqliteTable('announcements', {
   size: text('size', { enum: ['small', 'mid', 'large', 'custom'] }).notNull(),
   heightPx: integer('height_px'),
   widthPercent: integer('width_percent'),
+  startType: text('start_type', { enum: ['now', 'specific'] }).notNull().default('now'),
+  endType: text('end_type', { enum: ['until_stop', 'specific'] }).notNull().default('until_stop'),
   startDate: text('start_date').notNull(),
   endDate: text('end_date').notNull(),
   showCloseButton: integer('show_close_button', { mode: 'boolean' }).default(true),
   closeButtonPosition: text('close_button_position', {
-    enum: ['left', 'right', 'center']
+    enum: ['left', 'right', 'center', 'none']
   }).notNull(),
   countdownEndTime: text('countdown_end_time'),
   timezone: text('timezone').default('UTC'),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
   status: text('status', { enum: ['draft', 'published', 'paused', 'ended'] }).notNull().default('draft'),
+  displayBeforeDelay: text('display_before_delay').default('none'),
+  showAfterClosing: text('show_after_closing').default('none'),
+  showAfterCTA: text('show_after_cta').default('none'),
 }, (table) => ({
   typeIdx: index('announcements_type_idx').on(table.type),
   dateIdx: index('announcements_date_idx').on(table.startDate, table.endDate),

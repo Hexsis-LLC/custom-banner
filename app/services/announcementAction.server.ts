@@ -47,11 +47,51 @@ export class AnnouncementAction {
 
 
   private getStartDate(basic: AnnouncementBannerData['basic']) {
-    return basic.startType === 'now' ? new Date().toISOString() : new Date(basic.startDate).toISOString();
+    if (basic.startType === 'now') {
+      return new Date().toISOString();
+    }
+    
+    // For specific date/time, combine the date and time
+    const date = new Date(basic.startDate);
+    if (basic.startTime) {
+      // Parse time in 12-hour format
+      const [time, period] = basic.startTime.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      let hour24 = hours;
+      
+      if (period === 'PM' && hours !== 12) {
+        hour24 = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        hour24 = 0;
+      }
+      
+      date.setHours(hour24, minutes, 0, 0);
+    }
+    return date.toISOString();
   }
 
   private getEndDate(basic: AnnouncementBannerData['basic']) {
-    return basic.endType === 'until_stop' ? new Date('2099-12-31').toISOString() : new Date(basic.endDate).toISOString();
+    if (basic.endType === 'until_stop') {
+      return new Date('2099-12-31').toISOString();
+    }
+    
+    // For specific date/time, combine the date and time
+    const date = new Date(basic.endDate);
+    if (basic.endTime) {
+      // Parse time in 12-hour format
+      const [time, period] = basic.endTime.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      let hour24 = hours;
+      
+      if (period === 'PM' && hours !== 12) {
+        hour24 = hours + 12;
+      } else if (period === 'AM' && hours === 12) {
+        hour24 = 0;
+      }
+      
+      date.setHours(hour24, minutes, 0, 0);
+    }
+    return date.toISOString();
   }
 
   private getCreateAnnouncementData(formData: AnnouncementBannerData, shopId: string) {
@@ -62,13 +102,18 @@ export class AnnouncementAction {
       size: formData.basic.size,
       heightPx: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeHeight) : undefined,
       widthPercent: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeWidth) : undefined,
+      startType: formData.basic.startType,
+      endType: formData.basic.endType,
       startDate: this.getStartDate(formData.basic),
       endDate: this.getEndDate(formData.basic),
-      showCloseButton: true,
-      closeButtonPosition: formData.other.closeButtonPosition,
+      showCloseButton: formData.basic.showCloseButton,
+      closeButtonPosition: formData.basic.closeButtonPosition,
       timezone: 'UTC',
       isActive: true,
       status: formData.basic.status,
+      displayBeforeDelay: formData.other.displayBeforeDelay,
+      showAfterClosing: formData.other.showAfterClosing,
+      showAfterCTA: formData.other.showAfterCTA,
       texts: [this.getTextData(formData)],
       background: this.getBackgroundData(formData),
       pagePatterns: formData.other.selectedPages || ['__global']
@@ -82,15 +127,21 @@ export class AnnouncementAction {
       size: formData.basic.size,
       heightPx: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeHeight) : undefined,
       widthPercent: formData.basic.size === 'custom' ? parseInt(formData.basic.sizeWidth) : undefined,
+      startType: formData.basic.startType,
+      endType: formData.basic.endType,
       startDate: this.getStartDate(formData.basic),
       endDate: this.getEndDate(formData.basic),
-      showCloseButton: true,
-      closeButtonPosition: formData.other.closeButtonPosition,
+      showCloseButton: formData.basic.showCloseButton,
+      closeButtonPosition: formData.basic.closeButtonPosition,
       timezone: 'UTC',
       isActive: true,
       status: formData.basic.status,
+      displayBeforeDelay: formData.other.displayBeforeDelay,
+      showAfterClosing: formData.other.showAfterClosing,
+      showAfterCTA: formData.other.showAfterCTA,
       texts: [this.getTextData(formData)],
       background: this.getBackgroundData(formData),
+      pagePatterns: formData.other.selectedPages || ['__global']
     };
   }
 

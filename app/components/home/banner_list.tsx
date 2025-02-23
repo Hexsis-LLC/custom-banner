@@ -92,6 +92,7 @@ export default function BannerList() {
        status,
        startDate,
        endDate,
+       type,
      }, index) => (
       <IndexTable.Row
         id={id.toString()}
@@ -115,6 +116,11 @@ export default function BannerList() {
             {tabs[state.selectedTab].id === 'active' ? "Active" :
              status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text variant="bodyMd" as="span">
+            {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+          </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           {new Date(startDate).toLocaleString('en-US', {
@@ -149,7 +155,7 @@ export default function BannerList() {
               />
               <Button
                 icon={EditIcon}
-                onClick={() => navigate(`/app/campaign/announcement/${id}`)}
+                onClick={() => navigate(`/app/campaign/announcement?id=${id}`)}
                 variant="tertiary"
                 accessibilityLabel="Edit Announcement"
               />
@@ -167,6 +173,11 @@ export default function BannerList() {
       <IndexTable.Row id={`skeleton-${index}`} key={`skeleton-${index}`} position={index}>
         <IndexTable.Cell>
           <SkeletonDisplayText size="small" />
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Box maxWidth="100px">
+            <SkeletonDisplayText size="small" />
+          </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Box maxWidth="100px">
@@ -250,6 +261,7 @@ export default function BannerList() {
               headings={[
                 {title: 'Campaign Title'},
                 {title: 'Status'},
+                {title: 'Banner Type'},
                 {title: 'Start Date & Time'},
                 {title: 'End Date & Time'},
                 {title: 'Action'},

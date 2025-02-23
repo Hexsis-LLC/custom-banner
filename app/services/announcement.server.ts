@@ -858,6 +858,8 @@ export class AnnouncementService {
         size: announcement.size,
         heightPx: announcement.heightPx,
         widthPercent: announcement.widthPercent,
+        startType: announcement.startType,
+        endType: announcement.endType,
         startDate: announcement.startDate,
         endDate: announcement.endDate,
         showCloseButton: announcement.showCloseButton,
@@ -865,6 +867,9 @@ export class AnnouncementService {
         countdownEndTime: announcement.countdownEndTime,
         timezone: announcement.timezone,
         isActive: announcement.isActive,
+        displayBeforeDelay: announcement.displayBeforeDelay,
+        showAfterClosing: announcement.showAfterClosing,
+        showAfterCTA: announcement.showAfterCTA,
         texts: announcement.texts.map(text => ({
           id: text.id,
           announcementId: text.announcementId,

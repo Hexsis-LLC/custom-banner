@@ -1,4 +1,5 @@
-import type {AnnouncementBannerData, Size} from "../types/announcement";
+import type { Size, BannerType } from "../types/announcement";
+import type { FormCloseButtonPosition, FormAnnouncementBannerData } from "../types/announcement-form";
 
 export const TABS = [
   {id: 'basic', content: 'Basic'},
@@ -8,7 +9,7 @@ export const TABS = [
   {id: 'other', content: 'Other'},
 ];
 
-export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
+export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
   basic: {
     size: 'large' as Size,
     sizeHeight: "52",
@@ -23,7 +24,7 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
     type: 'basic',
     isActive: true,
     showCloseButton: true,
-    closeButtonPosition: 'right',
+    closeButtonPosition: 'right' as FormCloseButtonPosition,
     status: 'draft',
   },
   text: {
@@ -47,6 +48,11 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
     fontUrl: '',
     buttonFontColor: '#000000',
     buttonBackgroundColor: '#FFFFFF',
+    type: 'button',
+    text: 'Click Here',
+    link: 'https://',
+    bgColor: '#FFFFFF',
+    textColor: '#000000',
   },
   background: {
     backgroundType: 'solid',
@@ -59,12 +65,13 @@ export const DEFAULT_INITIAL_DATA: AnnouncementBannerData = {
       bottom: 12,
       left: 16,
     },
+    backgroundColor: '#000000',
+    backgroundPattern: null,
   },
   other: {
-    closeButtonPosition: 'right',
-    displayBeforeDelay: 'no-delay',
-    showAfterClosing: 'never',
-    showAfterCTA: 'no-delay',
+    displayBeforeDelay: 'none',
+    showAfterClosing: 'none',
+    showAfterCTA: 'none',
     selectedPages: ['__global'],
     campaignTiming: 'immediate',
   },

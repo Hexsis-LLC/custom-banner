@@ -73,6 +73,16 @@ export interface BasicSettings {
   widthPercent?: number;
 }
 
+export interface TextEntry {
+  id: string;
+  announcementText: string;
+  textColor: string;
+  fontSize: number;
+  fontType: 'site' | string;
+  fontUrl?: string;
+  languageCode?: string;
+}
+
 export interface TextSettings {
   id?: number;
   announcementText: string;
@@ -84,6 +94,7 @@ export interface TextSettings {
   announcementId?: number;
   ctas?: CTASettings[];
   customFont?: string;
+  textEntries?: TextEntry[];
 }
 
 export interface CTASettings {
@@ -158,6 +169,8 @@ export interface Announcement extends BaseEntity, BaseNullableFields {
   title: string;
   shopId: string;
   size: Size;
+  startType: 'now' | 'specific';
+  endType: 'until_stop' | 'specific';
   startDate: string;
   endDate: string;
   closeButtonPosition: CloseButtonPosition;
@@ -173,9 +186,14 @@ export interface KVAnnouncement extends BaseEntity, BaseNullableFields {
   title: string;
   shopId: string;
   size: Size;
+  startType: 'now' | 'specific';
+  endType: 'until_stop' | 'specific';
   startDate: string;
   endDate: string;
   closeButtonPosition: CloseButtonPosition;
+  displayBeforeDelay: string;
+  showAfterClosing: string;
+  showAfterCTA: string;
   texts: Array<DatabaseTextSettings>;
   background: DatabaseBackgroundSettings | null;
   form: Array<DatabaseFormField>;
@@ -217,6 +235,8 @@ export interface CreateAnnouncementInput {
   size: Size;
   heightPx?: number;
   widthPercent?: number;
+  startType: 'now' | 'specific';
+  endType: 'until_stop' | 'specific';
   startDate: string;
   endDate: string;
   showCloseButton?: boolean;
@@ -250,17 +270,31 @@ export interface CreateAnnouncementInput {
   pagePatterns?: string[];
 }
 
-export type DatabaseAnnouncement = Omit<Announcement, 'heightPx' | 'widthPercent' | 'showCloseButton' | 'countdownEndTime' | 'timezone' | 'isActive' | 'texts' | 'background'> & {
+export interface DatabaseAnnouncement extends BaseEntity {
+  type: BannerType;
+  title: string;
+  shopId: string;
+  size: Size;
   heightPx: number | null;
   widthPercent: number | null;
+  startType: 'now' | 'specific';
+  endType: 'until_stop' | 'specific';
+  startDate: string;
+  endDate: string;
   showCloseButton: boolean | null;
+  closeButtonPosition: CloseButtonPosition;
   countdownEndTime: string | null;
   timezone: string | null;
   isActive: boolean | null;
+  status: AnnouncementStatus;
+  displayBeforeDelay: string;
+  showAfterClosing: string;
+  showAfterCTA: string;
   texts: DatabaseTextSettings[];
   background: DatabaseBackgroundSettings | null;
   form: DatabaseFormField[];
-};
+  pagePatternLinks: PagePatternLink[];
+}
 
 export type TransformedAnnouncement = Omit<DatabaseAnnouncement, 'pagePatternLinks'>;
 
@@ -271,7 +305,6 @@ export interface GroupedAnnouncements {
 }
 
 export interface OtherSettings {
-  closeButtonPosition: CloseButtonPosition;
   displayBeforeDelay: string;
   showAfterClosing: string;
   showAfterCTA: string;
