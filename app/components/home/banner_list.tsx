@@ -21,71 +21,20 @@ import {
 import { ChartVerticalIcon, EditIcon, DuplicateIcon, DisabledIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { useNavigate } from "@remix-run/react";
 import EmptyHome from "./empty_screen";
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import illustration from "../../assets/svg/Illustration.svg";
-import { useBannerList } from './use-banner-list';
+import { useBannerList, BannerListProvider } from '../../contexts/BannerListContext';
 import type { IndexTableSelectionType } from '@shopify/polaris';
 
-export default function BannerList() {
-  const navigate = useNavigate();
-  const {
-    state,
-    tabs,
-    sortOptions,
-    handleFiltersQueryChange,
-    handleTabChange,
-    handleSortChange,
-    handleBulkAction,
-    setPage,
-  } = useBannerList();
-
-  const {mode, setMode} = useSetIndexFiltersMode();
-
-  const {selectedResources, allResourcesSelected, handleSelectionChange} =
-    useIndexResourceState(state.announcements.map(item => ({id: item.id.toString()})));
-
-  const clearSelection = useCallback(() => {
-    handleSelectionChange('page' as IndexTableSelectionType, false);
-  }, [handleSelectionChange]);
-
-  const handleBulkDelete = useCallback(async () => {
-    const success = await handleBulkAction('delete', selectedResources);
-    if (success) clearSelection();
-  }, [handleBulkAction, selectedResources, clearSelection]);
-
-  const handleBulkPause = useCallback(async () => {
-    const success = await handleBulkAction('pause', selectedResources);
-    if (success) clearSelection();
-  }, [handleBulkAction, selectedResources, clearSelection]);
-
-  const handleBulkDuplicate = useCallback(async () => {
-    const success = await handleBulkAction('duplicate', selectedResources);
-    if (success) clearSelection();
-  }, [handleBulkAction, selectedResources, clearSelection]);
-
-  const bulkActions = [
-    {
-      content: state.bulkActionLoading === 'delete' ? 'Deleting...' : 'Delete',
-      icon: DeleteIcon,
-      destructive: true,
-      onAction: handleBulkDelete,
-      disabled: state.bulkActionLoading !== null,
-    },
-    {
-      content: state.bulkActionLoading === 'pause' ? 'Pausing...' : 'Pause',
-      icon: DisabledIcon,
-      onAction: handleBulkPause,
-      disabled: state.bulkActionLoading !== null,
-    },
-    {
-      content: state.bulkActionLoading === 'duplicate' ? 'Duplicating...' : 'Duplicate',
-      icon: DuplicateIcon,
-      onAction: handleBulkDuplicate,
-      disabled: state.bulkActionLoading !== null,
-    },
-  ];
-
-  const rowMarkup = state.announcements.map(
+// Extracted row markup function with memoization for better performance
+const renderRowMarkup = (
+  announcements: any[], 
+  selectedResources: string[], 
+  tabs: typeof import('../../contexts/BannerListContext').ANNOUNCEMENT_TABS, 
+  selectedTab: number, 
+  navigate: ReturnType<typeof useNavigate>
+) => {
+  return announcements.map(
     ({
        id,
        title,
@@ -107,19 +56,19 @@ export default function BannerList() {
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Badge tone={
-            tabs[state.selectedTab].id === 'active' ? "success" :
+            tabs[selectedTab].id === 'active' ? "success" :
             status === 'published' ? "success" :
             status === 'draft' ? "info" :
             status === 'paused' ? "warning" :
             "critical"
           }>
-            {tabs[state.selectedTab].id === 'active' ? "Active" :
+            {tabs[selectedTab].id === 'active' ? "Active" :
              status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant="bodyMd" as="span">
-            {type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+            {type.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -163,41 +112,73 @@ export default function BannerList() {
           </div>
         </IndexTable.Cell>
       </IndexTable.Row>
-    ),
+    )
   );
+};
 
-  const condensed = useBreakpoints().smDown;
+function BannerListContent() {
+  const navigate = useNavigate();
+  const {
+    state,
+    tabs,
+    sortOptions,
+    handleFiltersQueryChange,
+    handleTabChange,
+    handleSortChange,
+    handleBulkAction,
+    setPage,
+  } = useBannerList();
 
-  const renderSkeletonRows = () => {
-    return Array.from({ length: 5 }).map((_, index) => (
-      <IndexTable.Row id={`skeleton-${index}`} key={`skeleton-${index}`} position={index}>
-        <IndexTable.Cell>
-          <SkeletonDisplayText size="small" />
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Box maxWidth="100px">
-            <SkeletonDisplayText size="small" />
-          </Box>
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Box maxWidth="100px">
-            <SkeletonDisplayText size="small" />
-          </Box>
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <SkeletonBodyText lines={1} />
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <SkeletonBodyText lines={1} />
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Box maxWidth="100px">
-            <SkeletonDisplayText size="small" />
-          </Box>
-        </IndexTable.Cell>
-      </IndexTable.Row>
-    ));
-  };
+  const {mode, setMode} = useSetIndexFiltersMode();
+
+  // Use useMemo to prevent unnecessary re-renders of useIndexResourceState
+  const indexResources = useMemo(() => {
+    return state.announcements.map(item => ({ id: item.id.toString() }));
+  }, [state.announcements]);
+
+  const {selectedResources, allResourcesSelected, handleSelectionChange} =
+    useIndexResourceState(indexResources);
+
+  const clearSelection = useCallback(() => {
+    handleSelectionChange('page' as IndexTableSelectionType, false);
+  }, [handleSelectionChange]);
+
+  const handleBulkDelete = useCallback(async () => {
+    const success = await handleBulkAction('delete', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const handleBulkPause = useCallback(async () => {
+    const success = await handleBulkAction('pause', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const handleBulkDuplicate = useCallback(async () => {
+    const success = await handleBulkAction('duplicate', selectedResources);
+    if (success) clearSelection();
+  }, [handleBulkAction, selectedResources, clearSelection]);
+
+  const bulkActions = useMemo(() => [
+    {
+      content: state.bulkActionLoading === 'delete' ? 'Deleting...' : 'Delete',
+      icon: DeleteIcon,
+      destructive: true,
+      onAction: handleBulkDelete,
+      disabled: state.bulkActionLoading !== null,
+    },
+    {
+      content: state.bulkActionLoading === 'pause' ? 'Pausing...' : 'Pause',
+      icon: DisabledIcon,
+      onAction: handleBulkPause,
+      disabled: state.bulkActionLoading !== null,
+    },
+    {
+      content: state.bulkActionLoading === 'duplicate' ? 'Duplicating...' : 'Duplicate',
+      icon: DuplicateIcon,
+      onAction: handleBulkDuplicate,
+      disabled: state.bulkActionLoading !== null,
+    },
+  ], [state.bulkActionLoading, handleBulkDelete, handleBulkPause, handleBulkDuplicate]);
 
   // Only show EmptyHome when "all" tab is selected and there's no data
   if (tabs[state.selectedTab].id === 'all' && state.announcements.length === 0 && !state.isLoading) {
@@ -208,6 +189,16 @@ export default function BannerList() {
     singular: 'announcement',
     plural: 'announcements',
   };
+
+  const condensed = useBreakpoints().smDown;
+
+  // Memoize rows to prevent unnecessary re-renders
+  const memoizedRows = useMemo(() => {
+    if (state.isInitialLoad) {
+      return renderSkeletonRows();
+    }
+    return renderRowMarkup(state.announcements, selectedResources, tabs, state.selectedTab, navigate);
+  }, [state.announcements, selectedResources, tabs, state.selectedTab, state.isInitialLoad, navigate]);
 
   return (
     <Page
@@ -250,10 +241,11 @@ export default function BannerList() {
                 handleSortChange(['date desc']);
               }}
             />
+            
             <IndexTable
               condensed={condensed}
               resourceName={resourceName}
-              itemCount={state.isLoading ? 5 : state.announcements.length}
+              itemCount={state.announcements.length || (state.isInitialLoad ? 5 : 0)}
               selectedItemsCount={
                 allResourcesSelected ? 'All' : selectedResources.length
               }
@@ -269,14 +261,14 @@ export default function BannerList() {
               selectable
               hasZebraStriping
               promotedBulkActions={bulkActions}
-              pagination={state.isLoading ? undefined : {
+              pagination={{
                 hasNext: state.currentPage < state.totalPages,
                 hasPrevious: state.currentPage > 1,
                 onNext: () => setPage(state.currentPage + 1),
                 onPrevious: () => setPage(state.currentPage - 1),
               }}
             >
-              {state.isInitialLoad ? renderSkeletonRows() : rowMarkup}
+              {memoizedRows}
             </IndexTable>
           </LegacyCard>
         </Layout.Section>
@@ -307,5 +299,45 @@ export default function BannerList() {
         </Layout.Section>
       </Layout>
     </Page>
+  );
+}
+
+// Extracted skeleton row rendering function
+function renderSkeletonRows() {
+  return Array.from({ length: 5 }).map((_, index) => (
+    <IndexTable.Row id={`skeleton-${index}`} key={`skeleton-${index}`} position={index}>
+      <IndexTable.Cell>
+        <SkeletonDisplayText size="small" />
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Box maxWidth="100px">
+          <SkeletonDisplayText size="small" />
+        </Box>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Box maxWidth="100px">
+          <SkeletonDisplayText size="small" />
+        </Box>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <SkeletonBodyText lines={1} />
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <SkeletonBodyText lines={1} />
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Box maxWidth="100px">
+          <SkeletonDisplayText size="small" />
+        </Box>
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
+}
+
+export default function BannerList() {
+  return (
+    <BannerListProvider>
+      <BannerListContent />
+    </BannerListProvider>
   );
 }

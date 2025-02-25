@@ -675,6 +675,77 @@ export class AnnouncementService {
     });
   }
 
+  async getFilteredAnnouncementsByShop(
+    shopId: string,
+    tab: string,
+    search: string,
+    sort: string,
+    page: number,
+    limit: number
+  ) {
+    // Create base filter conditions
+    const baseConditions = [eq(announcements.shopId, shopId)];
+    
+    // Add filter by tab/status
+    if (tab !== "all") {
+      const now = new Date().toISOString();
+      
+      if (tab === "active") {
+        baseConditions.push(eq(announcements.status, 'published'));
+        baseConditions.push(gte(announcements.endDate, now));
+      } else if (tab === "ended") {
+        baseConditions.push(lte(announcements.endDate, now));
+      } else {
+        baseConditions.push(eq(announcements.status, tab as any));
+      }
+    }
+    
+    // Add search filter if provided
+    if (search) {
+      const searchLower = `%${search.toLowerCase()}%`;
+      baseConditions.push(
+        sql`LOWER(${announcements.title}) LIKE ${searchLower} OR LOWER(${announcements.type}) LIKE ${searchLower}`
+      );
+    }
+    
+    // Calculate pagination
+    const offset = (page - 1) * limit;
+    
+    // Determine sort direction
+    const [, direction] = sort.split(" ");
+    const sortOrder = direction === "asc" 
+      ? sql`${announcements.startDate} ASC` 
+      : sql`${announcements.startDate} DESC`;
+    
+    // Get total count with same filters (excluding pagination)
+    const countResult = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(announcements)
+      .where(and(...baseConditions));
+      
+    const totalCount = Number(countResult[0]?.count || 0);
+    
+    // Get paginated and filtered data with minimal related records
+    const data = await db.query.announcements.findMany({
+      where: and(...baseConditions),
+      with: {
+        // Only include essential related data for the list view
+        texts: true, // Include all text data but we'll limit downstream processing
+        background: true,
+        pagePatternLinks: {
+          with: {
+            pagePattern: true,
+          },
+        },
+      },
+      orderBy: sortOrder,
+      limit,
+      offset,
+    });
+    
+    return { data, totalCount };
+  }
+
   async bulkDeleteAnnouncements(ids: number[]) {
     // Get the announcements before deletion to get their shopIds
     const existingAnnouncements = await Promise.all(ids.map(id => this.getAnnouncement(id)));

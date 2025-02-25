@@ -201,21 +201,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const announcementService = new AnnouncementService();
-    const allAnnouncements = await announcementService.getAnnouncementsByShop(session.shop);
-
-    // Apply filters and sorting
-    const filteredAnnouncements = filterAnnouncements(allAnnouncements, queryParams);
-    const sortedAnnouncements = sortAnnouncements(filteredAnnouncements, queryParams.sort);
     
-    // Paginate results
-    const { data, totalPages } = paginateAnnouncements(sortedAnnouncements, queryParams.page);
+    // Use optimized database query with filtering and pagination
+    const { data, totalCount } = await announcementService.getFilteredAnnouncementsByShop(
+      session.shop,
+      queryParams.tab,
+      queryParams.search,
+      queryParams.sort,
+      queryParams.page,
+      ITEMS_PER_PAGE
+    );
 
-    return json<PaginatedResponse>({
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+    return json({
       data,
       totalPages,
       currentPage: queryParams.page
     });
   } catch (error) {
+    console.error('Error fetching announcements:', error);
     return createErrorResponse(
       error instanceof Error ? error.message : 'Failed to fetch announcements',
       500
