@@ -154,7 +154,7 @@ export class AnnouncementService {
       return;
     }
 
-    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements);
+    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements as DatabaseAnnouncement[]);
     console.log('Grouped announcements:', {
       globalCount: groupedAnnouncements.global.length,
       patterns: groupedAnnouncements.__patterns,
