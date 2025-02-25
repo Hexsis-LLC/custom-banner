@@ -172,6 +172,7 @@
     const CONFIG = {
       API_URL: 'https://custombanner.hexstore.io',
       SCROLL_THRESHOLD: 50,
+      DEBUG: false, // Set to true to see time zone debugging information
       DEFAULT_STYLES: {
         backgroundColor: '#000000',
         textColor: '#ffffff',
@@ -180,14 +181,74 @@
       }
     };
 
+    /**
+     * @typedef {Object} KVAnnouncement
+     * @property {string} id - Unique identifier
+     * @property {string} type - Banner type ('basic', 'multi_text', 'countdown', 'email_signup')
+     * @property {string} title - Campaign title
+     * @property {string} shopId - Shop identifier
+     * @property {string} size - Banner size ('small', 'mid', 'large', 'custom')
+     * @property {'now' | 'specific'} startType - How the banner starts
+     * @property {'until_stop' | 'specific'} endType - How the banner ends
+     * @property {string} startDate - ISO date string for start
+     * @property {string} endDate - ISO date string for end
+     * @property {string} closeButtonPosition - Position of close button ('left', 'right', 'none')
+     * @property {boolean} showCloseButton - Whether to show close button
+     * @property {boolean} isActive - Whether banner is active
+     * @property {TextSettings[]} texts - Array of text settings
+     * @property {BackgroundSettings|null} background - Background settings
+     */
+
+    /**
+     * @typedef {Object} TextSettings
+     * @property {string} textMessage - The message text
+     * @property {string} textColor - Hex color code for text
+     * @property {number} fontSize - Font size in pixels
+     * @property {string} fontType - Font type ('site', 'dynamic', 'custom')
+     * @property {string} [fontUrl] - URL to custom font
+     * @property {string} [customFont] - Custom font family name
+     * @property {CTASettings[]} [ctas] - Call-to-action buttons
+     */
+
+    /**
+     * @typedef {Object} CTASettings
+     * @property {string} text - Button text
+     * @property {string} link - Button link URL
+     * @property {string} [bgColor] - Background color
+     * @property {string} [textColor] - Text color
+     * @property {number} [buttonRadius] - Border radius in pixels
+     * @property {string} [padding] - CSS padding value
+     */
+
+    /**
+     * @typedef {Object} BackgroundSettings
+     * @property {string} backgroundColor - Main background color
+     * @property {string} [color2] - Secondary color for gradients
+     * @property {string} [backgroundType] - 'solid' or 'gradient'
+     * @property {string} [pattern] - Background pattern
+     * @property {string} [padding] - CSS padding value
+     */
+
+    /**
+     * @typedef {Object} AnnouncementKVData
+     * @property {KVAnnouncement[]} global - Global announcements
+     * @property {string[]} __patterns - Pattern keys
+     * @property {KVAnnouncement[]} [key: string] - Dynamic keys for paths or patterns
+     */
+
     // Banner Service - Handles banner data fetching and processing
     class BannerService {
       constructor(shop) {
         this.shop = shop;
       }
 
+      /**
+       * Fetches banner data from the API
+       * @returns {Promise<AnnouncementKVData|null>}
+       */
       async fetchBannerData() {
         try {
+          // Make API request to get banner data for the shop
           const response = await fetch(`${CONFIG.API_URL}/${this.shop}`, {
             method: 'GET',
             headers: {
@@ -195,6 +256,8 @@
               'Content-Type': 'application/json'
             }
           });
+          
+          // Parse and return the AnnouncementKVData response
           return await response.json();
         } catch (error) {
           console.error('Custom Banner Error:', error);
@@ -226,18 +289,34 @@
 
     // Announcement Selector - Handles announcement selection based on priority
     class AnnouncementSelector {
-      data;
+      /** @type {AnnouncementKVData} */
+      data; // AnnouncementKVData from the API
+      /** @type {string} */
       currentPath;
+      
+      /**
+       * @param {AnnouncementKVData} data - The banner data from API
+       * @param {string} currentPath - Current page path
+       */
       constructor(data, currentPath) {
         this.data = data;
         this.currentPath = currentPath;
       }
 
+      /**
+       * Gets announcements that exactly match the current path
+       * Paths in data are stored with / replaced by _0x2F_ for compatibility
+       * @returns {KVAnnouncement[]} Array of exact matching announcements
+       */
       getExactPathAnnouncements() {
         const exactPath = this.currentPath.replace(/\//g, '_0x2F_');
         return Array.isArray(this.data[exactPath]) ? this.data[exactPath] : [];
       }
 
+      /**
+       * Gets announcements that match a pattern (like /products/*)
+       * @returns {KVAnnouncement[]} Array of pattern matching announcements
+       */
       getPatternAnnouncements() {
         if (!Array.isArray(this.data.__patterns)) return [];
 
@@ -253,10 +332,18 @@
         return [];
       }
 
+      /**
+       * Gets global announcements that show on all pages 
+       * @returns {KVAnnouncement[]} Array of global announcements
+       */
       getGlobalAnnouncements() {
         return Array.isArray(this.data.global) ? this.data.global : [];
       }
 
+      /**
+       * Sorts patterns by specificity (most specific first)
+       * @returns {string[]} Sorted pattern array
+       */
       getSortedPatterns() {
         return [...this.data.__patterns].sort((a, b) => {
           const aSpecificity = (a.match(/\//g) || []).length + (a.match(/[^*/]+/g) || []).length;
@@ -265,6 +352,10 @@
         });
       }
 
+      /**
+       * Selects announcements in priority order
+       * @returns {KVAnnouncement[]} Selected announcements for current page
+       */
       selectAnnouncements() {
         // Check in priority order: exact path > pattern > global
         const exactPathAnnouncements = this.getExactPathAnnouncements();
@@ -305,11 +396,18 @@
         });
       }
 
+      /**
+       * Creates a banner element from announcement data
+       * @param {KVAnnouncement} announcement - The announcement data
+       * @returns {HTMLDivElement} - The created banner element
+       */
       createBanner(announcement) {
         const banner = document.createElement('div');
         banner.className = 'hex-banner-container';
 
+        /** @type {TextSettings} */
         const text = announcement.texts[0];
+        /** @type {BackgroundSettings|null} */
         const background = announcement.background;
 
         banner.style.backgroundColor = background?.backgroundColor || CONFIG.DEFAULT_STYLES.backgroundColor;
@@ -410,15 +508,57 @@
         document.body.style.paddingTop = `${totalHeight}px`;
       }
 
-      displayAnnouncements(announcements) {
+      /**
+       * Converts UTC date string to user's local time
+       * @param {string} dateString - ISO date string from API
+       * @returns {Date} - Date object in user's local time
+       */
+      getLocalDate(dateString) {
+        // Parse the date string to a Date object
+        // This automatically converts to the user's local time zone
+        return new Date(dateString);
+      }
+
+      /**
+       * Checks if a banner should be displayed based on time constraints
+       * @param {KVAnnouncement} announcement - The announcement to check
+       * @returns {boolean} - Whether the banner should be displayed
+       */
+      isWithinTimeWindow(announcement) {
+        // Get current time in user's local time zone
         const now = new Date();
+        
+        // Convert announcement dates to user's local time zone
+        const start = this.getLocalDate(announcement.startDate);
+        const end = this.getLocalDate(announcement.endDate);
+        
+        // Debug time information if needed
+        if (CONFIG.DEBUG) {
+          console.log('Banner Time Check:', {
+            bannerTitle: announcement.title,
+            userTime: now.toLocaleString(),
+            userTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            startTime: start.toLocaleString(),
+            endTime: end.toLocaleString(),
+            isActive: announcement.isActive,
+            isAfterStart: now >= start,
+            isBeforeEnd: now <= end
+          });
+        }
+        
+        return announcement.isActive && now >= start && now <= end;
+      }
+
+      /**
+       * Displays announcements from the data
+       * @param {KVAnnouncement[]} announcements - Announcements selected for display
+       */
+      displayAnnouncements(announcements) {
         let addedBanners = 0;
 
         announcements.forEach(announcement => {
-          const start = new Date(announcement.startDate);
-          const end = new Date(announcement.endDate);
-
-          if (announcement.isActive && now >= start && now <= end) {
+          // Check if the announcement should be displayed based on time
+          if (this.isWithinTimeWindow(announcement)) {
             const banner = this.createBanner(announcement);
             if (banner) {
               this.wrapper.appendChild(banner);
@@ -435,20 +575,31 @@
       }
     }
 
-    // Main initialization
+    /**
+     * Main initialization function - Fetches data and displays banners
+     * 
+     * Data flow:
+     * 1. Fetch AnnouncementKVData from API
+     * 2. Select applicable announcements based on current path
+     * 3. Display selected announcements in the UI
+     */
     async function initBanners() {
       const shop = Shopify.shop;
       const currentPath = window.location.pathname;
 
+      // Create the banner service and UI
       const bannerService = new BannerService(shop);
       const bannerUI = new BannerUI();
 
+      // Fetch AnnouncementKVData from the API
       const data = await bannerService.fetchBannerData();
-      if (!data) return;
+      if (!data) return; // Exit if no data is returned
 
+      // Select applicable announcements based on current path
       const selector = new AnnouncementSelector(data, currentPath);
       const selectedAnnouncements = selector.selectAnnouncements();
 
+      // Display the selected announcements
       bannerUI.displayAnnouncements(selectedAnnouncements);
     }
 
