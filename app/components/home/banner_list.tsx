@@ -180,9 +180,6 @@ function BannerListContent() {
     },
   ], [state.bulkActionLoading, handleBulkDelete, handleBulkPause, handleBulkDuplicate]);
 
-  // Only show EmptyHome when "all" tab is selected and there's no data
- 
-
   const resourceName = {
     singular: 'announcement',
     plural: 'announcements',
@@ -197,9 +194,12 @@ function BannerListContent() {
     }
     return renderRowMarkup(state.announcements, selectedResources, tabs, state.selectedTab, navigate);
   }, [state.announcements, selectedResources, tabs, state.selectedTab, state.isInitialLoad, navigate]);
-  if (state.announcements.length === 0 && !state.isLoading) {
+
+  // Only show EmptyHome when "all" tab is selected and there's no data
+  if (state.announcements.length === 0 && !state.isLoading && state.selectedTab === 0) {
     return <EmptyHome/>;
   }
+
   return (
     <Page
       title="Welcome to HexStore - Announcement Bar"
