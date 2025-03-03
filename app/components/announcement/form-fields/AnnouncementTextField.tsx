@@ -1,19 +1,9 @@
-import {
-  Card,
-  Icon,
-  Text,
-  BlockStack,
-  InlineStack,
-  TextField,
-  RangeSlider,
-  Box,
-  Button,
-} from "@shopify/polaris";
-import { useFormContext } from "../../../contexts/AnnouncementFormContext";
-import { FontSection } from "../fontSection";
-import { PlusIcon, DeleteIcon } from "@shopify/polaris-icons";
-import type { TextEntry } from "../../../types/announcement";
-import { useMemo, useCallback } from "react";
+import {BlockStack, Box, Button, Card, Icon, InlineStack, RangeSlider, Text, TextField,} from "@shopify/polaris";
+import {useFormContext} from "../../../contexts/AnnouncementFormContext";
+import {FontSection} from "../fontSection";
+import {DeleteIcon, PlusIcon} from "@shopify/polaris-icons";
+import type {TextEntry} from "../../../types/announcement";
+import {useCallback, useMemo} from "react";
 
 interface AnnouncementTextFieldProps {
   isMultiText: boolean;
@@ -128,8 +118,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
 
       const mainField = mainFieldMapping[field];
       if (mainField) {
-        const mainValue = field === 'fontType' ? String(value) : value;
-        (updates as any)[mainField] = mainValue;
+        (updates as any)[mainField] = field === 'fontType' ? String(value) : value;
 
         // Clear font URL in main fields when switching to site font
         if (field === 'fontType' && String(value) === 'site') {
@@ -139,7 +128,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
     }
 
     handleFormChange('text', updates);
-  }, [textEntries, formData.text, handleFormChange]);
+  }, [textEntries, formData, handleFormChange]);
 
   /**
    * Gets the validation path based on the entry index
@@ -168,12 +157,12 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
               value={entry.announcementText}
               onChange={(value) => updateTextEntry(entry.id, 'announcementText', value)}
               error={hasError(getValidationPath(index, 'announcementText'))}
-              helpText={hasError(getValidationPath(index, 'announcementText')) ? 
+              helpText={hasError(getValidationPath(index, 'announcementText')) ?
                 getFieldErrorMessage(getValidationPath(index, 'announcementText')) : undefined}
             />
           </div>
           {showDeleteButton && (
-            <Button 
+            <Button
               icon={DeleteIcon}
               variant="plain"
               onClick={() => removeText(entry.id)}
@@ -191,7 +180,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
               autoComplete="off"
               prefix="#"
               error={hasError(getValidationPath(index, 'textColor'))}
-              helpText={hasError(getValidationPath(index, 'textColor')) ? 
+              helpText={hasError(getValidationPath(index, 'textColor')) ?
                 getFieldErrorMessage(getValidationPath(index, 'textColor')) : undefined}
             />
           </div>
@@ -242,7 +231,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
               <Icon source="help" />
             </InlineStack>
             {isMultiText && (
-              <Button 
+              <Button
                 onClick={addNewText}
                 icon={PlusIcon}
                 variant="primary"
@@ -258,4 +247,4 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
       </Box>
     </Card>
   );
-} 
+}

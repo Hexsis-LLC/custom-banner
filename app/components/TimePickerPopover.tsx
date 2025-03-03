@@ -6,7 +6,7 @@ import {
 } from "@shopify/polaris";
 import type {PopoverCloseSource} from "@shopify/polaris";
 import {useState, useCallback} from "react";
-import {CalendarIcon, ClockIcon} from "@shopify/polaris-icons";
+import {ClockIcon} from "@shopify/polaris-icons";
 
 // Time utilities
 const toInt = (time: string) => {

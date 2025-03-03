@@ -4,9 +4,8 @@ import {
   TextField,
   Icon,
   Popover,
-  Box,
   Card,
-  BlockStack,
+
 } from "@shopify/polaris";
 import type {PopoverCloseSource} from "@shopify/polaris";
 import {useState, useRef, useEffect} from "react";
@@ -21,12 +20,12 @@ interface DatePickerPopoverProps {
 }
 
 export function DatePickerPopover({
-  selectedDate,
-  onChange,
-  label = "Date",
-  isModal = false,
-  error,
-}: DatePickerPopoverProps) {
+                                    selectedDate,
+                                    onChange,
+                                    label = "Date",
+                                    isModal = false,
+                                    error,
+                                  }: DatePickerPopoverProps) {
   function nodeContainsDescendant(rootNode: any, descendant: any) {
     if (rootNode === descendant) {
       return true;
@@ -68,7 +67,7 @@ export function DatePickerPopover({
     setDate({month, year});
   }
 
-  function handleDateSelection({end: newSelectedDate}: {end: Date}) {
+  function handleDateSelection({end: newSelectedDate}: { end: Date }) {
     onChange(newSelectedDate);
     setVisible(false);
   }
@@ -87,7 +86,7 @@ export function DatePickerPopover({
       role="combobox"
       label={"Start date"}
       labelHidden={true}
-      prefix={<Icon source={CalendarIcon} />}
+      prefix={<Icon source={CalendarIcon}/>}
       value={formattedValue}
       onFocus={() => setVisible(true)}
       onChange={handleInputValueChange}

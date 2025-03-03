@@ -34,10 +34,10 @@ export function ValidationMessages({validationErrors, actionData}: ValidationMes
             title="Error"
             tone="critical"
           >
-            {actionData.error}
+            {actionData.error as string}
           </Banner>
         </Box>
       )}
     </>
   );
-} 
+}

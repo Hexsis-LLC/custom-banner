@@ -1,4 +1,4 @@
-import type { Size, BannerType } from "../types/announcement";
+import type { Size } from "../types/announcement";
 import type { FormCloseButtonPosition, FormAnnouncementBannerData } from "../types/announcement-form";
 
 export const TABS = [

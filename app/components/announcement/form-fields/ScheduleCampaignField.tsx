@@ -19,7 +19,7 @@ export function ScheduleCampaignField() {
 
   const onStartTypeChange = (value: StartType) => {
     if (value === 'now') {
-      handleFormChange('basic', { 
+      handleFormChange('basic', {
         startType: value,
         startDate: new Date().toISOString(),
         startTime: '',
@@ -27,7 +27,7 @@ export function ScheduleCampaignField() {
     } else {
       const now = new Date();
       now.setHours(12, 0, 0, 0);
-      handleFormChange('basic', { 
+      handleFormChange('basic', {
         startType: value,
         startDate: now.toISOString(),
         startTime: '12:00'
@@ -37,7 +37,7 @@ export function ScheduleCampaignField() {
 
   const onEndTypeChange = (value: EndType) => {
     if (value === 'until_stop') {
-      handleFormChange('basic', { 
+      handleFormChange('basic', {
         endType: value,
         endDate: new Date().toISOString(),
         endTime: '',
@@ -45,7 +45,7 @@ export function ScheduleCampaignField() {
     } else {
       const now = new Date();
       now.setHours(12, 0, 0, 0);
-      handleFormChange('basic', { 
+      handleFormChange('basic', {
         endType: value,
         endDate: now.toISOString(),
         endTime: '12:00'
@@ -57,7 +57,7 @@ export function ScheduleCampaignField() {
     // Set time to noon to avoid timezone issues
     const selectedDate = new Date(date);
     selectedDate.setHours(12, 0, 0, 0);
-    handleFormChange('basic', { 
+    handleFormChange('basic', {
       startDate: selectedDate.toISOString(),
       startType: 'specific' as const
     });
@@ -67,7 +67,7 @@ export function ScheduleCampaignField() {
     // Set time to noon to avoid timezone issues
     const selectedDate = new Date(date);
     selectedDate.setHours(12, 0, 0, 0);
-    handleFormChange('basic', { 
+    handleFormChange('basic', {
       endDate: selectedDate.toISOString(),
       endType: 'specific' as const
     });
@@ -78,7 +78,7 @@ export function ScheduleCampaignField() {
     const [time, period] = value.split(' ');
     const [hours, minutes] = time.split(':').map(Number);
     let hour24 = hours;
-    
+
     if (period === 'PM' && hours !== 12) {
       hour24 = hours + 12;
     } else if (period === 'AM' && hours === 12) {
@@ -86,7 +86,7 @@ export function ScheduleCampaignField() {
     }
 
     const formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    handleFormChange('basic', { 
+    handleFormChange('basic', {
       startTime: value,
       startType: 'specific' as const
     });
@@ -97,7 +97,7 @@ export function ScheduleCampaignField() {
     const [time, period] = value.split(' ');
     const [hours, minutes] = time.split(':').map(Number);
     let hour24 = hours;
-    
+
     if (period === 'PM' && hours !== 12) {
       hour24 = hours + 12;
     } else if (period === 'AM' && hours === 12) {
@@ -105,7 +105,7 @@ export function ScheduleCampaignField() {
     }
 
     const formattedTime = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-    handleFormChange('basic', { 
+    handleFormChange('basic', {
       endTime: value,
       endType: 'specific' as const
     });

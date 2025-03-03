@@ -68,13 +68,15 @@ export default function Index() {
 
     <>
 
-      {outletContext.hideNav ? (
+<BannerList />
+
+      {/* {outletContext.hideNav ? (
         <>
           <BannerList />
         </>
       ) : (
         <OnboardingInit onStart={handleStart}></OnboardingInit>
-      )}
+      )} */}
     </>
   );
 }

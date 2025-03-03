@@ -1,6 +1,5 @@
-import { Outlet, useNavigate } from "@remix-run/react";
-import { TitleBar } from "@shopify/app-bridge-react";
-import { Page, Layout, Card, Text, BlockStack, Button, InlineStack, Icon, Grid } from "@shopify/polaris";
+import { useNavigate } from "@remix-run/react";
+import { Page, Layout, Card, Text, BlockStack, Button, InlineStack, Grid } from "@shopify/polaris";
 import { ExternalIcon } from "@shopify/polaris-icons";
 import type { BannerType } from "../types/announcement";
 

@@ -15,13 +15,13 @@ import type {LoaderFunctionArgs} from "@remix-run/node";
 import {json} from "@remix-run/node";
 import {authenticate, unauthenticated} from "../shopify.server";
 import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
-import type {FormState, LoaderData, ActionData, FormAnnouncementBannerData} from "../types/announcement-form";
+import type {FormState, LoaderData} from "../types/announcement-form";
 import type {BannerType} from "../types/announcement";
 import Storefront from "../services/storefront.server";
 import {FormProvider, useFormContext} from "../contexts/AnnouncementFormContext";
 import {AnnouncementTabs} from "../components/announcement/AnnouncementTabs";
 import {ValidationMessages} from "../components/announcement/ValidationMessages";
-import {AdjustIcon, ChevronDownIcon} from "@shopify/polaris-icons";
+import {ChevronDownIcon} from "@shopify/polaris-icons";
 import {AnnouncementService} from "../services/announcement.server";
 
 // Loader
@@ -30,19 +30,19 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
   const {storefront} = await unauthenticated.storefront(session.shop)
   const storeFrontService = new Storefront(storefront)
   const pages = await storeFrontService.getStorePages();
-  
+
   // Get announcement type from URL params or query string
   const url = new URL(request.url);
   const announcementType = (url.searchParams.get('type') || 'basic') as BannerType;
   const announcementId = url.searchParams.get('id');
 
   let formData: FormState;
-  
+
   if (announcementId) {
     // Fetch existing announcement data for editing
     const announcementService = new AnnouncementService();
     const existingAnnouncement = await announcementService.getAnnouncement(parseInt(announcementId));
-    
+
     if (!existingAnnouncement) {
       throw new Error('Announcement not found');
     }
