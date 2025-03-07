@@ -23,6 +23,7 @@ import {AnnouncementTabs} from "../components/announcement/AnnouncementTabs";
 import {ValidationMessages} from "../components/announcement/ValidationMessages";
 import {ChevronDownIcon} from "@shopify/polaris-icons";
 import {AnnouncementService} from "../services/announcement.server";
+import { LivePreview } from "../components/announcement/LivePreview";
 
 // Loader
 export const loader = async ({request, params}: LoaderFunctionArgs) => {
@@ -263,6 +264,7 @@ function AnnouncementForm() {
       e.preventDefault();
       handleFormSubmit(actionType || 'draft');
     }}>
+      <LivePreview />
       <Page
         title={getPageTitle()}
         backAction={{content: "Banner Types", url: "/app/campaign/banner_type"}}
@@ -334,6 +336,7 @@ export default function AnnouncementBanner() {
 
   return (
     <FormProvider initialData={initialData}>
+      
       <AnnouncementForm/>
     </FormProvider>
   );

@@ -3,6 +3,7 @@ export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
 export type CloseButtonPosition = 'right' | 'left' | 'center';
 export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
 export type CTAType = 'text' | 'button';
+export type FontType = 'site' | 'dynamic'| 'custom';
 
 // Base interfaces for common fields
 interface BaseEntity {
@@ -78,7 +79,7 @@ export interface TextEntry {
   announcementText: string;
   textColor: string;
   fontSize: number;
-  fontType: 'site' | string;
+  fontType: FontType;
   fontUrl?: string;
   languageCode?: string;
 }
@@ -88,7 +89,7 @@ export interface TextSettings {
   announcementText: string;
   textColor: string;
   fontSize: number;
-  fontType: 'site' | string;
+  fontType: FontType;
   fontUrl?: string;
   languageCode?: string;
   announcementId?: number;
@@ -108,7 +109,7 @@ export interface CTASettings {
     bottom: number;
     left: number;
   };
-  fontType: 'site' | string;
+  fontType: FontType;
   fontUrl?: string;
   buttonFontColor: string;
   buttonBackgroundColor: string;
