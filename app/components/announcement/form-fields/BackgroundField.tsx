@@ -11,6 +11,7 @@ import {
   Select,
 } from "@shopify/polaris";
 import { useFormContext } from "../../../contexts/AnnouncementFormContext";
+import { ColorPickerInput } from "app/components/ColorPickerInput";
 
 const patternOptions = [
   { label: 'None', value: 'none' },
@@ -26,7 +27,11 @@ export function BackgroundField() {
   };
 
   const onColor1Change = (value: string) => {
-    handleFormChange('background', { color1: value });
+    if (formData.background.backgroundType === 'solid') {
+      handleFormChange('background', { color1: value });
+    } else {
+      handleFormChange('background', { gradientValue: value });
+    }
   };
 
   const onColor2Change = (value: string) => {
@@ -69,40 +74,19 @@ export function BackgroundField() {
           </InlineStack>
 
           {formData.background.backgroundType === 'solid' ? (
-            <TextField
+            <ColorPickerInput
               label="Color"
               value={formData.background.color1}
               onChange={onColor1Change}
-              autoComplete="off"
-              prefix="#"
-              error={hasError('background.color1')}
-              helpText={hasError('background.color1') ? getFieldErrorMessage('background.color1') : undefined}
+              type="solid"
             />
           ) : (
-            <InlineStack gap="400" align="space-between">
-              <div style={{width: '49%'}}>
-                <TextField
-                  label="Color 1"
-                  value={formData.background.color1}
-                  onChange={onColor1Change}
-                  autoComplete="off"
-                  prefix="#"
-                  error={hasError('background.color1')}
-                  helpText={hasError('background.color1') ? getFieldErrorMessage('background.color1') : undefined}
-                />
-              </div>
-              <div style={{width: '49%'}}>
-                <TextField
-                  label="Color 2"
-                  value={formData.background.color2}
-                  onChange={onColor2Change}
-                  autoComplete="off"
-                  prefix="#"
-                  error={hasError('background.color2')}
-                  helpText={hasError('background.color2') ? getFieldErrorMessage('background.color2') : undefined}
-                />
-              </div>
-            </InlineStack>
+            <ColorPickerInput
+              label="Gradient"
+              value={formData.background.gradientValue || "linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)"}
+              onChange={onColor1Change}
+              type="gradient"
+            />
           )}
 
           <Select

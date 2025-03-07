@@ -9,6 +9,7 @@ export const basicInfoFieldSchema = z.object({
   type: z.literal('basic'),
   isActive: z.boolean().default(true),
   closeButtonPosition: z.enum(['right', 'left', 'center', 'none']).default('right'),
+  closeButtonColor: z.string().min(1, "Close button color is required"),
   startType: z.enum(['now', 'specific']),
   endType: z.enum(['until_stop', 'specific']),
   startDate: z.coerce.date(),

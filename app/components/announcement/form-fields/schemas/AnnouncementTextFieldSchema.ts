@@ -8,13 +8,15 @@ export const announcementTextFieldSchema = z.object({
   fontUrl: z.string().optional(),
   languageCode: z.string().optional(),
 }).superRefine((data, ctx) => {
-  if (data.fontType !== 'site' && !data.fontUrl) {
+  // Only require font URL for custom fonts
+  if (data.fontType === 'custom' && !data.fontUrl) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Font URL is required for dynamic and custom fonts",
+      message: "Font URL is required for custom fonts",
       path: ['fontUrl'],
     });
   }
+  // Validate URL format if provided
   if (data.fontUrl && !data.fontUrl.startsWith('http')) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

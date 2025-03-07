@@ -24,6 +24,9 @@ import {ValidationMessages} from "../components/announcement/ValidationMessages"
 import {ChevronDownIcon} from "@shopify/polaris-icons";
 import {AnnouncementService} from "../services/announcement.server";
 import { LivePreview } from "../components/announcement/LivePreview";
+import type { FontType } from "../types/announcement";
+import { PageService } from "~/services/page.server";
+import { AnnouncementForm } from "~/components/announcement/AnnouncementForm";
 
 // Loader
 export const loader = async ({request, params}: LoaderFunctionArgs) => {
@@ -66,6 +69,7 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
         isActive: existingAnnouncement.isActive || false,
         showCloseButton: existingAnnouncement.showCloseButton || true,
         closeButtonPosition: existingAnnouncement.closeButtonPosition,
+        closeButtonColor: existingAnnouncement.closeButtonColor || '#FFFFFF',
         countdownEndTime: existingAnnouncement.countdownEndTime || undefined,
         timezone: existingAnnouncement.timezone || undefined,
         status: existingAnnouncement.status,
@@ -74,7 +78,7 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
         announcementText: existingAnnouncement.texts[0]?.textMessage || '',
         textColor: existingAnnouncement.texts[0]?.textColor || '#FFFFFF',
         fontSize: existingAnnouncement.texts[0]?.fontSize || 16,
-        fontType: 'site',
+        fontType: (existingAnnouncement.texts[0]?.fontType as FontType) || 'site',
         fontUrl: existingAnnouncement.texts[0]?.customFont || '',
       },
       cta: {
@@ -87,8 +91,8 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
           bottom: 8,
           left: 16,
         },
-        fontType: 'site',
-        fontUrl: '',
+        fontType: existingAnnouncement.texts[0]?.ctas[0]?.fontType || 'site',
+        fontUrl: existingAnnouncement.texts[0]?.ctas[0]?.fontUrl || '',
         buttonFontColor: existingAnnouncement.texts[0]?.ctas[0]?.textColor || '#000000',
         buttonBackgroundColor: existingAnnouncement.texts[0]?.ctas[0]?.bgColor || '#FFFFFF',
         type: existingAnnouncement.texts[0]?.ctas[0]?.type || 'button',
@@ -98,9 +102,10 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
         textColor: existingAnnouncement.texts[0]?.ctas[0]?.textColor || '#000000',
       },
       background: {
-        backgroundType: 'solid',
+        backgroundType: existingAnnouncement.background?.backgroundType || 'solid',
         color1: existingAnnouncement.background?.backgroundColor || '#000000',
         color2: '',
+        gradientValue: existingAnnouncement.background?.gradientValue || '',
         pattern: existingAnnouncement.background?.backgroundPattern || 'none',
         padding: {
           top: 12,

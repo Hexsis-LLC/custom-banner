@@ -24,9 +24,12 @@ export default class CustomFonts {
     return this.fonts;
   }
 
-
   getFontByFamily(family: string): IFont | undefined {
     return this.fonts.find(font => font.family.toLowerCase() === family.toLowerCase());
+  }
+
+  getFontByUrl(url: string): IFont | undefined {
+    return this.fonts.find(font => font.files.regular === url);
   }
 
   getRandomFont(): IFont {
@@ -34,11 +37,9 @@ export default class CustomFonts {
     return this.fonts[randomIndex];
   }
 
-
   getAllFontFamilies(): string[] {
     return this.fonts.map(font => font.family);
   }
-
 
   searchFonts(query: string): IFont[] {
     const searchTerm = query.toLowerCase();

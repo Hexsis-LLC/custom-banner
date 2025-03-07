@@ -11,6 +11,7 @@ import {
 } from "@shopify/polaris";
 import { useFormContext } from "../../../contexts/AnnouncementFormContext";
 import { FontSection } from "../fontSection";
+import { ColorPickerInput } from "app/components/ColorPickerInput";
 
 type CTAType = 'regular' | 'bar' | 'link' | 'none';
 
@@ -50,9 +51,39 @@ export function CTAButtonField() {
     handleFormChange('cta', { buttonBackgroundColor: value });
   };
 
+  const onCtaLinkTextColorChange = (value: string) => {
+    handleFormChange('cta', { textColor: value });
+  };
+
   const renderFields = () => {
     switch (formData.cta.ctaType) {
       case 'link':
+        return (
+          <BlockStack gap="400">
+            <TextField
+              label="Button Text"
+              value={formData.cta.ctaText}
+              onChange={onCtaTextChange}
+              autoComplete="off"
+              error={hasError('cta.ctaText')}
+              helpText={hasError('cta.ctaText') ? getFieldErrorMessage('cta.ctaText') : undefined}
+            />
+            <TextField
+              label="Link URL"
+              value={formData.cta.ctaLink}
+              onChange={onCtaLinkChange}
+              autoComplete="off"
+              error={hasError('cta.ctaLink')}
+              helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
+            />
+            <ColorPickerInput
+              label="Link Text Color"
+              value={formData.cta.textColor ?? "rgb(255, 255, 255)"}
+              onChange={onCtaLinkTextColorChange}
+              type="solid"
+            />
+          </BlockStack>
+        );
       case 'regular':
         return (
           <BlockStack gap="400">
@@ -75,25 +106,19 @@ export function CTAButtonField() {
             {formData.cta.ctaType === 'regular' && (
               <InlineStack gap="400" align="space-between">
                 <div style={{width: '49%'}}>
-                  <TextField
+                  <ColorPickerInput
                     label="Button Text Color"
-                    value={formData.cta.buttonFontColor}
+                    value={formData.cta.buttonFontColor ?? "rgb(0, 0, 0)"}
                     onChange={onCtaButtonFontColorChange}
-                    autoComplete="off"
-                    prefix="#"
-                    error={hasError('cta.buttonFontColor')}
-                    helpText={hasError('cta.buttonFontColor') ? getFieldErrorMessage('cta.buttonFontColor') : undefined}
+                    type="solid"
                   />
                 </div>
                 <div style={{width: '49%'}}>
-                  <TextField
+                  <ColorPickerInput
                     label="Button Background Color"
-                    value={formData.cta.buttonBackgroundColor}
+                    value={formData.cta.buttonBackgroundColor ?? "rgb(0, 0, 0)"}
                     onChange={onCtaButtonBackgroundColorChange}
-                    autoComplete="off"
-                    prefix="#"
-                    error={hasError('cta.buttonBackgroundColor')}
-                    helpText={hasError('cta.buttonBackgroundColor') ? getFieldErrorMessage('cta.buttonBackgroundColor') : undefined}
+                    type="solid"
                   />
                 </div>
               </InlineStack>

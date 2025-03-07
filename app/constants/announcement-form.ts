@@ -1,4 +1,4 @@
-import type { Size } from "../types/announcement";
+import type { Size, FontType } from "../types/announcement";
 import type { FormCloseButtonPosition, FormAnnouncementBannerData } from "../types/announcement-form";
 
 export const TABS = [
@@ -25,13 +25,14 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
     isActive: true,
     showCloseButton: true,
     closeButtonPosition: 'right' as FormCloseButtonPosition,
+    closeButtonColor: 'rgb(255, 255, 255)',
     status: 'draft',
   },
   text: {
     announcementText: '',
     textColor: '#FFFFFF',
     fontSize: 16,
-    fontType: 'site',
+    fontType: 'site' as FontType,
     fontUrl: '',
   },
   cta: {

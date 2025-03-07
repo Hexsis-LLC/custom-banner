@@ -2,8 +2,9 @@ import {BlockStack, Box, Button, Card, Icon, InlineStack, RangeSlider, Text, Tex
 import {useFormContext} from "../../../contexts/AnnouncementFormContext";
 import {FontSection} from "../fontSection";
 import {DeleteIcon, PlusIcon} from "@shopify/polaris-icons";
-import type {TextEntry} from "../../../types/announcement";
+import type {TextEntry, FontType} from "../../../types/announcement";
 import {useCallback, useMemo} from "react";
+import { ColorPickerInput } from "app/components/ColorPickerInput";
 
 interface AnnouncementTextFieldProps {
   isMultiText: boolean;
@@ -88,7 +89,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
 
       // Special handling for font type changes
       if (field === 'fontType') {
-        const fontType = String(value);
+        const fontType = value as FontType;
         return {
           ...entry,
           fontType,
@@ -118,10 +119,10 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
 
       const mainField = mainFieldMapping[field];
       if (mainField) {
-        (updates as any)[mainField] = field === 'fontType' ? String(value) : value;
+        (updates as any)[mainField] = field === 'fontType' ? value as FontType : value;
 
         // Clear font URL in main fields when switching to site font
-        if (field === 'fontType' && String(value) === 'site') {
+        if (field === 'fontType' && value === 'site') {
           (updates as any).fontUrl = '';
         }
       }
@@ -173,7 +174,7 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
         {/* Text Color and Font Size Section */}
         <InlineStack gap="400" align="space-between">
           <div style={{width: '49%'}}>
-            <TextField
+            {/* <TextField
               label="Text Color"
               value={entry.textColor}
               onChange={(value) => updateTextEntry(entry.id, 'textColor', value)}
@@ -182,7 +183,13 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
               error={hasError(getValidationPath(index, 'textColor'))}
               helpText={hasError(getValidationPath(index, 'textColor')) ?
                 getFieldErrorMessage(getValidationPath(index, 'textColor')) : undefined}
-            />
+            /> */}
+            <ColorPickerInput
+  label="Text Color"
+  value={entry.textColor ??"rgb(0, 0, 0)"}
+  onChange={(newColor) =>updateTextEntry(entry.id, 'textColor', newColor)}
+  type="solid"
+/>
           </div>
           <div style={{width: '49%'}}>
             <BlockStack gap="200">

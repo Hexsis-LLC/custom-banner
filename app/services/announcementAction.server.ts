@@ -14,10 +14,13 @@ export class AnnouncementAction {
   }
 
   private getBackgroundData(formData: AnnouncementBannerData) {
+    const { background } = formData;
     return {
-      backgroundColor: formData.background.color1,
-      backgroundPattern: formData.background.pattern === 'none' ? undefined : formData.background.pattern,
-      padding: undefined,
+      backgroundColor: background.backgroundType === 'solid' ? background.color1 : '',
+      backgroundType: background.backgroundType,
+      gradientValue: background.backgroundType === 'gradient' ? background.gradientValue : undefined,
+      backgroundPattern: background.pattern === 'none' ? undefined : background.pattern,
+      padding: this.formatPadding(background.padding)
     };
   }
 
@@ -32,6 +35,7 @@ export class AnnouncementAction {
       textColor: formData.text.textColor,
       fontSize: formData.text.fontSize,
       customFont: formData.text.fontType === 'site' ? undefined : formData.text.fontUrl,
+      fontType: formData.text.fontType,
       languageCode: undefined,
       callToActions: formData.cta.ctaType === 'none' ? [] : [{
         type: this.mapCtaType(formData.cta.ctaType),
@@ -41,6 +45,8 @@ export class AnnouncementAction {
         textColor: formData.cta.buttonFontColor,
         buttonRadius: undefined,
         padding: undefined,
+        fontType: formData.cta.fontType,
+        fontUrl: formData.cta.fontType === 'site' ? undefined : formData.cta.fontUrl,
       }]
     };
   }
@@ -108,6 +114,7 @@ export class AnnouncementAction {
       endDate: this.getEndDate(formData.basic),
       showCloseButton: formData.basic.showCloseButton,
       closeButtonPosition: formData.basic.closeButtonPosition,
+      closeButtonColor: formData.basic.closeButtonColor,
       timezone: 'UTC',
       isActive: true,
       status: formData.basic.status,
@@ -133,6 +140,7 @@ export class AnnouncementAction {
       endDate: this.getEndDate(formData.basic),
       showCloseButton: formData.basic.showCloseButton,
       closeButtonPosition: formData.basic.closeButtonPosition,
+      closeButtonColor: formData.basic.closeButtonColor,
       timezone: 'UTC',
       isActive: true,
       status: formData.basic.status,

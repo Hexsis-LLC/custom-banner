@@ -4,10 +4,13 @@ import {
   Text,
   BlockStack,
   InlineStack,
+  Button,
+  Icon,
 } from "@shopify/polaris";
 import type {IFont} from "../../utils/google-fonts";
 import CustomFonts from "../../utils/google-fonts";
 import {useState, useCallback, useEffect, useRef} from "react";
+import {RefreshIcon} from "@shopify/polaris-icons";
 
 interface FontSectionProps {
   fontType: string;
@@ -31,37 +34,56 @@ export function FontSection({
   const [font, setFont] = useState<IFont | null>(null);
   const isInitialMount = useRef(true);
 
-  // Effect to handle dynamic font when component mounts or fontType changes
+  // Initialize font when component mounts or fontUrl changes
   useEffect(() => {
-    // Skip the first render to prevent double initialization
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
     if (fontType === 'dynamic') {
       const fonts = new CustomFonts();
-      const randomFont = fonts.getRandomFont();
-      setFont(randomFont);
-      // Only update URL if it's different
-      if (randomFont.files.regular !== fontUrl) {
+      if (fontUrl) {
+        const fontData = fonts.getFontByUrl(fontUrl);
+        if (fontData) {
+          setFont(fontData);
+        } else {
+          // If font not found, generate a new one
+          const randomFont = fonts.getRandomFont();
+          setFont(randomFont);
+          onFontUrlChange(randomFont.files.regular);
+        }
+      } else {
+        // If no font URL, generate a new one
+        const randomFont = fonts.getRandomFont();
+        setFont(randomFont);
         onFontUrlChange(randomFont.files.regular);
       }
     } else {
       setFont(null);
     }
-  }, [fontType]); // Remove onFontUrlChange from dependencies
+  }, [fontType, fontUrl, onFontUrlChange]);
 
   const handleFontTypeChange = useCallback((newFontType: string) => {
     if (newFontType === 'site') {
       // Clear font URL when switching to site font
       onFontUrlChange('');
+      setFont(null);
     } else if (newFontType === 'custom' && !fontUrl) {
       // Initialize empty URL for custom font to trigger validation
       onFontUrlChange('');
+      setFont(null);
+    } else if (newFontType === 'dynamic') {
+      // Generate initial font for dynamic type
+      const fonts = new CustomFonts();
+      const randomFont = fonts.getRandomFont();
+      setFont(randomFont);
+      onFontUrlChange(randomFont.files.regular);
     }
     onFontTypeChange(newFontType);
   }, [onFontTypeChange, onFontUrlChange, fontUrl]);
+
+  const handleGenerateNewFont = useCallback(() => {
+    const fonts = new CustomFonts();
+    const randomFont = fonts.getRandomFont();
+    setFont(randomFont);
+    onFontUrlChange(randomFont.files.regular);
+  }, [onFontUrlChange]);
 
   // Helper to check if URL field has error
   const hasUrlError = useCallback(() => {
@@ -120,7 +142,18 @@ export function FontSection({
         {/* Font URL Input for Dynamic and Custom Fonts */}
         {(fontType === 'dynamic' || fontType === 'custom') && (
           <BlockStack gap="200">
-            {font && <Text as="p" variant="bodyMd" tone="subdued">{font.family}</Text>}
+            {font && (
+              <InlineStack gap="400" blockAlign="center">
+                <Text as="p" variant="bodyMd" tone="subdued">{font.family}</Text>
+                {fontType === 'dynamic' && (
+                  <Button
+                    onClick={handleGenerateNewFont}
+                    icon={RefreshIcon}
+                    accessibilityLabel="Generate new font"
+                  />
+                )}
+              </InlineStack>
+            )}
             <TextField
               label={font ? 'Font URL' : 'Custom Font URL'}
               value={font?.files.regular ?? fontUrl}

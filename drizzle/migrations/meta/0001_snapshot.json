@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6a242dad-0dc0-48f4-a5f5-779064e0dc49",
-  "prevId": "3a486afa-5b09-4c0b-9ebc-f65d0f5dc0b8",
+  "id": "793f00ec-a90b-4b25-822a-c4f9d1012378",
+  "prevId": "17c592e7-0f2e-44df-8cb5-53cef9fb90de",
   "tables": {
     "session": {
       "name": "session",
@@ -171,6 +171,14 @@
           "notNull": false,
           "autoincrement": false
         },
+        "font_type": {
+          "name": "font_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'site'"
+        },
         "language_code": {
           "name": "language_code",
           "type": "text",
@@ -232,8 +240,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "shop": {
-          "name": "shop",
+        "shop_id": {
+          "name": "shop_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -259,6 +267,22 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "start_type": {
+          "name": "start_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'now'"
+        },
+        "end_type": {
+          "name": "end_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'until_stop'"
         },
         "start_date": {
           "name": "start_date",
@@ -289,12 +313,13 @@
           "notNull": true,
           "autoincrement": false
         },
-        "specific_page": {
-          "name": "specific_page",
+        "close_button_color": {
+          "name": "close_button_color",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'rgb(255, 255, 255)'"
         },
         "countdown_end_time": {
           "name": "countdown_end_time",
@@ -318,6 +343,38 @@
           "notNull": false,
           "autoincrement": false,
           "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'draft'"
+        },
+        "display_before_delay": {
+          "name": "display_before_delay",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'none'"
+        },
+        "show_after_closing": {
+          "name": "show_after_closing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'none'"
+        },
+        "show_after_cta": {
+          "name": "show_after_cta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'none'"
         }
       },
       "indexes": {
@@ -335,10 +392,98 @@
             "end_date"
           ],
           "isUnique": false
+        },
+        "announcements_shop_idx": {
+          "name": "announcements_shop_idx",
+          "columns": [
+            "shop_id"
+          ],
+          "isUnique": false
+        },
+        "announcements_status_idx": {
+          "name": "announcements_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "announcements_X_page_patterns": {
+      "name": "announcements_X_page_patterns",
+      "columns": {
+        "page_patterns_id": {
+          "name": "page_patterns_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "announcements_id": {
+          "name": "announcements_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "page_patterns_idx": {
+          "name": "page_patterns_idx",
+          "columns": [
+            "page_patterns_id"
+          ],
+          "isUnique": false
+        },
+        "announcements_idx": {
+          "name": "announcements_idx",
+          "columns": [
+            "announcements_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "announcements_X_page_patterns_page_patterns_id_page_patterns_id_fk": {
+          "name": "announcements_X_page_patterns_page_patterns_id_page_patterns_id_fk",
+          "tableFrom": "announcements_X_page_patterns",
+          "tableTo": "page_patterns",
+          "columnsFrom": [
+            "page_patterns_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "announcements_X_page_patterns_announcements_id_announcements_id_fk": {
+          "name": "announcements_X_page_patterns_announcements_id_announcements_id_fk",
+          "tableFrom": "announcements_X_page_patterns",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcements_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "announcements_X_page_patterns_page_patterns_id_announcements_id_pk": {
+          "columns": [
+            "page_patterns_id",
+            "announcements_id"
+          ],
+          "name": "announcements_X_page_patterns_page_patterns_id_announcements_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -366,6 +511,21 @@
           "notNull": true,
           "autoincrement": false
         },
+        "background_type": {
+          "name": "background_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'solid'"
+        },
+        "gradient_value": {
+          "name": "gradient_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "background_pattern": {
           "name": "background_pattern",
           "type": "text",
@@ -382,7 +542,15 @@
           "default": "'10px 15px'"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "banner_background_announcement_id_unique": {
+          "name": "banner_background_announcement_id_unique",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "banner_background_announcement_id_announcements_id_fk": {
           "name": "banner_background_announcement_id_announcements_id_fk",
@@ -543,6 +711,21 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'10px 20px'"
+        },
+        "font_type": {
+          "name": "font_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'site'"
+        },
+        "font_url": {
+          "name": "font_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -561,6 +744,31 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "page_patterns": {
+      "name": "page_patterns",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'__global'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

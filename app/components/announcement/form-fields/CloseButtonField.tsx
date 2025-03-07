@@ -7,6 +7,7 @@ import {
   Box,
 } from "@shopify/polaris";
 import { useFormContext } from "../../../contexts/AnnouncementFormContext";
+import { ColorPickerInput } from "app/components/ColorPickerInput";
 
 export function CloseButtonField() {
   const { formData, handleFormChange } = useFormContext();
@@ -16,6 +17,10 @@ export function CloseButtonField() {
       showCloseButton: position !== 'none',
       closeButtonPosition: position 
     });
+  };
+
+  const handleCloseButtonColorChange = (value: string) => {
+    handleFormChange('basic', { closeButtonColor: value });
   };
 
   return (
@@ -51,6 +56,17 @@ export function CloseButtonField() {
               />
             </InlineStack>
           </BlockStack>
+
+          {formData.basic.showCloseButton && formData.basic.closeButtonPosition !== "none" && (
+            <BlockStack gap="200">
+              <ColorPickerInput
+                label="Close Button Color"
+                value={formData.basic.closeButtonColor ?? "rgb(255, 255, 255)"}
+                onChange={handleCloseButtonColorChange}
+                type="solid"
+              />
+            </BlockStack>
+          )}
         </BlockStack>
       </Box>
     </Card>

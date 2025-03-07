@@ -67,6 +67,7 @@ export interface BasicSettings {
   isActive: boolean;
   showCloseButton?: boolean;
   closeButtonPosition: CloseButtonPosition;
+  closeButtonColor: string;
   countdownEndTime?: string;
   timezone?: string;
   status: AnnouncementStatus;
@@ -124,9 +125,10 @@ export interface CTASettings {
 
 export interface BackgroundSettings extends BaseBackground {
   id?: number;
-  backgroundType: 'solid' | string;
+  backgroundType: 'solid' | 'gradient';
   color1: string;
   color2: string;
+  gradientValue?: string;
   pattern: string;
   padding: {
     top: number;
@@ -175,6 +177,7 @@ export interface Announcement extends BaseEntity, BaseNullableFields {
   startDate: string;
   endDate: string;
   closeButtonPosition: CloseButtonPosition;
+  closeButtonColor: string;
   status: AnnouncementStatus;
   texts: DatabaseTextSettings[];
   background?: DatabaseBackgroundSettings;

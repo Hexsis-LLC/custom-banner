@@ -24,6 +24,7 @@ export const announcements = sqliteTable('announcements', {
   closeButtonPosition: text('close_button_position', {
     enum: ['left', 'right', 'center', 'none']
   }).notNull(),
+  closeButtonColor: text('close_button_color').notNull().default('rgb(255, 255, 255)'),
   countdownEndTime: text('countdown_end_time'),
   timezone: text('timezone').default('UTC'),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
@@ -69,6 +70,7 @@ export const announcementText = sqliteTable('announcement_text', {
   textColor: text('text_color').notNull(),
   fontSize: integer('font_size').notNull(),
   customFont: text('custom_font'),
+  fontType: text('font_type').notNull().default('site'),
   languageCode: text('language_code').default('en')
 }, (table) => ({
   announcementIdx: index('text_announcement_idx').on(table.announcementId)
@@ -85,7 +87,9 @@ export const callToAction = sqliteTable('call_to_action', {
   bgColor: text('bg_color').notNull(),
   textColor: text('text_color').notNull(),
   buttonRadius: integer('button_radius').default(4),
-  padding: text('padding').default('10px 20px')
+  padding: text('padding').default('10px 20px'),
+  fontType: text('font_type').notNull().default('site'),
+  fontUrl: text('font_url')
 });
 
 export const bannerBackground = sqliteTable('banner_background', {
@@ -94,7 +98,9 @@ export const bannerBackground = sqliteTable('banner_background', {
     .references(() => announcements.id)
     .notNull()
     .unique(), // Enforce 1:1 relationship
-  backgroundColor: text('bg_color').notNull(),
+  backgroundColor: text('bg_color').notNull(), // For solid colors
+  backgroundType: text('background_type', { enum: ['solid', 'gradient'] }).notNull().default('solid'),
+  gradientValue: text('gradient_value'), // Full gradient string
   backgroundPattern: text('background_pattern'),
   padding: text('padding').default('10px 15px')
 });

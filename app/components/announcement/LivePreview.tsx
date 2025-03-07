@@ -65,7 +65,7 @@ const bannerTextStyle = (props: StyledProps): React.CSSProperties => {
     : { fontFamily: props.fontFamily || 'inherit' };
 
   return {
-    color: props.color || '#ffffff',
+    color: props.color || 'inherit',
     fontSize: `${props.fontSize || 16}px`,
     margin: 0,
     textAlign: 'center',
@@ -91,40 +91,54 @@ const ctaWrapperStyle: React.CSSProperties = {
   marginRight: '56px'
 };
 
-const ctaTextLinkStyle = (props: StyledProps): React.CSSProperties => ({
-  color: props.cta?.textColor || '#ffffff',
-  textDecoration: 'underline',
-  fontSize: `${props.fontSize || 16}px`,
-  fontFamily: props.fontFamily || 'inherit',
-  cursor: 'pointer',
-  transition: 'opacity 0.2s',
-  opacity: 1,
-  position: 'relative',
-  zIndex: 1,
-  marginLeft: '10px'
-});
+const ctaTextLinkStyle = (props: StyledProps): React.CSSProperties => {
+  // Only apply fontFamily if it's not a site font
+  const fontStyles = props.fontType === 'site' 
+    ? {}
+    : { fontFamily: props.fontFamily || 'inherit' };
 
-const ctaButtonStyle = (props: StyledProps): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textDecoration: 'none',
-  transition: 'all 0.2s ease',
-  whiteSpace: 'nowrap',
-  minWidth: '80px',
-  textAlign: 'center',
-  backgroundColor: props.cta?.buttonBackgroundColor || '#ffffff',
-  color: props.cta?.buttonFontColor || '#000000',
-  padding: props.cta?.padding 
-    ? `${props.cta.padding.top}px ${props.cta.padding.right}px ${props.cta.padding.bottom}px ${props.cta.padding.left}px` 
-    : '5px 15px',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  border: 'none',
-  fontFamily: props.fontFamily || 'inherit',
-  fontSize: `${props.fontSize || 16}px`,
-  opacity: 1
-});
+  return {
+    color: props.cta?.textColor || props.color || 'rgb(255, 255, 255)',
+    textDecoration: 'underline',
+    fontSize: '16px',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+    opacity: 1,
+    position: 'relative',
+    zIndex: 1,
+    marginLeft: '10px',
+    ...fontStyles
+  };
+};
+
+const ctaButtonStyle = (props: StyledProps): React.CSSProperties => {
+  // Only apply fontFamily if it's not a site font
+  const fontStyles = props.fontType === 'site' 
+    ? {}
+    : { fontFamily: props.fontFamily || 'inherit' };
+
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap',
+    minWidth: '80px',
+    textAlign: 'center',
+    backgroundColor: props.cta?.buttonBackgroundColor || 'rgb(255, 255, 255)',
+    color: props.cta?.buttonFontColor || 'rgb(0, 0, 0)',
+    padding: props.cta?.padding 
+      ? `${props.cta.padding.top}px ${props.cta.padding.right}px ${props.cta.padding.bottom}px ${props.cta.padding.left}px` 
+      : '5px 15px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    border: 'none',
+    fontSize: '16px',
+    opacity: 1,
+    ...fontStyles
+  };
+};
 
 const ctaBarStyle = (props: StyledProps): React.CSSProperties => ({
   position: 'absolute',
@@ -147,7 +161,7 @@ const ctaContainerStyle: React.CSSProperties = {
 const closeButtonStyle = (props: StyledProps): React.CSSProperties => ({
   background: 'none',
   border: 'none',
-  color: '#ffffff',
+  color: props.color,
   cursor: 'pointer',
   padding: '5px',
   fontSize: '18px',
@@ -235,7 +249,7 @@ export function LivePreview() {
       ? background.color1
       : undefined,
     background: background.backgroundType === 'gradient'
-      ? `linear-gradient(to right, ${background.color1}, ${background.color2})`
+      ? background.gradientValue
       : undefined,
     padding: background.padding,
     height,
@@ -245,7 +259,7 @@ export function LivePreview() {
   // Get text styles based on font type
   const getTextStyles = (): StyledProps => {
     const baseStyles: StyledProps = {
-      color: text.textColor,
+      color: text.textColor || 'rgb(255, 255, 255)',
       fontSize: text.fontSize,
       fontType: text.fontType as FontType
     };
@@ -264,6 +278,18 @@ export function LivePreview() {
     return baseStyles;
   };
 
+  // Add debug logging to track color and gradient values
+  useEffect(() => {
+    console.log('Color Debug:', {
+      backgroundType: background.backgroundType,
+      solidColor: background.color1,
+      gradientValue: background.backgroundType === 'gradient' ? background.gradientValue : null,
+      textColor: text.textColor,
+      ctaTextColor: cta.textColor,
+      ctaButtonColor: cta.buttonBackgroundColor
+    });
+  }, [background, text.textColor, cta.textColor, cta.buttonBackgroundColor]);
+
   // Transform CTA data to match CTASettings type
   const getCTAProps = (): { cta: Partial<CTASettings> } => {
     return {
@@ -277,7 +303,6 @@ export function LivePreview() {
   // Get CTA styles based on type and font
   const getCTAStyles = (): StyledProps => {
     const baseStyles: StyledProps = {
-      fontSize: text.fontSize, // Use text font size as default
       fontType: cta.fontType as FontType,
       cta: getCTAProps().cta
     };
@@ -387,7 +412,10 @@ export function LivePreview() {
     <div style={bannerContainerStyle(styleProps)}>
       <div style={bannerWrapperStyle(styleProps)}>
         <div style={bannerContentStyle(styleProps)}>
-          <p style={bannerTextStyle(getTextStyles())}>
+          <p style={{
+            ...bannerTextStyle(getTextStyles()),
+            color: text.textColor
+          }}>
             {text.announcementText}
           </p>
 
@@ -399,7 +427,10 @@ export function LivePreview() {
             )}
 
             {basic.showCloseButton && basic.closeButtonPosition !== 'none' && (
-              <button style={closeButtonStyle({ position: closePos })}>✕</button>
+              <button style={closeButtonStyle({ 
+                position: closePos,
+                color: basic.closeButtonColor
+              })}>✕</button>
             )}
           </div>
         </div>
