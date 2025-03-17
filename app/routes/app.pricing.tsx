@@ -155,14 +155,11 @@ export default function PricingPage() {
       <BlockStack gap="500">
         <InlineStack gap="500" blockAlign="start" wrap={false}>
           {/* Free Plan Card */}
-          <div style={cardStyle}>
-            <Box
+          <Box
               background="bg-surface"
               borderRadius="200"
               width="500px"
               padding="0"
-              borderWidth="025"
-              borderColor="border"
               overflowX="hidden"
               overflowY="hidden"
             >
@@ -221,11 +218,9 @@ export default function PricingPage() {
                 </Box>
               </BlockStack>
             </Box>
-          </div>
 
           {/* Pro Plan Card */}
-          <div style={cardStyle}>
-            <Box
+          <Box
               background="bg-surface"
               borderRadius="200"
               width="500px"
@@ -301,27 +296,25 @@ export default function PricingPage() {
                     variant="primary"
                     fullWidth
                     disabled={isPro && (
-                      (billingCycle === "monthly" && currentPlan === planConstants.PRO_MONTHLY_PLAN) || 
-                      (billingCycle === "yearly" && (currentPlan === planConstants.PRO_YEARLY_PLAN || currentPlan === "Pro Annual Plan"))
+                      (billingCycle === "monthly" && currentPlan === planConstants.PRO_MONTHLY_PLAN) ||
+                      (billingCycle === "yearly" && [planConstants.PRO_YEARLY_PLAN, "Pro Annual Plan"].includes(currentPlan))
                     )}
                     url={upgradeUrl}
                   >
-                    {billingCycle === "monthly" && currentPlan === planConstants.PRO_MONTHLY_PLAN ? 
-                      "Subscribed" : 
-                      billingCycle === "yearly" && (currentPlan === planConstants.PRO_YEARLY_PLAN || currentPlan === "Pro Annual Plan") ? 
-                      "Subscribed" :
-                      billingCycle === "yearly" && currentPlan === planConstants.PRO_MONTHLY_PLAN ?
-                      "Upgrade" : 
-                      currentPlan === planConstants.FREE_PLAN ? 
-                      "Upgrade" : 
-                      billingCycle === "monthly" && (currentPlan === planConstants.PRO_YEARLY_PLAN || currentPlan === "Pro Annual Plan") ? 
-                      "Downgrade" : 
-                      "Subscribe"}
+                    {(() => {
+                      if ((billingCycle === "monthly" && currentPlan === planConstants.PRO_MONTHLY_PLAN) ||
+                          (billingCycle === "yearly" && [planConstants.PRO_YEARLY_PLAN, "Pro Annual Plan"].includes(currentPlan))) {
+                        return "Subscribed";
+                      }
+                      if (currentPlan === planConstants.FREE_PLAN) return "Upgrade";
+                      if (billingCycle === "yearly" && currentPlan === planConstants.PRO_MONTHLY_PLAN) return "Upgrade";
+                      if (billingCycle === "monthly" && [planConstants.PRO_YEARLY_PLAN, "Pro Annual Plan"].includes(currentPlan)) return "Downgrade";
+                      return "Subscribe";
+                    })()}
                   </Button>
                 </Box>
               </BlockStack>
             </Box>
-          </div>
         </InlineStack>
       </BlockStack>
     </Page>
