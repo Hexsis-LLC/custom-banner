@@ -1,0 +1,37 @@
+import {
+  sqliteTable,
+  integer,
+  text,
+  index,
+} from 'drizzle-orm/sqlite-core';
+import { relations } from 'drizzle-orm';
+import { announcements } from './announcements';
+
+// Table definition
+export const afterTimerEnds = sqliteTable('after_timer_ends', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  announcementId: integer('announcement_id')
+    .references(() => announcements.id)
+    .notNull()
+    .unique(),
+  action: text('action', {
+    enum: ['hide', 'show_zeros', 'create_announcement']
+  }).notNull(),
+  childAnnouncementId: integer('child_announcement_id')
+    .references(() => announcements.id),
+}, (table) => ({
+  announcementIdx: index('after_timer_announcement_idx').on(table.announcementId)
+}));
+
+// Relations
+export const afterTimerEndsRelations = relations(afterTimerEnds, ({ one }) => ({
+  announcement: one(announcements, {
+    fields: [afterTimerEnds.announcementId],
+    references: [announcements.id],
+  }),
+  childAnnouncement: one(announcements, {
+    fields: [afterTimerEnds.childAnnouncementId],
+    references: [announcements.id],
+    relationName: 'child_announcement'
+  }),
+})); 

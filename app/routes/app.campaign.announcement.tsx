@@ -16,7 +16,6 @@ import {json} from "@remix-run/node";
 import {authenticate, unauthenticated} from "../shopify.server";
 import {TABS, DEFAULT_INITIAL_DATA} from "../constants/announcement-form";
 import type {FormState, LoaderData} from "../types/announcement-form";
-import type {BannerType} from "../types/announcement";
 import Storefront from "../services/storefront.server";
 import {FormProvider, useFormContext} from "../contexts/AnnouncementFormContext";
 import {AnnouncementTabs} from "../components/announcement/AnnouncementTabs";
@@ -24,9 +23,7 @@ import {ValidationMessages} from "../components/announcement/ValidationMessages"
 import {ChevronDownIcon} from "@shopify/polaris-icons";
 import {AnnouncementService} from "../services/announcement.server";
 import { LivePreview } from "../components/announcement/LivePreview";
-import type { FontType } from "../types/announcement";
-import { PageService } from "~/services/page.server";
-import { AnnouncementForm } from "~/components/announcement/AnnouncementForm";
+import type {BannerType, FontType} from "../types/announcement";
 
 // Loader
 export const loader = async ({request, params}: LoaderFunctionArgs) => {
@@ -70,7 +67,6 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
         showCloseButton: existingAnnouncement.showCloseButton || true,
         closeButtonPosition: existingAnnouncement.closeButtonPosition,
         closeButtonColor: existingAnnouncement.closeButtonColor || '#FFFFFF',
-        countdownEndTime: existingAnnouncement.countdownEndTime || undefined,
         timezone: existingAnnouncement.timezone || undefined,
         status: existingAnnouncement.status,
       },
@@ -341,7 +337,6 @@ export default function AnnouncementBanner() {
 
   return (
     <FormProvider initialData={initialData}>
-      
       <AnnouncementForm/>
     </FormProvider>
   );

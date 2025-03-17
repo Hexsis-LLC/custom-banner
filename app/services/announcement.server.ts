@@ -9,7 +9,7 @@ import {
   bannerForm,
   callToAction,
   pagePatterns,
-} from '../../drizzle/schema/announcement';
+} from '../../drizzle/schema/announcement_old';
 import {type AnnouncementKVData, CloudflareKVService} from "./cloudflareKV.server";
 import type {
   CreateAnnouncementInput,
@@ -685,11 +685,11 @@ export class AnnouncementService {
   ) {
     // Create base filter conditions
     const baseConditions = [eq(announcements.shopId, shopId)];
-    
+
     // Add filter by tab/status
     if (tab !== "all") {
       const now = new Date().toISOString();
-      
+
       if (tab === "active") {
         baseConditions.push(eq(announcements.status, 'published'));
         baseConditions.push(gte(announcements.endDate, now));
@@ -699,7 +699,7 @@ export class AnnouncementService {
         baseConditions.push(eq(announcements.status, tab as any));
       }
     }
-    
+
     // Add search filter if provided
     if (search) {
       const searchLower = `%${search.toLowerCase()}%`;
@@ -707,24 +707,24 @@ export class AnnouncementService {
         sql`LOWER(${announcements.title}) LIKE ${searchLower} OR LOWER(${announcements.type}) LIKE ${searchLower}`
       );
     }
-    
+
     // Calculate pagination
     const offset = (page - 1) * limit;
-    
+
     // Determine sort direction
     const [, direction] = sort.split(" ");
-    const sortOrder = direction === "asc" 
-      ? sql`${announcements.startDate} ASC` 
+    const sortOrder = direction === "asc"
+      ? sql`${announcements.startDate} ASC`
       : sql`${announcements.startDate} DESC`;
-    
+
     // Get total count with same filters (excluding pagination)
     const countResult = await db
       .select({ count: sql`COUNT(*)` })
       .from(announcements)
       .where(and(...baseConditions));
-      
+
     const totalCount = Number(countResult[0]?.count || 0);
-    
+
     // Get paginated and filtered data with minimal related records
     const data = await db.query.announcements.findMany({
       where: and(...baseConditions),
@@ -742,7 +742,7 @@ export class AnnouncementService {
       limit,
       offset,
     });
-    
+
     return { data, totalCount };
   }
 
