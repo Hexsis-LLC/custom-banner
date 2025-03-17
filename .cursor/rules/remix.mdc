@@ -1,0 +1,103 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+ You are an expert in Remix, TailwindCSS, and TypeScript, Shopify, Shopify Polaris Design, Shopify Remix Js App, Shopify Graphql, Drizzle ORM with SQLite, zod focusing on scalable web development.
+ 
+## Key Principles
+- Provide clear, precise Remix and TypeScript examples.
+- Apply immutability and pure functions where applicable.
+- Favor route modules and nested layouts for composition and modularity.
+- Use meaningful variable names (e.g., `isAuthenticated`, `userRole`).
+- Always use kebab-case for file names (e.g., `user-profile.tsx`).
+- Prefer named exports for loaders, actions, and components.
+
+## TypeScript & Remix
+- Define data structures with interfaces for type safety.
+- Avoid the `any` type; fully utilize TypeScript's type system.
+- Organize files: imports, loaders/actions, component logic.
+- Use template strings for multi-line literals.
+- Utilize optional chaining and nullish coalescing.
+- Use nested layouts and dynamic routes where applicable.
+- Leverage loaders for efficient server-side rendering and data fetching.
+- Use `useFetcher` and `useLoaderData` for seamless data management between client and server.
+
+## File Naming Conventions
+- `*.tsx` for React components.
+- `*.ts` for utilities, types, non tsx realted code and configurations.
+- `root.tsx` for the root layout.
+- All files use kebab-case.
+
+## Code Style
+- Use single quotes for string literals.
+- Indent with 2 spaces.
+- Ensure clean code with no trailing whitespace.
+- Use `const` for immutable variables.
+- Use template strings for string interpolation.
+
+## Remix-Specific Guidelines
+- Use `<Link>` for navigation, avoiding full page reloads.
+- Implement loaders and actions for server-side data loading and mutations.
+- Ensure accessibility with semantic HTML and ARIA labels.
+- Leverage route-based loading, error boundaries, and catch boundaries.
+- Use the `useFetcher` hook for non-blocking data updates.
+- Cache and optimize resource loading where applicable to improve performance.
+
+## Import Order
+1. Remix core modules
+2. React and other core libraries
+3. Third-party packages
+4. Application-specific imports
+5. Environment-specific imports
+6. Relative path imports
+
+## Error Handling and Validation
+- Implement error boundaries for catching unexpected errors.
+- Use custom error handling within loaders and actions.
+- Validate user input on both client and server using formData or JSON.
+
+## Testing
+- Use `@testing-library/react` for component testing.
+- Write tests for loaders and actions ensuring data correctness.
+- Mock fetch requests and responses where applicable.
+
+## Performance Optimization
+- Prefetch routes using `<Link prefetch="intent">` for faster navigation.
+- Defer non-essential JavaScript using `<Scripts defer />`.
+- Optimize nested layouts to minimize re-rendering.
+- Use Remix's built-in caching and data revalidation to optimize performance.
+
+## Security
+- Prevent XSS by sanitizing user-generated content.
+- Use Remix's CSRF protection for form submissions.
+- Handle sensitive data on the server; never expose it in client code.
+
+## Shopify Remix Guidelines
+- **Shopify API Integration:**
+  - Use Shopify's GraphQL API within loaders and actions for efficient data fetching.
+  - Securely store and manage Shopify API keys and tokens using environment variables.
+  - Leverage the Shopify Storefront API for dynamic commerce experiences.
+- **UI/UX and Polaris Design:**
+  - Integrate Shopify Polaris Design components for a consistent and accessible UI.
+  - Customize Polaris components using TailwindCSS when necessary.
+  - Adhere to Shopify Polaris guidelines for accessibility and responsive design.
+- **Project Structure & Organization:**
+  - Use nested layouts for Shopify sections to promote reusability and maintainability.
+- **Data Management and GraphQL:**
+  - Define Shopify data structures with TypeScript interfaces for type safety.
+  - Validate and sanitize data coming from Shopify APIs with `zod`.
+  - Use `useLoaderData` to fetch Shopify data and ensure seamless client-server integration.
+- **Performance and Caching:**
+  - Optimize Shopify API calls with caching strategies and efficient server-side rendering.
+  - Defer non-critical Shopify component loading using Remix's data fetching strategies.
+- **Error Handling and Testing:**
+  - Implement error boundaries specifically for Shopify API interactions.
+  - Write comprehensive tests for Shopify loaders, actions, and components using `@testing-library/react`.
+  - Mock Shopify API responses for reliable and isolated testing.
+
+## Final Notes
+- Maintain consistency in code style and conventions across the project.
+- Regularly update dependencies and follow the latest Remix and Shopify best practices.
+- Refer to @Remix Documentation and [Shopify Polaris Documentation](mdc:https:/polaris.shopify.com) for the latest guidelines.

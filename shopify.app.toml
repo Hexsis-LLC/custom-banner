@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "ec9e14e5a3e1d4d66a897f1dc5d608da"
+client_id = "a6de817838cb5bd3036a069dc004c51e"
 application_url = "https://custombanner.ishaf.info"
 embedded = true
 name = "Custom Banner"

@@ -198,9 +198,11 @@ export interface KVAnnouncement extends BaseEntity, BaseNullableFields {
   displayBeforeDelay: string;
   showAfterClosing: string;
   showAfterCTA: string;
+  status: AnnouncementStatus;
   texts: Array<DatabaseTextSettings>;
   background: DatabaseBackgroundSettings | null;
   form: Array<DatabaseFormField>;
+  pagePatterns?: string[];
 }
 
 export interface AnnouncementKVData {

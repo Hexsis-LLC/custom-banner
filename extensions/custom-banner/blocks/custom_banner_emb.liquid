@@ -256,7 +256,7 @@
               'Content-Type': 'application/json'
             }
           });
-          
+
           // Parse and return the AnnouncementKVData response
           return await response.json();
         } catch (error) {
@@ -293,7 +293,7 @@
       data; // AnnouncementKVData from the API
       /** @type {string} */
       currentPath;
-      
+
       /**
        * @param {AnnouncementKVData} data - The banner data from API
        * @param {string} currentPath - Current page path
@@ -333,7 +333,7 @@
       }
 
       /**
-       * Gets global announcements that show on all pages 
+       * Gets global announcements that show on all pages
        * @returns {KVAnnouncement[]} Array of global announcements
        */
       getGlobalAnnouncements() {
@@ -411,7 +411,7 @@
         const background = announcement.background;
 
         banner.style.backgroundColor = background?.backgroundColor || CONFIG.DEFAULT_STYLES.backgroundColor;
-        
+
         // Apply padding from API if available
         if (background?.padding) {
           banner.style.padding = background.padding;
@@ -435,11 +435,11 @@
         if (text?.ctas?.length > 0) {
           const ctaWrapper = document.createElement('div');
           ctaWrapper.className = 'hex-banner-cta-wrapper';
-          
+
           text.ctas.forEach(cta => {
             ctaWrapper.appendChild(this.createCTAButton(cta));
           });
-          
+
           actionsDiv.appendChild(ctaWrapper);
         }
 
@@ -457,12 +457,12 @@
         textElement.style.color = text?.textColor || CONFIG.DEFAULT_STYLES.textColor;
         textElement.style.fontSize = `${text?.fontSize || CONFIG.DEFAULT_STYLES.fontSize}px`;
         textElement.textContent = text?.textMessage || '';
-        
+
         // Apply custom font if available
         if (text?.customFont) {
           textElement.style.fontFamily = text.customFont;
         }
-        
+
         return textElement;
       }
 
@@ -471,19 +471,19 @@
         ctaButton.href = cta.link || '#';
         ctaButton.className = 'hex-banner-cta';
         ctaButton.textContent = cta.text || '';
-        
+
         // Apply CTA styles from API
         ctaButton.style.backgroundColor = cta.bgColor || CONFIG.DEFAULT_STYLES.textColor;
         ctaButton.style.color = cta.textColor || CONFIG.DEFAULT_STYLES.backgroundColor;
         ctaButton.style.borderRadius = `${cta.buttonRadius || 4}px`;
-        
+
         // Apply padding from API if available
         if (cta.padding && cta.padding !== '0px 0px 0px 0px') {
           ctaButton.style.padding = cta.padding;
         } else {
           ctaButton.style.padding = '5px 15px';
         }
-        
+
         return ctaButton;
       }
 
@@ -527,11 +527,11 @@
       isWithinTimeWindow(announcement) {
         // Get current time in user's local time zone
         const now = new Date();
-        
+
         // Convert announcement dates to user's local time zone
         const start = this.getLocalDate(announcement.startDate);
         const end = this.getLocalDate(announcement.endDate);
-        
+
         // Debug time information if needed
         if (CONFIG.DEBUG) {
           console.log('Banner Time Check:', {
@@ -545,7 +545,7 @@
             isBeforeEnd: now <= end
           });
         }
-        
+
         return announcement.isActive && now >= start && now <= end;
       }
 
@@ -577,7 +577,7 @@
 
     /**
      * Main initialization function - Fetches data and displays banners
-     * 
+     *
      * Data flow:
      * 1. Fetch AnnouncementKVData from API
      * 2. Select applicable announcements based on current path
