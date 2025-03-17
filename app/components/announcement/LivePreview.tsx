@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFormContext } from '../../contexts/AnnouncementFormContext';
-import type { CTASettings, CloseButtonPosition, FontType } from '../../types/announcement';
+import type { CTASettings, CloseButtonPosition, FontType, DbBannerBackground } from '../../types/announcement';
 
 interface StyledProps {
   backgroundColor?: string;
@@ -244,17 +244,52 @@ export function LivePreview() {
     ? `${basic.sizeWidth}%`
     : '100%';
 
+  // Create background style based on background type
+  const getBackgroundStyles = () => {
+    if (background.backgroundType === 'solid') {
+      return {
+        backgroundColor: background.color1 || '#000000',
+        background: undefined
+      };
+    } else if (background.backgroundType === 'gradient') {
+      // Use gradientValue if available, otherwise construct it
+      const gradientStyle = background.gradientValue || 
+        `linear-gradient(90deg, ${background.color1 || '#000000'}, ${background.color2 || '#ffffff'})`;
+      
+      return {
+        backgroundColor: undefined,
+        background: gradientStyle
+      };
+    }
+    
+    // Default fallback
+    return {
+      backgroundColor: '#000000',
+      background: undefined
+    };
+  };
+
+  const bgStyles = getBackgroundStyles();
+  
   const styleProps = {
-    backgroundColor: background.backgroundType === 'solid' 
-      ? background.color1
-      : undefined,
-    background: background.backgroundType === 'gradient'
-      ? background.gradientValue
-      : undefined,
+    backgroundColor: bgStyles.backgroundColor,
+    background: bgStyles.background,
     padding: background.padding,
     height,
     width
   };
+
+  // Add debug logging to track background styles
+  useEffect(() => {
+    console.log('Background Debug:', {
+      backgroundType: background.backgroundType,
+      color1: background.color1,
+      color2: background.color2,
+      gradientValue: background.gradientValue,
+      computedStyles: bgStyles,
+      padding: background.padding
+    });
+  }, [background, bgStyles]);
 
   // Get text styles based on font type
   const getTextStyles = (): StyledProps => {

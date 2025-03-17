@@ -1,18 +1,22 @@
-import type { AnnouncementBannerData, Size, BannerType, AnnouncementStatus, FontType } from "./announcement";
-
-// Extend CloseButtonPosition to include 'none'
-export type FormCloseButtonPosition = 'right' | 'left' | 'center' | 'none';
+import type { 
+  AnnouncementBannerData, 
+  Size, 
+  BannerType, 
+  AnnouncementStatus, 
+  FontType,
+  CloseButtonPosition
+} from "./announcement";
 
 // Form-specific version of AnnouncementBannerData
 export type FormAnnouncementBannerData = Omit<AnnouncementBannerData, 'basic'> & {
   basic: Omit<AnnouncementBannerData['basic'], 'closeButtonPosition'> & {
-    closeButtonPosition: FormCloseButtonPosition;
+    closeButtonPosition: CloseButtonPosition;
     closeButtonColor: string;
   };
 };
 
 export interface FormBasicSettings extends Omit<AnnouncementBannerData['basic'], 'closeButtonPosition'> {
-  closeButtonPosition: FormCloseButtonPosition;
+  closeButtonPosition: CloseButtonPosition;
   closeButtonColor: string;
 }
 
@@ -32,7 +36,7 @@ export interface FormState {
     type: BannerType;
     isActive: boolean;
     showCloseButton: boolean;
-    closeButtonPosition: FormCloseButtonPosition;
+    closeButtonPosition: CloseButtonPosition;
     closeButtonColor: string;
     status?: AnnouncementStatus;
     countdownEndTime?: string;
@@ -91,7 +95,7 @@ export interface FormState {
     backgroundPattern?: string | null;
   };
   other: {
-    closeButtonPosition: FormCloseButtonPosition;
+    closeButtonPosition: CloseButtonPosition;
     displayBeforeDelay: string;
     showAfterClosing: string;
     showAfterCTA: string;

@@ -4,7 +4,7 @@ import { AnnouncementService } from "../services/announcement.server";
 import {AnnouncementAction} from "../services/announcementAction.server";
 import { ZodError } from "zod";
 import { validateAnnouncement } from "../schemas/announcement";
-import type { DatabaseAnnouncement } from "../types/announcement";
+import type { DbAnnouncement, DbAnnouncementText, DbBannerBackground, DbBannerForm, PagePatternLink } from "../types/announcement";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -18,7 +18,7 @@ interface QueryParams {
 
 // Types for response data
 interface PaginatedResponse {
-  data: DatabaseAnnouncement[];
+  data: DbAnnouncement[];
   totalPages: number;
   currentPage: number;
 }
@@ -64,38 +64,41 @@ const createSuccessResponse = (message: string, data?: unknown) => {
   return json(response);
 };
 
+// Define an augmented type that includes relations
+type AugmentedDbAnnouncement = DbAnnouncement & {
+  texts: DbAnnouncementText[];
+  background: DbBannerBackground | null;
+  form: DbBannerForm | null;
+  pagePatternLinks: PagePatternLink[];
+};
+
 // Helper functions for filtering and sorting
 const filterAnnouncements = (
-  announcements: DatabaseAnnouncement[],
-  { tab, search }: Pick<QueryParams, 'tab' | 'search'>
-): DatabaseAnnouncement[] => {
-  return announcements.filter(item => {
-    const now = new Date();
-    
-    // Tab filter
-    const matchesTab = tab === "all" ? true :
-      tab === "active" ? (
-        item.status === 'published' &&
-        new Date(item.endDate) >= now
-      ) :
-      tab === "ended" ? (
-        new Date(item.endDate) < now
-      ) :
-      item.status === tab;
+  announcements: AugmentedDbAnnouncement[],
+  filters: {
+    status: string[];
+    type: string[];
+    search: string;
+  }
+) => {
+  return announcements.filter((announcement) => {
+    const matchesStatus =
+      filters.status.length === 0 ||
+      filters.status.includes(announcement.status);
+    const matchesType =
+      filters.type.length === 0 || filters.type.includes(announcement.type);
+    const matchesSearch =
+      filters.search === "" ||
+      announcement.title.toLowerCase().includes(filters.search.toLowerCase());
 
-    // Search filter
-    const matchesSearch = !search ||
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.type.toLowerCase().includes(search.toLowerCase());
-
-    return matchesTab && matchesSearch;
+    return matchesStatus && matchesType && matchesSearch;
   });
 };
 
 const sortAnnouncements = (
-  announcements: DatabaseAnnouncement[],
+  announcements: AugmentedDbAnnouncement[],
   sort: string
-): DatabaseAnnouncement[] => {
+): AugmentedDbAnnouncement[] => {
   const [, direction] = sort.split(" ");
   return [...announcements].sort((a, b) => {
     return direction === "asc"
@@ -105,7 +108,7 @@ const sortAnnouncements = (
 };
 
 const paginateAnnouncements = (
-  announcements: DatabaseAnnouncement[],
+  announcements: AugmentedDbAnnouncement[],
   page: number
 ): Pick<PaginatedResponse, 'data' | 'totalPages'> => {
   const totalPages = Math.ceil(announcements.length / ITEMS_PER_PAGE);

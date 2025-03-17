@@ -1,5 +1,9 @@
 import {AnnouncementService} from './announcement.server';
-import type {AnnouncementBannerData} from '../types/announcement';
+import type {
+  AnnouncementBannerData,
+  CreateAnnouncementInput,
+  DbCallToAction
+} from '../types/announcement';
 
 export class AnnouncementAction {
   private announcementService: AnnouncementService;
@@ -8,17 +12,32 @@ export class AnnouncementAction {
     this.announcementService = new AnnouncementService();
   }
 
-
   private formatPadding(padding: { top: number; right: number; bottom: number; left: number }): string {
     return `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`;
   }
 
-  private getBackgroundData(formData: AnnouncementBannerData) {
+  private getBackgroundData(formData: AnnouncementBannerData): CreateAnnouncementInput['background'] & {
+    backgroundColor?: string;
+    backgroundType?: string;
+    backgroundPattern?: string;
+    padding?: string;
+  } {
     const { background } = formData;
     return {
+      // Fields for CreateAnnouncementInput
+      type: background.backgroundType === 'gradient' ? 'gradient' : 'color',
+      color: background.backgroundType === 'solid' ? background.color1 : undefined,
+      gradientStart: background.backgroundType === 'gradient' ? background.color1 : undefined,
+      gradientEnd: background.backgroundType === 'gradient' ? background.color2 : undefined,
+      gradientDirection: background.backgroundType === 'gradient' ? '90deg' : undefined,
+      gradientValue: background.backgroundType === 'gradient' ? background.gradientValue : undefined,
+      imageUrl: background.pattern === 'none' ? undefined : background.pattern,
+      imagePosition: undefined,
+      imageSize: undefined,
+      
+      // Original fields needed for other parts of the application
       backgroundColor: background.backgroundType === 'solid' ? background.color1 : '',
       backgroundType: background.backgroundType,
-      gradientValue: background.backgroundType === 'gradient' ? background.gradientValue : undefined,
       backgroundPattern: background.pattern === 'none' ? undefined : background.pattern,
       padding: this.formatPadding(background.padding)
     };
@@ -29,7 +48,19 @@ export class AnnouncementAction {
     return 'text';
   }
 
-  private getTextData(formData: AnnouncementBannerData) {
+  private getTextData(formData: AnnouncementBannerData): CreateAnnouncementInput['texts'][0] & {
+    callToActions?: Array<{
+      type?: 'button' | 'text';
+      text?: string;
+      link?: string;
+      bgColor?: string;
+      textColor?: string;
+      buttonRadius?: number;
+      padding?: string;
+      fontType?: string;
+      fontUrl?: string;
+    }>;
+  } {
     return {
       textMessage: formData.text.announcementText,
       textColor: formData.text.textColor,
@@ -38,11 +69,18 @@ export class AnnouncementAction {
       fontType: formData.text.fontType,
       languageCode: undefined,
       callToActions: formData.cta.ctaType === 'none' ? [] : [{
+        // Fields for CreateAnnouncementInput
+        text: formData.cta.ctaText || '',
+        url: formData.cta.ctaLink || '',
+        textColor: formData.cta.buttonFontColor || '',
+        buttonColor: formData.cta.buttonBackgroundColor || '',
+        openInNewTab: true,
+        position: 0,
+        
+        // Original fields needed for other parts of the application
         type: this.mapCtaType(formData.cta.ctaType),
-        text: formData.cta.ctaText,
         link: formData.cta.ctaLink,
         bgColor: formData.cta.buttonBackgroundColor,
-        textColor: formData.cta.buttonFontColor,
         buttonRadius: undefined,
         padding: undefined,
         fontType: formData.cta.fontType,
@@ -50,7 +88,6 @@ export class AnnouncementAction {
       }]
     };
   }
-
 
   private getStartDate(basic: AnnouncementBannerData['basic']) {
     if (basic.startType === 'now') {
@@ -100,7 +137,7 @@ export class AnnouncementAction {
     return date.toISOString();
   }
 
-  private getCreateAnnouncementData(formData: AnnouncementBannerData, shopId: string) {
+  private getCreateAnnouncementData(formData: AnnouncementBannerData, shopId: string): CreateAnnouncementInput {
     return {
       type: 'basic' as const,
       title: formData.basic.campaignTitle,
@@ -127,7 +164,7 @@ export class AnnouncementAction {
     };
   }
 
-  private getUpdateAnnouncementData(formData: AnnouncementBannerData) {
+  private getUpdateAnnouncementData(formData: AnnouncementBannerData): Partial<CreateAnnouncementInput> {
     return {
       type: 'basic' as const,
       title: formData.basic.campaignTitle,

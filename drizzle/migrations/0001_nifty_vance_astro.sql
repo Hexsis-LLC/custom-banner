@@ -1,1 +1,0 @@
-ALTER TABLE `announcements` ADD `close_button_color` text DEFAULT 'rgb(255, 255, 255)' NOT NULL;

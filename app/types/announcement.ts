@@ -1,13 +1,35 @@
+import {
+  announcements,
+  announcementText,
+  bannerBackground,
+  bannerForm,
+  callToAction,
+  pagePatterns,
+  announcementsXPagePatterns
+} from '../../drizzle/schema/announcement';
+import { InferSelectModel } from 'drizzle-orm';
+
 export type Size = 'large' | 'mid' | 'small' | 'custom';
 export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
-export type CloseButtonPosition = 'right' | 'left' | 'center';
+export type CloseButtonPosition = 'right' | 'left' | 'center' | 'none';
 export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
 export type CTAType = 'text' | 'button';
 export type FontType = 'site' | 'dynamic'| 'custom';
 
+// Infer types directly from Drizzle schema
+export type DbAnnouncement = InferSelectModel<typeof announcements>;
+export type DbAnnouncementText = InferSelectModel<typeof announcementText>;
+export type DbBannerBackground = InferSelectModel<typeof bannerBackground>;
+export type DbBannerForm = InferSelectModel<typeof bannerForm>;
+export type DbCallToAction = InferSelectModel<typeof callToAction>;
+export type DbPagePattern = InferSelectModel<typeof pagePatterns>;
+export type DbAnnouncementPagePatternLink = InferSelectModel<typeof announcementsXPagePatterns>;
+
 // Base interfaces for common fields
 interface BaseEntity {
   id: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface BaseNullableFields {
@@ -139,25 +161,6 @@ export interface BackgroundSettings extends BaseBackground {
   announcementId?: number;
 }
 
-// Database-specific interfaces
-export interface DatabaseTextSettings extends BaseEntity, BaseText {
-  announcementId: number;
-  ctas: Array<DatabaseCTASettings>;
-}
-
-export interface DatabaseCTASettings extends BaseEntity, BaseCTA {
-  announcementTextId: number;
-}
-
-export interface DatabaseBackgroundSettings extends BaseEntity, BaseBackground {
-  announcementId: number;
-  padding: string | null;
-}
-
-export interface DatabaseFormField extends BaseEntity, BaseForm {
-  announcementId: number;
-}
-
 // Main announcement interfaces
 export interface AnnouncementBannerData {
   basic: BasicSettings;
@@ -179,30 +182,91 @@ export interface Announcement extends BaseEntity, BaseNullableFields {
   closeButtonPosition: CloseButtonPosition;
   closeButtonColor: string;
   status: AnnouncementStatus;
-  texts: DatabaseTextSettings[];
-  background?: DatabaseBackgroundSettings;
+  texts: DbAnnouncementText[];
+  background?: DbBannerBackground;
   pagePatternLinks: PagePatternLink[];
 }
 
 // KV Store types
-export interface KVAnnouncement extends BaseEntity, BaseNullableFields {
+export interface KVAnnouncement extends BaseEntity {
   type: BannerType;
   title: string;
   shopId: string;
   size: Size;
+  heightPx: number | null;
+  widthPercent: number | null;
   startType: 'now' | 'specific';
   endType: 'until_stop' | 'specific';
   startDate: string;
   endDate: string;
+  showCloseButton: boolean | null;
   closeButtonPosition: CloseButtonPosition;
-  displayBeforeDelay: string;
-  showAfterClosing: string;
-  showAfterCTA: string;
+  closeButtonColor: string;
+  timezone: string | null;
+  isActive: boolean | null;
   status: AnnouncementStatus;
-  texts: Array<DatabaseTextSettings>;
-  background: DatabaseBackgroundSettings | null;
-  form: Array<DatabaseFormField>;
-  pagePatterns?: string[];
+  displayBeforeDelay: string | null;
+  showAfterClosing: string | null;
+  showAfterCTA: string | null;
+  texts: Array<KVTextSettings>;
+  background: KVBackgroundSettings | null;
+  form: KVFormField | null;
+}
+
+export interface KVTextSettings {
+  id: number;
+  announcementId: number;
+  textMessage: string;
+  textColor: string;
+  fontSize: number;
+  customFont: string | null;
+  fontType: string;
+  languageCode: string;
+  createdAt: string;
+  updatedAt: string;
+  ctas: KVCTASettings[];
+}
+
+export interface KVCTASettings {
+  id: number;
+  announcementTextId: number;
+  text: string;
+  url: string;
+  textColor: string;
+  buttonColor: string;
+  openInNewTab: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KVBackgroundSettings {
+  id: number;
+  announcementId: number;
+  type: 'color' | 'gradient' | 'image';
+  color: string;
+  gradientStart: string | null;
+  gradientEnd: string | null;
+  gradientDirection: string | null;
+  imageUrl: string | null;
+  imagePosition: string | null;
+  imageSize: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KVFormField {
+  id: number;
+  announcementId: number;
+  formType: 'email' | 'phone' | 'both';
+  buttonText: string;
+  buttonColor: string;
+  buttonTextColor: string;
+  placeholderText: string | null;
+  successMessage: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AnnouncementKVData {
@@ -247,62 +311,60 @@ export interface CreateAnnouncementInput {
   endDate: string;
   showCloseButton?: boolean;
   closeButtonPosition: CloseButtonPosition;
-  countdownEndTime?: string;
+  closeButtonColor: string;
   timezone?: string;
   isActive?: boolean;
   status: AnnouncementStatus;
+  displayBeforeDelay?: string;
+  showAfterClosing?: string;
+  showAfterCTA?: string;
+  childAnnouncementId?: number;
   texts: Array<{
     textMessage: string;
     textColor: string;
     fontSize: number;
     customFont?: string;
+    fontType?: string;
     languageCode?: string;
     callToActions?: Array<{
-      type: CTAType;
       text: string;
-      link: string;
-      bgColor: string;
+      url: string;
       textColor: string;
-      buttonRadius?: number;
-      padding?: string;
+      buttonColor: string;
+      openInNewTab?: boolean;
+      position?: number;
     }>;
   }>;
   background?: {
-    backgroundColor: string;
-    backgroundPattern?: string;
-    padding?: string;
+    type: 'color' | 'gradient' | 'image';
+    color?: string;
+    gradientStart?: string;
+    gradientEnd?: string;
+    gradientDirection?: string;
+    gradientValue?: string;
+    imageUrl?: string;
+    imagePosition?: string;
+    imageSize?: string;
   };
-  form?: Array<BaseForm>;
+  form?: {
+    formType: 'email' | 'phone' | 'both';
+    buttonText: string;
+    buttonColor: string;
+    buttonTextColor: string;
+    placeholderText?: string;
+    successMessage?: string;
+    errorMessage?: string;
+  };
   pagePatterns?: string[];
 }
 
-export interface DatabaseAnnouncement extends BaseEntity {
-  type: BannerType;
-  title: string;
-  shopId: string;
-  size: Size;
-  heightPx: number | null;
-  widthPercent: number | null;
-  startType: 'now' | 'specific';
-  endType: 'until_stop' | 'specific';
-  startDate: string;
-  endDate: string;
-  showCloseButton: boolean | null;
-  closeButtonPosition: CloseButtonPosition;
-  countdownEndTime: string | null;
-  timezone: string | null;
-  isActive: boolean | null;
-  status: AnnouncementStatus;
-  displayBeforeDelay: string;
-  showAfterClosing: string;
-  showAfterCTA: string;
-  texts: DatabaseTextSettings[];
-  background: DatabaseBackgroundSettings | null;
-  form: DatabaseFormField[];
+// Use the Drizzle types directly instead of duplicating them
+export type TransformedAnnouncement = Omit<DbAnnouncement & {
+  texts: DbAnnouncementText[];
+  background: DbBannerBackground | null;
+  form: DbBannerForm | null;
   pagePatternLinks: PagePatternLink[];
-}
-
-export type TransformedAnnouncement = Omit<DatabaseAnnouncement, 'pagePatternLinks'>;
+}, 'pagePatternLinks'>;
 
 export interface GroupedAnnouncements {
   global: TransformedAnnouncement[];
@@ -318,12 +380,9 @@ export interface OtherSettings {
   campaignTiming: string;
 }
 
-export interface PagePattern extends BaseEntity {
-  pattern: string;
-}
-
+// Use the Drizzle type directly
 export interface PagePatternLink {
   pagePatternsID: number;
   announcementsID: number;
-  pagePattern: PagePattern;
+  pagePattern: DbPagePattern;
 }

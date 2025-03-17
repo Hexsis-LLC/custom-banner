@@ -2,6 +2,7 @@ import {
   sqliteTable,
   integer,
   text,
+  index,
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { announcements } from './announcements';
@@ -16,8 +17,12 @@ export const bannerForm = sqliteTable('banner_form', {
   placeholder: text('placeholder'),
   label: text('label'),
   isRequired: integer('is_required', { mode: 'boolean' }).default(true),
-  validationRegex: text('validation_regex')
-});
+  validationRegex: text('validation_regex'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => ({
+  announcementIdx: index('form_announcement_idx').on(table.announcementId)
+}));
 
 // Relations
 export const bannerFormRelations = relations(bannerForm, ({ one }) => ({
@@ -25,4 +30,4 @@ export const bannerFormRelations = relations(bannerForm, ({ one }) => ({
     fields: [bannerForm.announcementId],
     references: [announcements.id],
   }),
-})); 
+}));

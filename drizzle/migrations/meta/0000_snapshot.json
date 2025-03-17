@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "17c592e7-0f2e-44df-8cb5-53cef9fb90de",
+  "id": "0a4fa59b-b828-4f32-bc34-6ee7af55b1b0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "session": {
@@ -126,6 +126,100 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "after_timer_ends": {
+      "name": "after_timer_ends",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "announcement_id": {
+          "name": "announcement_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "child_announcement_id": {
+          "name": "child_announcement_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "after_timer_ends_announcement_id_unique": {
+          "name": "after_timer_ends_announcement_id_unique",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": true
+        },
+        "after_timer_announcement_idx": {
+          "name": "after_timer_announcement_idx",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "after_timer_ends_announcement_id_announcements_id_fk": {
+          "name": "after_timer_ends_announcement_id_announcements_id_fk",
+          "tableFrom": "after_timer_ends",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "after_timer_ends_child_announcement_id_announcements_id_fk": {
+          "name": "after_timer_ends_child_announcement_id_announcements_id_fk",
+          "tableFrom": "after_timer_ends",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "child_announcement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "announcement_text": {
       "name": "announcement_text",
       "columns": {
@@ -186,6 +280,20 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'en'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -313,12 +421,13 @@
           "notNull": true,
           "autoincrement": false
         },
-        "countdown_end_time": {
-          "name": "countdown_end_time",
+        "close_button_color": {
+          "name": "close_button_color",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'rgb(255, 255, 255)'"
         },
         "timezone": {
           "name": "timezone",
@@ -367,39 +476,30 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'none'"
+        },
+        "child_announcement_id": {
+          "name": "child_announcement_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
-      "indexes": {
-        "announcements_type_idx": {
-          "name": "announcements_type_idx",
-          "columns": [
-            "type"
-          ],
-          "isUnique": false
-        },
-        "announcements_date_idx": {
-          "name": "announcements_date_idx",
-          "columns": [
-            "start_date",
-            "end_date"
-          ],
-          "isUnique": false
-        },
-        "announcements_shop_idx": {
-          "name": "announcements_shop_idx",
-          "columns": [
-            "shop_id"
-          ],
-          "isUnique": false
-        },
-        "announcements_status_idx": {
-          "name": "announcements_status_idx",
-          "columns": [
-            "status"
-          ],
-          "isUnique": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -418,6 +518,20 @@
         "announcements_id": {
           "name": "announcements_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -532,6 +646,20 @@
           "notNull": false,
           "autoincrement": false,
           "default": "'10px 15px'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -541,6 +669,13 @@
             "announcement_id"
           ],
           "isUnique": true
+        },
+        "background_announcement_idx": {
+          "name": "background_announcement_idx",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -614,9 +749,31 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "form_announcement_idx": {
+          "name": "form_announcement_idx",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "banner_form_announcement_id_announcements_id_fk": {
           "name": "banner_form_announcement_id_announcements_id_fk",
@@ -718,9 +875,31 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "cta_text_idx": {
+          "name": "cta_text_idx",
+          "columns": [
+            "announcement_text_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "call_to_action_announcement_text_id_announcement_text_id_fk": {
           "name": "call_to_action_announcement_text_id_announcement_text_id_fk",
@@ -728,6 +907,145 @@
           "tableTo": "announcement_text",
           "columnsFrom": [
             "announcement_text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "countdown_settings": {
+      "name": "countdown_settings",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "announcement_id": {
+          "name": "announcement_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timer_type": {
+          "name": "timer_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "time_format": {
+          "name": "time_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'HH:mm:ss'"
+        },
+        "show_days": {
+          "name": "show_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "end_date_time": {
+          "name": "end_date_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_days": {
+          "name": "duration_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_hours": {
+          "name": "duration_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_seconds": {
+          "name": "duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "daily_start_time": {
+          "name": "daily_start_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "daily_end_time": {
+          "name": "daily_end_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "countdown_settings_announcement_id_unique": {
+          "name": "countdown_settings_announcement_id_unique",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": true
+        },
+        "countdown_announcement_idx": {
+          "name": "countdown_announcement_idx",
+          "columns": [
+            "announcement_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "countdown_settings_announcement_id_announcements_id_fk": {
+          "name": "countdown_settings_announcement_id_announcements_id_fk",
+          "tableFrom": "countdown_settings",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcement_id"
           ],
           "columnsTo": [
             "id"
@@ -757,6 +1075,20 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'__global'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},

@@ -26,6 +26,8 @@ export const countdownSettings = sqliteTable('countdown_settings', {
   durationSeconds: integer('duration_seconds'),
   dailyStartTime: text('daily_start_time'),
   dailyEndTime: text('daily_end_time'),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 }, (table) => ({
   announcementIdx: index('countdown_announcement_idx').on(table.announcementId)
 }));

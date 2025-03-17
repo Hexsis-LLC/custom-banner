@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1741360213811,
-      "tag": "0000_aromatic_rattler",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1741384485434,
-      "tag": "0001_nifty_vance_astro",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1742218147577,
-      "tag": "0002_sharp_prowler",
+      "when": 1742219584379,
+      "tag": "0000_silent_siren",
       "breakpoints": true
     }
   ]

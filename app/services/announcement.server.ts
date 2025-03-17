@@ -9,14 +9,31 @@ import {
   bannerForm,
   callToAction,
   pagePatterns,
-} from '../../drizzle/schema/announcement_old';
+} from '../../drizzle/schema/announcement';
 import {type AnnouncementKVData, CloudflareKVService} from "./cloudflareKV.server";
 import type {
   CreateAnnouncementInput,
-  DatabaseAnnouncement,
   GroupedAnnouncements,
   TransformedAnnouncement,
+  DbAnnouncement,
+  DbAnnouncementText,
+  DbBannerBackground,
+  DbBannerForm,
+  DbCallToAction,
+  DbPagePattern,
 } from '../types/announcement';
+
+// Define an augmented type that includes relations
+type AugmentedDbAnnouncement = DbAnnouncement & {
+  texts: (DbAnnouncementText & {
+    ctas: DbCallToAction[];
+  })[];
+  background: DbBannerBackground | null;
+  form: DbBannerForm | null;
+  pagePatternLinks: {
+    pagePattern: DbPagePattern;
+  }[];
+};
 
 // Database-specific text settings
 export class AnnouncementService {
@@ -25,7 +42,7 @@ export class AnnouncementService {
     this.kvService = new CloudflareKVService();
   }
 
-  private async transformActiveAnnouncements(announcements: DatabaseAnnouncement[]): Promise<GroupedAnnouncements> {
+  private async transformActiveAnnouncements(announcements: AugmentedDbAnnouncement[]): Promise<GroupedAnnouncements> {
     console.log('Starting transformation with announcements:', announcements.map(a => ({
       id: a.id,
       status: a.status,
@@ -154,7 +171,8 @@ export class AnnouncementService {
       return;
     }
 
-    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements as DatabaseAnnouncement[]);
+    // Use 'as unknown as AugmentedDbAnnouncement[]' to safely convert the type
+    const groupedAnnouncements = await this.transformActiveAnnouncements(allLatestAnnouncements as unknown as AugmentedDbAnnouncement[]);
     console.log('Grouped announcements:', {
       globalCount: groupedAnnouncements.global.length,
       patterns: groupedAnnouncements.__patterns,
@@ -252,58 +270,79 @@ export class AnnouncementService {
       // Create texts and CTAs
       for (const text of texts) {
         const { callToActions, ...textData } = text;
+
+        // Create text using type-safe values
+        const textValues: Omit<typeof announcementText.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+          textMessage: textData.textMessage,
+          textColor: textData.textColor,
+          fontSize: textData.fontSize,
+          customFont: textData.customFont,
+          fontType: textData.fontType || 'site',
+          languageCode: textData.languageCode || 'en',
+          announcementId: createdAnnouncement.id
+        };
+
         const [createdText] = await tx
           .insert(announcementText)
-          .values({
-            textMessage: textData.textMessage,
-            textColor: textData.textColor,
-            fontSize: textData.fontSize,
-            customFont: textData.customFont,
-            languageCode: textData.languageCode,
-            announcementId: createdAnnouncement.id
-          })
+          .values(textValues)
           .returning();
 
         if (callToActions?.length) {
-          await tx.insert(callToAction).values(
-            callToActions.map((cta) => ({
-              type: cta.type,
+          // Process each CTA individually to avoid type issues
+          for (const cta of callToActions) {
+            // Create CTA using type-safe values
+            const ctaValues: Omit<typeof callToAction.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+              type: 'button' as const,
               text: cta.text,
-              link: cta.link,
-              bgColor: cta.bgColor,
+              link: cta.url,
+              bgColor: cta.buttonColor,
               textColor: cta.textColor,
-              buttonRadius: cta.buttonRadius,
-              padding: cta.padding,
+              buttonRadius: 4,
+              padding: '10px 20px',
               announcementTextId: createdText.id,
-            }))
-          );
+            };
+
+            await tx.insert(callToAction).values(ctaValues);
+          }
         }
       }
 
       // Create background
       if (background) {
-        await tx
-          .insert(bannerBackground)
-          .values({
-            backgroundColor: background.backgroundColor,
-            backgroundPattern: background.backgroundPattern,
-            padding: background.padding,
-            announcementId: createdAnnouncement.id
-          });
+        // Create background using type-safe values
+        const bgValues: Omit<typeof bannerBackground.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+          backgroundColor: background.color || 'rgba(0,0,0,0)',
+          backgroundType: background.type === 'gradient' ? 'gradient' : 'solid',
+          gradientValue: background.gradientValue || (background.gradientStart && background.gradientEnd
+            ? `linear-gradient(${background.gradientDirection || '90deg'}, ${background.gradientStart}, ${background.gradientEnd})`
+            : undefined),
+          backgroundPattern: background.imageUrl,
+          padding: '10px 15px', // Default value
+          announcementId: createdAnnouncement.id
+        };
+
+        console.log('Creating background with values:', {
+          type: background.type,
+          gradientValue: background.gradientValue,
+          computedGradientValue: bgValues.gradientValue
+        });
+
+        await tx.insert(bannerBackground).values(bgValues);
       }
 
-      // Create form fields if they exist
-      if (form?.length) {
-        await tx.insert(bannerForm).values(
-          form.map((f) => ({
-            inputType: f.inputType,
-            placeholder: f.placeholder,
-            label: f.label,
-            isRequired: f.isRequired,
-            validationRegex: f.validationRegex,
-            announcementId: createdAnnouncement.id,
-          }))
-        );
+      // Create form if it exists
+      if (form) {
+        // Create form using type-safe values
+        const formValues: Omit<typeof bannerForm.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+          inputType: form.formType === 'email' ? 'email' : 'text',
+          placeholder: form.placeholderText,
+          label: form.buttonText,
+          isRequired: true,
+          validationRegex: null,
+          announcementId: createdAnnouncement.id,
+        };
+
+        await tx.insert(bannerForm).values(formValues);
       }
 
       // Always create at least one page pattern
@@ -330,10 +369,12 @@ export class AnnouncementService {
         });
 
         // Create the link
-        await tx.insert(announcementsXPagePatterns).values({
+        const linkValues: Omit<typeof announcementsXPagePatterns.$inferInsert, 'createdAt' | 'updatedAt'> = {
           pagePatternsID: pagePattern.id,
           announcementsID: createdAnnouncement.id,
-        });
+        };
+
+        await tx.insert(announcementsXPagePatterns).values(linkValues);
       }
     });
 
@@ -522,18 +563,40 @@ export class AnnouncementService {
         // Insert new texts and CTAs
         for (const text of texts) {
           const { callToActions, ...textData } = text;
+
+          // Create text using type-safe values
+          const textValues: Omit<typeof announcementText.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+            textMessage: textData.textMessage,
+            textColor: textData.textColor,
+            fontSize: textData.fontSize,
+            customFont: textData.customFont,
+            fontType: textData.fontType || 'site',
+            languageCode: textData.languageCode || 'en',
+            announcementId: id
+          };
+
           const [newText] = await tx
             .insert(announcementText)
-            .values({ ...textData, announcementId: id })
+            .values(textValues)
             .returning();
 
           if (callToActions?.length) {
-            await tx.insert(callToAction).values(
-              callToActions.map((cta) => ({
-                ...cta,
+            // Process each CTA individually
+            for (const cta of callToActions) {
+              // Create CTA using type-safe values
+              const ctaValues: Omit<typeof callToAction.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+                type: 'button' as const,
+                text: cta.text,
+                link: cta.url,
+                bgColor: cta.buttonColor,
+                textColor: cta.textColor,
+                buttonRadius: 4,
+                padding: '10px 20px',
                 announcementTextId: newText.id,
-              }))
-            );
+              };
+
+              await tx.insert(callToAction).values(ctaValues);
+            }
           }
         }
       }
@@ -543,22 +606,43 @@ export class AnnouncementService {
         await tx
           .delete(bannerBackground)
           .where(eq(bannerBackground.announcementId, id));
-        await tx
-          .insert(bannerBackground)
-          .values({ ...background, announcementId: id });
+
+        // Create background using type-safe values
+        const bgValues: Omit<typeof bannerBackground.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+          backgroundColor: background.color || 'rgba(0,0,0,0)',
+          backgroundType: background.type === 'gradient' ? 'gradient' : 'solid',
+          gradientValue: background.gradientValue || (background.gradientStart && background.gradientEnd
+            ? `linear-gradient(${background.gradientDirection || '90deg'}, ${background.gradientStart}, ${background.gradientEnd})`
+            : undefined),
+          backgroundPattern: background.imageUrl,
+          padding: '10px 15px',
+          announcementId: id
+        };
+
+        console.log('Creating background with values:', {
+          type: background.type,
+          gradientValue: background.gradientValue,
+          computedGradientValue: bgValues.gradientValue
+        });
+
+        await tx.insert(bannerBackground).values(bgValues);
       }
 
-      // Update form fields if provided
+      // Update form if provided
       if (form) {
         await tx.delete(bannerForm).where(eq(bannerForm.announcementId, id));
-        if (form.length > 0) {
-          await tx.insert(bannerForm).values(
-            form.map((f) => ({
-              ...f,
-              announcementId: id,
-            }))
-          );
-        }
+
+        // Create form using type-safe values
+        const formValues: Omit<typeof bannerForm.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+          inputType: form.formType === 'email' ? 'email' : 'text',
+          placeholder: form.placeholderText,
+          label: form.buttonText,
+          isRequired: true,
+          validationRegex: null,
+          announcementId: id
+        };
+
+        await tx.insert(bannerForm).values(formValues);
       }
 
       // Update page patterns if provided
@@ -575,10 +659,12 @@ export class AnnouncementService {
             .values({ pattern })
             .returning();
 
-          await tx.insert(announcementsXPagePatterns).values({
+          const linkValues: Omit<typeof announcementsXPagePatterns.$inferInsert, 'createdAt' | 'updatedAt'> = {
             pagePatternsID: pagePattern.id,
             announcementsID: id,
-          });
+          };
+
+          await tx.insert(announcementsXPagePatterns).values(linkValues);
         }
       }
 
@@ -833,82 +919,111 @@ export class AnnouncementService {
         originals
           .filter((original): original is NonNullable<typeof original> => original !== null)
           .map(async (original) => {
-            // Create the base announcement
+            // Create the base announcement - use type-safe values
+            const announcementValues: Omit<typeof announcements.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+              type: original.type,
+              title: `${original.title} (copy)`,
+              shopId: original.shopId,
+              size: original.size,
+              heightPx: original.heightPx ?? undefined,
+              widthPercent: original.widthPercent ?? undefined,
+              startType: original.startType,
+              endType: original.endType,
+              startDate: original.startDate,
+              endDate: original.endDate,
+              showCloseButton: Boolean(original.showCloseButton),
+              closeButtonPosition: original.closeButtonPosition,
+              closeButtonColor: original.closeButtonColor,
+              timezone: original.timezone ?? undefined,
+              isActive: original.isActive ?? undefined,
+              status: 'draft',
+              displayBeforeDelay: original.displayBeforeDelay ?? undefined,
+              showAfterClosing: original.showAfterClosing ?? undefined,
+              showAfterCTA: original.showAfterCTA ?? undefined,
+              childAnnouncementId: original.childAnnouncementId ?? undefined
+            };
+
             const [newAnnouncement] = await tx
               .insert(announcements)
-              .values({
-                type: original.type,
-                title: `${original.title} (copy)`,
-                shopId: original.shopId,
-                size: original.size,
-                heightPx: original.heightPx ?? undefined,
-                widthPercent: original.widthPercent ?? undefined,
-                startDate: original.startDate,
-                endDate: original.endDate,
-                showCloseButton: Boolean(original.showCloseButton),
-                closeButtonPosition: original.closeButtonPosition,
-                countdownEndTime: original.countdownEndTime ?? undefined,
-                timezone: original.timezone ?? undefined,
-                isActive: original.isActive ?? undefined,
-                status: 'draft'
-              })
+              .values(announcementValues)
               .returning();
 
             // Duplicate texts and CTAs
             for (const text of original.texts) {
+              // Create text using type-safe values
+              const textValues: Omit<typeof announcementText.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+                textMessage: text.textMessage,
+                textColor: text.textColor,
+                fontSize: text.fontSize,
+                customFont: text.customFont ?? undefined,
+                fontType: text.fontType ?? 'site',
+                languageCode: text.languageCode ?? undefined,
+                announcementId: newAnnouncement.id
+              };
+
               const [newText] = await tx
                 .insert(announcementText)
-                .values({
-                  textMessage: text.textMessage,
-                  textColor: text.textColor,
-                  fontSize: text.fontSize,
-                  customFont: text.customFont ?? undefined,
-                  languageCode: text.languageCode ?? undefined,
-                  announcementId: newAnnouncement.id
-                })
+                .values(textValues)
                 .returning();
 
               if (text.ctas?.length) {
-                await tx
-                  .insert(callToAction)
-                  .values(text.ctas.map(cta => ({
-                    type: cta.type,
+                // Process each CTA individually
+                for (const cta of text.ctas) {
+                  // Handle both old and new schema formats with type-safe values
+                  const anyCtaOld = cta as any;
+
+                  const ctaValues: Omit<typeof callToAction.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+                    type: 'button' as const,
                     text: cta.text,
-                    link: cta.link,
-                    bgColor: cta.bgColor,
+                    link: 'link' in cta ? anyCtaOld.link : '#',
+                    bgColor: 'bgColor' in cta ? anyCtaOld.bgColor : '#000000',
                     textColor: cta.textColor,
-                    buttonRadius: cta.buttonRadius ?? undefined,
-                    padding: cta.padding ?? undefined,
+                    buttonRadius: 'buttonRadius' in cta && anyCtaOld.buttonRadius ? anyCtaOld.buttonRadius : 4,
+                    padding: 'padding' in cta && anyCtaOld.padding ? anyCtaOld.padding : '10px 20px',
                     announcementTextId: newText.id
-                  })));
+                  };
+
+                  await tx.insert(callToAction).values(ctaValues);
+                }
               }
             }
 
             // Duplicate background
             if (original.background) {
-              await tx
-                .insert(bannerBackground)
-                .values({
-                  backgroundColor: original.background.backgroundColor,
-                  backgroundPattern: original.background.backgroundPattern ?? undefined,
-                  padding: original.background.padding ?? undefined,
-                  announcementId: newAnnouncement.id
-                });
+              const bg = original.background as any;
+
+              // Type-safe values for background
+              const bgValues: Omit<typeof bannerBackground.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+                backgroundColor: 'backgroundColor' in bg ? bg.backgroundColor : 'rgba(0,0,0,0)',
+                backgroundType: 'backgroundType' in bg ? bg.backgroundType : 'solid',
+                gradientValue: 'gradientValue' in bg ? bg.gradientValue : null,
+                backgroundPattern: 'backgroundPattern' in bg ? bg.backgroundPattern : null,
+                padding: 'padding' in bg && bg.padding ? bg.padding : '10px 15px',
+                announcementId: newAnnouncement.id
+              };
+
+              await tx.insert(bannerBackground).values(bgValues);
             }
 
             // Duplicate page patterns
             for (const link of original.pagePatternLinks) {
+              // Create page pattern with type-safe values
+              const patternValues: Omit<typeof pagePatterns.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
+                pattern: link.pagePattern.pattern
+              };
+
               const [pagePattern] = await tx
                 .insert(pagePatterns)
-                .values({pattern: link.pagePattern.pattern})
+                .values(patternValues)
                 .returning();
 
-              await tx
-                .insert(announcementsXPagePatterns)
-                .values({
-                  pagePatternsID: pagePattern.id,
-                  announcementsID: newAnnouncement.id
-                });
+              // Create link using type-safe values
+              const linkValues: Omit<typeof announcementsXPagePatterns.$inferInsert, 'createdAt' | 'updatedAt'> = {
+                pagePatternsID: pagePattern.id,
+                announcementsID: newAnnouncement.id
+              };
+
+              await tx.insert(announcementsXPagePatterns).values(linkValues);
             }
 
             return newAnnouncement;
@@ -921,6 +1036,9 @@ export class AnnouncementService {
   private convertToKVData(groupedAnnouncements: GroupedAnnouncements): AnnouncementKVData {
     // Convert each announcement to the expected format
     const convertAnnouncement = (announcement: TransformedAnnouncement) => {
+      const anyAnnouncement = announcement as any;
+
+      // Create a KVAnnouncement object
       return {
         id: announcement.id,
         type: announcement.type,
@@ -935,46 +1053,100 @@ export class AnnouncementService {
         endDate: announcement.endDate,
         showCloseButton: announcement.showCloseButton,
         closeButtonPosition: announcement.closeButtonPosition,
-        countdownEndTime: announcement.countdownEndTime,
+        closeButtonColor: announcement.closeButtonColor,
         timezone: announcement.timezone,
         isActive: announcement.isActive,
+        status: announcement.status,
         displayBeforeDelay: announcement.displayBeforeDelay,
         showAfterClosing: announcement.showAfterClosing,
         showAfterCTA: announcement.showAfterCTA,
-        texts: announcement.texts.map(text => ({
-          id: text.id,
-          announcementId: text.announcementId,
-          textMessage: text.textMessage,
-          textColor: text.textColor,
-          fontSize: text.fontSize,
-          customFont: text.customFont,
-          languageCode: text.languageCode || 'en',
-          ctas: text.ctas.map(cta => ({
-            id: cta.id,
-            announcementTextId: text.id,
-            type: cta.type,
-            text: cta.text,
-            link: cta.link,
-            bgColor: cta.bgColor,
-            textColor: cta.textColor,
-            buttonRadius: cta.buttonRadius,
-            padding: cta.padding
-          }))
-        })),
-        background: announcement.background ? {
-          id: announcement.background.id,
-          announcementId: announcement.background.announcementId,
-          backgroundColor: announcement.background.backgroundColor,
-          backgroundPattern: announcement.background.backgroundPattern,
-          padding: announcement.background.padding
-        } : null,
-        form: announcement.form
+        // Map createdAt/updatedAt if they exist, otherwise use current date
+        createdAt: anyAnnouncement.createdAt || new Date().toISOString(),
+        updatedAt: anyAnnouncement.updatedAt || new Date().toISOString(),
+
+        // Map text settings with new KVTextSettings interface
+        texts: announcement.texts.map(text => {
+          const anyText = text as any;
+
+          return {
+            id: text.id,
+            announcementId: text.announcementId,
+            textMessage: text.textMessage,
+            textColor: text.textColor,
+            fontSize: text.fontSize,
+            customFont: text.customFont,
+            fontType: anyText.fontType || 'site',
+            languageCode: text.languageCode || 'en',
+            createdAt: anyText.createdAt || new Date().toISOString(),
+            updatedAt: anyText.updatedAt || new Date().toISOString(),
+
+            // Map CTA settings with new KVCTASettings interface
+            ctas: (text as any).ctas.map((cta: any) => {
+              const anyCtaOld = cta;
+              const anyCtaNew = cta;
+
+              return {
+                id: cta.id,
+                announcementTextId: text.id,
+                text: cta.text,
+                url: anyCtaNew.url || anyCtaOld.link || '',
+                textColor: cta.textColor,
+                buttonColor: anyCtaNew.buttonColor || anyCtaOld.bgColor || '',
+                openInNewTab: anyCtaNew.openInNewTab || true,
+                position: anyCtaNew.position || 0,
+                createdAt: anyCtaNew.createdAt || new Date().toISOString(),
+                updatedAt: anyCtaNew.updatedAt || new Date().toISOString()
+              };
+            })
+          };
+        }),
+
+        // Map background settings with new KVBackgroundSettings interface
+        background: announcement.background ? (() => {
+          const anyBgOld = announcement.background as any;
+          const anyBgNew = announcement.background as any;
+
+          return {
+            id: announcement.background.id,
+            announcementId: announcement.background.announcementId,
+            type: (anyBgNew.type || (anyBgOld.backgroundType === 'gradient' ? 'gradient' : 'color')) as 'color' | 'gradient' | 'image',
+            color: anyBgNew.color || anyBgOld.backgroundColor || '',
+            gradientStart: anyBgNew.gradientStart || null,
+            gradientEnd: anyBgNew.gradientEnd || null,
+            gradientDirection: anyBgNew.gradientDirection || null,
+            imageUrl: anyBgNew.imageUrl || anyBgOld.backgroundPattern || null,
+            imagePosition: anyBgNew.imagePosition || null,
+            imageSize: anyBgNew.imageSize || null,
+            createdAt: anyBgNew.createdAt || new Date().toISOString(),
+            updatedAt: anyBgNew.updatedAt || new Date().toISOString()
+          };
+        })() : null,
+
+        // Map form settings with new KVFormField interface
+        form: announcement.form ? (() => {
+          const anyFormOld = announcement.form as any;
+          const anyFormNew = announcement.form as any;
+
+          return {
+            id: announcement.form.id,
+            announcementId: announcement.form.announcementId,
+            formType: (anyFormNew.formType || (anyFormOld.inputType === 'email' ? 'email' : 'phone')) as 'email' | 'phone' | 'both',
+            buttonText: anyFormNew.buttonText || anyFormOld.label || '',
+            buttonColor: anyFormNew.buttonColor || '#000000',
+            buttonTextColor: anyFormNew.buttonTextColor || '#FFFFFF',
+            placeholderText: anyFormNew.placeholderText || anyFormOld.placeholder || null,
+            successMessage: anyFormNew.successMessage || null,
+            errorMessage: anyFormNew.errorMessage || null,
+            createdAt: anyFormNew.createdAt || new Date().toISOString(),
+            updatedAt: anyFormNew.updatedAt || new Date().toISOString()
+          };
+        })() : null
       };
     };
 
     // Convert each group of announcements
     return {
-      global: groupedAnnouncements.global.map(convertAnnouncement),
+      global: groupedAnnouncements.global.map(convertAnnouncement) as any,
       __patterns: groupedAnnouncements.__patterns,
       ...Object.fromEntries(
         Object.entries(groupedAnnouncements)

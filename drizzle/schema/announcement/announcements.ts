@@ -2,7 +2,6 @@ import {
   sqliteTable,
   integer,
   text,
-  index,
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
@@ -31,12 +30,9 @@ export const announcements = sqliteTable('announcements', {
   showAfterClosing: text('show_after_closing').default('none'),
   showAfterCTA: text('show_after_cta').default('none'),
   childAnnouncementId: integer('child_announcement_id'),
-}, (table) => ({
-  typeIdx: index('announcements_type_idx').on(table.type),
-  dateIdx: index('announcements_date_idx').on(table.startDate, table.endDate),
-  shopIdIdx: index('announcements_shop_idx').on(table.shopId),
-  statusIdx: index('announcements_status_idx').on(table.status),
-}));
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
 
 // Relations need to be defined after importing all related announcement to avoid circular references
 // This is handled in the relations.ts file

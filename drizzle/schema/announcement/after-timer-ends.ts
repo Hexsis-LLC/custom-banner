@@ -19,6 +19,8 @@ export const afterTimerEnds = sqliteTable('after_timer_ends', {
   }).notNull(),
   childAnnouncementId: integer('child_announcement_id')
     .references(() => announcements.id),
+  createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 }, (table) => ({
   announcementIdx: index('after_timer_announcement_idx').on(table.announcementId)
 }));
