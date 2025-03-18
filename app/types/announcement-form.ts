@@ -94,6 +94,22 @@ export interface FormState {
     backgroundColor?: string;
     backgroundPattern?: string | null;
   };
+  countdown?: {
+    timerType: 'till_end_date' | 'duration' | 'daily_schedule';
+    timeFormat: string;
+    showDays: boolean;
+    endDateTime?: string;
+    durationDays?: number;
+    durationHours?: number;
+    durationMinutes?: number;
+    durationSeconds?: number;
+    dailyStartTime?: string;
+    dailyEndTime?: string;
+    afterTimerEnds?: {
+      action: 'hide' | 'show_zeros' | 'create_announcement';
+      childAnnouncementId?: number;
+    };
+  };
   other: {
     closeButtonPosition: CloseButtonPosition;
     displayBeforeDelay: string;

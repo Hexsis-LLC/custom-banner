@@ -6,7 +6,7 @@ export const basicInfoFieldSchema = z.object({
   sizeWidth: z.string(),
   campaignTitle: z.string().min(1, "Campaign title is required"),
   status: z.enum(['draft', 'published', 'paused', 'ended']).default('draft'),
-  type: z.literal('basic'),
+  type: z.enum(['basic', 'countdown', 'email_signup', 'multi_text']),
   isActive: z.boolean().default(true),
   closeButtonPosition: z.enum(['right', 'left', 'center', 'none']).default('right'),
   closeButtonColor: z.string().min(1, "Close button color is required"),

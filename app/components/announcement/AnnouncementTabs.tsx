@@ -14,6 +14,7 @@ interface AnnouncementTabsProps {
 }
 
 export function AnnouncementTabs({selected, pages}: AnnouncementTabsProps) {
+
   const pagesOptions = [
     { label: "All", value: "__global" },
     ...pages
@@ -38,4 +39,4 @@ export function AnnouncementTabs({selected, pages}: AnnouncementTabsProps) {
     default:
       return null;
   }
-} 
+}
