@@ -13,6 +13,22 @@ export type FormAnnouncementBannerData = Omit<AnnouncementBannerData, 'basic'> &
     closeButtonPosition: CloseButtonPosition;
     closeButtonColor: string;
   };
+  countdown?: {
+    timerType: 'till_end_date' | 'duration' | 'daily_schedule';
+    timeFormat: string;
+    showDays: boolean;
+    endDateTime?: string;
+    endTime?: string;
+    durationDays?: number;
+    durationHours?: number;
+    durationMinutes?: number;
+    durationSeconds?: number;
+    scheduleTime?: string;
+    afterTimerEnds?: {
+      action: 'hide' | 'show_zeros' | 'create_announcement';
+      nextAnnouncementId?: string;
+    };
+  };
 };
 
 export interface FormBasicSettings extends Omit<AnnouncementBannerData['basic'], 'closeButtonPosition'> {
@@ -99,15 +115,15 @@ export interface FormState {
     timeFormat: string;
     showDays: boolean;
     endDateTime?: string;
+    endTime?: string;
     durationDays?: number;
     durationHours?: number;
     durationMinutes?: number;
     durationSeconds?: number;
-    dailyStartTime?: string;
-    dailyEndTime?: string;
+    scheduleTime?: string;
     afterTimerEnds?: {
       action: 'hide' | 'show_zeros' | 'create_announcement';
-      childAnnouncementId?: number;
+      nextAnnouncementId?: string;
     };
   };
   other: {
@@ -139,3 +155,29 @@ export type ActionData = {
   errors?: string[];
   success?: boolean;
 };
+
+export interface FormCountdownSettings {
+  timerType: 'till_end_date' | 'duration' | 'daily_schedule';
+  timeFormat: string;
+  showDays: boolean;
+  endDateTime?: string;
+  endTime?: string;
+  durationDays?: number;
+  durationHours?: number;
+  durationMinutes?: number;
+  durationSeconds?: number;
+  scheduleTime?: string;
+  afterTimerEnds?: {
+    action: 'hide' | 'show_zeros' | 'create_announcement';
+    nextAnnouncementId?: string;
+    message?: string;
+    textColor?: string;
+    fontSize?: number;
+    ctaType?: 'link' | 'button' | 'none';
+    ctaText?: string;
+    ctaLink?: string;
+    buttonBackground?: string;
+    buttonTextColor?: string;
+    fontType?: 'site' | 'dynamic' | 'custom';
+  };
+}

@@ -5,7 +5,7 @@ import {
   BlockStack,
   InlineStack,
   Button,
-  Icon,
+
 } from "@shopify/polaris";
 import type {IFont} from "../../utils/google-fonts";
 import CustomFonts from "../../utils/google-fonts";
@@ -32,9 +32,8 @@ export function FontSection({
   errorPath,
 }: FontSectionProps) {
   const [font, setFont] = useState<IFont | null>(null);
-  const isInitialMount = useRef(true);
-
-  // Initialize font when component mounts or fontUrl changes
+  useRef(true);
+// Initialize font when component mounts or fontUrl changes
   useEffect(() => {
     if (fontType === 'dynamic') {
       const fonts = new CustomFonts();

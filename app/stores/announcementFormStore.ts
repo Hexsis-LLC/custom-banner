@@ -1,6 +1,7 @@
+/*
 import { create } from 'zustand';
 import { z } from 'zod';
-import type { FormState, ValidationState, FieldError } from '../types/announcement-form';
+import type { FormState, ValidationState } from '../types/announcement-form';
 import { validateAnnouncement } from '../schemas/announcement';
 import { getErrorMessage } from '../utils/announcement-form';
 import { ZodError } from 'zod';
@@ -28,25 +29,25 @@ interface AnnouncementFormActions {
     section: T,
     data: { [P in K]: FormState[T][P] }
   ) => void;
-  
+
   // Validate the entire form
   validateForm: () => boolean;
-  
+
   // Check if a field has an error
   hasError: (fieldPath: string) => boolean;
-  
+
   // Get error message for a field
   getFieldErrorMessage: (fieldPath: string) => string;
-  
+
   // Set the entire form data
   setFormData: (data: FormState) => void;
-  
+
   // Reset validation state
   resetValidation: () => void;
-  
+
   // Set validation errors
   setValidationErrors: (errors: string[]) => void;
-  
+
   // Set field errors
   setFieldErrors: (errors: ValidationState) => void;
 }
@@ -60,11 +61,11 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
   // This ensures all form sections exist even before explicit initialization
   formData: DEFAULT_INITIAL_DATA,
   validationErrors: [],
-  fieldErrors: { 
-    errors: [], 
-    errorFields: new Set<string>() 
+  fieldErrors: {
+    errors: [],
+    errorFields: new Set<string>()
   },
-  
+
   // Action to handle form changes
   handleFormChange: <T extends keyof FormState, K extends keyof FormState[T]>(
     section: T,
@@ -84,7 +85,7 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
       fieldErrors: { errors: [], errorFields: new Set<string>() }
     }));
   },
-  
+
   // Reset validation state
   resetValidation: () => {
     set({
@@ -92,29 +93,29 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
       fieldErrors: { errors: [], errorFields: new Set<string>() },
     });
   },
-  
+
   // Set validation errors
   setValidationErrors: (errors: string[]) => {
     set({ validationErrors: errors });
   },
-  
+
   // Set field errors
   setFieldErrors: (errors: ValidationState) => {
     set({ fieldErrors: errors });
   },
-  
+
   // Validate the form
   validateForm: () => {
     try {
       const { formData } = get();
-      
+
       // Ensure formData has all required sections before validation
-      if (!formData || !formData.basic || !formData.text || !formData.cta || 
+      if (!formData || !formData.basic || !formData.text || !formData.cta ||
           !formData.background || !formData.other) {
         console.error('Form data is incomplete, cannot validate');
         return false;
       }
-      
+
       const dataToValidate = {
         ...formData,
         basic: {
@@ -125,12 +126,12 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
       };
 
       validateAnnouncement(dataToValidate);
-      
+
       // Use a single state update instead of multiple calls
       set({
         fieldErrors: { errors: [], errorFields: new Set<string>() }
       });
-      
+
       return true;
     } catch (error) {
       if (error instanceof ZodError) {
@@ -163,18 +164,18 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
       return false;
     }
   },
-  
+
   // Check if a field has an error
   hasError: (fieldPath: string) => {
     return get().fieldErrors.errorFields.has(fieldPath);
   },
-  
+
   // Get error message for a field
   getFieldErrorMessage: (fieldPath: string) => {
     const error = get().fieldErrors.errors.find(err => err.path.join('.') === fieldPath);
     return error ? error.message : '';
   },
-  
+
   // Set the entire form data
   setFormData: (data: FormState) => {
     // Ensure all sections exist when setting form data
@@ -187,7 +188,7 @@ export const useAnnouncementFormStore = create<AnnouncementFormStore>((set, get)
       background: { ...DEFAULT_INITIAL_DATA.background, ...data.background },
       other: { ...DEFAULT_INITIAL_DATA.other, ...data.other },
     };
-    
+
     set({ formData: completeData });
   }
 }));
@@ -204,10 +205,11 @@ export const initializeFormStore = (initialData: FormState) => {
     background: { ...DEFAULT_INITIAL_DATA.background, ...initialData.background },
     other: { ...DEFAULT_INITIAL_DATA.other, ...initialData.other },
   };
-  
-  useAnnouncementFormStore.setState({ 
+
+  useAnnouncementFormStore.setState({
     formData: completeData,
     validationErrors: [],
     fieldErrors: { errors: [], errorFields: new Set<string>() }
   });
-}; 
+};
+*/

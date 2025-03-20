@@ -9,106 +9,311 @@ import {
   RangeSlider,
   Box,
 } from "@shopify/polaris";
-import { useFormContext } from "../../../contexts/AnnouncementFormContext";
 import { FontSection } from "../fontSection";
 import { ColorPickerInput } from "app/components/ColorPickerInput";
+import { ctaButtonFieldSchema, CTAButtonFieldData } from "../../../schemas/schemas/CTAButtonFieldSchema";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { ZodError } from "zod";
+import type { FontType } from "../../../types/announcement";
 
 type CTAType = 'regular' | 'bar' | 'link' | 'none';
 
-export function CTAButtonField() {
-  const { formData, handleFormChange, hasError, getFieldErrorMessage } = useFormContext();
+interface CTAButtonFieldProps {
+  initialData?: Partial<CTAButtonFieldData>;
+  onDataChange: (data: CTAButtonFieldData, isValid: boolean) => void;
+  externalErrors?: Record<string, string>;
+}
 
-  const onCtaTypeChange = (value: CTAType) => {
-    handleFormChange('cta', { ctaType: value });
-  };
+const DEFAULT_PADDING = {
+  top: 8,
+  right: 16,
+  bottom: 8,
+  left: 16,
+};
 
-  const onPaddingChange = (value: number, position: 'top' | 'right' | 'bottom' | 'left') => {
-    const newPadding = { ...formData.cta.padding, [position]: value };
-    handleFormChange('cta', { padding: newPadding });
-  };
+export function CTAButtonField({
+  initialData = {},
+  onDataChange,
+  externalErrors = {}
+}: CTAButtonFieldProps) {
+  // Track if this is the initial mount
+  const isInitialMount = useRef(true);
+  const hasCalledOnDataChange = useRef(false);
+  
+  // Log the incoming initial data for debugging
+  console.log("CTAButtonField received initialData:", initialData);
 
-  const onFontTypeChange = (value: string) => {
-    handleFormChange('cta', { fontType: value });
-  };
+  const [formData, setFormData] = useState<CTAButtonFieldData>(() => {
+    // Initialize with defaults merged with any provided initial data
+    const baseData = {
+      ctaType: (initialData.ctaType as CTAType) || 'none',
+      padding: initialData.padding || { ...DEFAULT_PADDING },
+      fontType: initialData.fontType || 'site',
+      fontUrl: initialData.fontUrl || '',
+      buttonFontColor: initialData.buttonFontColor || 'rgb(0, 0, 0)',
+      buttonBackgroundColor: initialData.buttonBackgroundColor || 'rgb(255, 255, 255)',
+      ctaText: initialData.ctaText || 'Click Here',
+      ctaLink: initialData.ctaLink || 'https://',
+    };
+    
+    // Add textColor only if it's a link type (to avoid type errors)
+    if (baseData.ctaType === 'link') {
+      return {
+        ...baseData,
+        textColor: (initialData as any).textColor || 'rgb(255, 255, 255)',
+      } as CTAButtonFieldData;
+    }
+    
+    return baseData as CTAButtonFieldData;
+  });
 
-  const onFontUrlChange = (value: string) => {
-    handleFormChange('cta', { fontUrl: value });
-  };
+  // Update state when initialData changes (for edit mode)
+  useEffect(() => {
+    // Skip updates if hasCalledOnDataChange is already true (component already initialized)
+    if (hasCalledOnDataChange.current) {
+      console.log("CTAButtonField already initialized, skipping initialData effect");
+      return;
+    }
+    
+    console.log("CTAButtonField initialData changed, updating formData state");
+    
+    // Only update if significant initial data is available
+    if (initialData.ctaType) {
+      const baseData = {
+        ctaType: (initialData.ctaType as CTAType) || formData.ctaType,
+        padding: initialData.padding || formData.padding,
+        fontType: initialData.fontType || formData.fontType,
+        fontUrl: initialData.fontUrl || formData.fontUrl,
+        buttonFontColor: initialData.buttonFontColor || formData.buttonFontColor,
+        buttonBackgroundColor: initialData.buttonBackgroundColor || formData.buttonBackgroundColor,
+        ctaText: initialData.ctaText || formData.ctaText,
+        ctaLink: initialData.ctaLink || formData.ctaLink,
+      };
+      
+      // Add textColor only if it's a link type
+      if (initialData.ctaType === 'link' || formData.ctaType === 'link') {
+        setFormData({
+          ...baseData,
+          textColor: (initialData as any).textColor || 
+            // Cast to any to avoid typing issues when accessing textColor
+            ((formData as any).textColor || 'rgb(255, 255, 255)'),
+        } as CTAButtonFieldData);
+      } else {
+        setFormData(baseData as CTAButtonFieldData);
+      }
+    }
+  }, [initialData, formData]);
 
-  const onCtaTextChange = (value: string) => {
-    handleFormChange('cta', { ctaText: value });
-  };
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
 
-  const onCtaLinkChange = (value: string) => {
-    handleFormChange('cta', { ctaLink: value });
-  };
+  // Combine external and local errors
+  const errors = useMemo(() => ({
+    ...localErrors,
+    ...externalErrors
+  }), [localErrors, externalErrors]);
 
-  const onCtaButtonFontColorChange = (value: string) => {
-    handleFormChange('cta', { buttonFontColor: value });
-  };
+  /**
+   * Updates the form data without notifying parent
+   */
+  const updateFormState = useCallback((updates: Partial<CTAButtonFieldData>) => {
+    // Check if we're actually changing something
+    let hasChanged = false;
+    Object.keys(updates).forEach(key => {
+      const typedKey = key as keyof CTAButtonFieldData;
+      // @ts-ignore - We know these keys exist in both objects
+      if (updates[typedKey] !== formData[typedKey]) {
+        hasChanged = true;
+      }
+    });
+    
+    // Only update if something changed
+    if (hasChanged) {
+      setFormData(prevFormData => {
+        const newFormData = {
+          ...prevFormData,
+          ...updates
+        } as CTAButtonFieldData;
+        
+        // Will trigger the useEffect for formData that will validate and notify parent
+        return newFormData;
+      });
+    }
+  }, [formData]);
 
-  const onCtaButtonBackgroundColorChange = (value: string) => {
-    handleFormChange('cta', { buttonBackgroundColor: value });
-  };
+  /**
+   * Validates the form data without setting errors (for internal use)
+   */
+  const validateData = useCallback((dataToValidate: CTAButtonFieldData): boolean => {
+    try {
+      ctaButtonFieldSchema.parse(dataToValidate);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, []);
 
-  const onCtaLinkTextColorChange = (value: string) => {
-    handleFormChange('cta', { textColor: value });
-  };
+  /**
+   * Validates the form data and sets error messages
+   */
+  const validateForm = useCallback(() => {
+    try {
+      ctaButtonFieldSchema.parse(formData);
+      setLocalErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const newErrors: Record<string, string> = {};
+        
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          newErrors[path] = err.message;
+        });
+        
+        setLocalErrors(newErrors);
+      }
+      return false;
+    }
+  }, [formData]);
 
-  const renderFields = () => {
-    switch (formData.cta.ctaType) {
-      case 'link':
+  // Run validation when external errors change
+  useEffect(() => {
+    validateForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalErrors]);
+
+  // Validate and notify parent when form data changes
+  useEffect(() => {
+    // Skip the first render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      
+      // Immediately validate on mount but don't call onDataChange
+      validateForm();
+      hasCalledOnDataChange.current = true;
+      return;
+    }
+    
+    // For subsequent updates, validate and notify parent
+    const isValid = validateForm();
+    
+    // Prevent recursive updates by ensuring we don't notify parent with the same data
+    if (hasCalledOnDataChange.current) {
+      onDataChange(formData, isValid);
+    } else {
+      hasCalledOnDataChange.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]);
+
+  /**
+   * Checks if a field has an error
+   */
+  const hasError = useCallback((path: string) => {
+    return !!errors[path];
+  }, [errors]);
+
+  /**
+   * Gets error message for a field
+   */
+  const getFieldErrorMessage = useCallback((path: string) => {
+    return errors[path] || '';
+  }, [errors]);
+
+  // Event handlers
+  const onCtaTypeChange = useCallback((value: CTAType) => {
+    updateFormState({ ctaType: value });
+  }, [updateFormState]);
+
+  const onPaddingChange = useCallback((value: number, position: 'top' | 'right' | 'bottom' | 'left') => {
+    const newPadding = { ...formData.padding, [position]: value };
+    updateFormState({ padding: newPadding });
+  }, [formData.padding, updateFormState]);
+
+  const onFontTypeChange = useCallback((value: string) => {
+    updateFormState({ fontType: value });
+  }, [updateFormState]);
+
+  const onFontUrlChange = useCallback((value: string) => {
+    updateFormState({ fontUrl: value });
+  }, [updateFormState]);
+
+  const onCtaTextChange = useCallback((value: string) => {
+    updateFormState({ ctaText: value });
+  }, [updateFormState]);
+
+  const onCtaLinkChange = useCallback((value: string) => {
+    updateFormState({ ctaLink: value });
+  }, [updateFormState]);
+
+  const onCtaButtonFontColorChange = useCallback((value: string) => {
+    updateFormState({ buttonFontColor: value });
+  }, [updateFormState]);
+
+  const onCtaButtonBackgroundColorChange = useCallback((value: string) => {
+    updateFormState({ buttonBackgroundColor: value });
+  }, [updateFormState]);
+
+  const onCtaLinkTextColorChange = useCallback((value: string) => {
+    updateFormState({ textColor: value });
+  }, [updateFormState]);
+
+  const renderFields = useCallback(() => {
+    switch (formData.ctaType) {
+      case 'link': {
+        // For link type, we need to cast to access textColor
+        const linkFormData = formData as Extract<CTAButtonFieldData, { ctaType: 'link' }>;
         return (
           <BlockStack gap="400">
             <TextField
               label="Button Text"
-              value={formData.cta.ctaText}
+              value={linkFormData.ctaText || ''}
               onChange={onCtaTextChange}
               autoComplete="off"
-              error={hasError('cta.ctaText')}
-              helpText={hasError('cta.ctaText') ? getFieldErrorMessage('cta.ctaText') : undefined}
+              error={hasError('ctaText')}
+              helpText={hasError('ctaText') ? getFieldErrorMessage('ctaText') : undefined}
             />
             <TextField
               label="Link URL"
-              value={formData.cta.ctaLink}
+              value={linkFormData.ctaLink || ''}
               onChange={onCtaLinkChange}
               autoComplete="off"
-              error={hasError('cta.ctaLink')}
-              helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
+              error={hasError('ctaLink')}
+              helpText={hasError('ctaLink') ? getFieldErrorMessage('ctaLink') : undefined}
             />
             <ColorPickerInput
               label="Link Text Color"
-              value={formData.cta.textColor ?? "rgb(255, 255, 255)"}
+              value={linkFormData.textColor || "rgb(255, 255, 255)"}
               onChange={onCtaLinkTextColorChange}
               type="solid"
             />
           </BlockStack>
         );
+      }
       case 'regular':
         return (
           <BlockStack gap="400">
             <TextField
               label="Button Text"
-              value={formData.cta.ctaText}
+              value={formData.ctaText || ''}
               onChange={onCtaTextChange}
               autoComplete="off"
-              error={hasError('cta.ctaText')}
-              helpText={hasError('cta.ctaText') ? getFieldErrorMessage('cta.ctaText') : undefined}
+              error={hasError('ctaText')}
+              helpText={hasError('ctaText') ? getFieldErrorMessage('ctaText') : undefined}
             />
             <TextField
               label="Link URL"
-              value={formData.cta.ctaLink}
+              value={formData.ctaLink || ''}
               onChange={onCtaLinkChange}
               autoComplete="off"
-              error={hasError('cta.ctaLink')}
-              helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
+              error={hasError('ctaLink')}
+              helpText={hasError('ctaLink') ? getFieldErrorMessage('ctaLink') : undefined}
             />
-            {formData.cta.ctaType === 'regular' && (
+            {formData.ctaType === 'regular' && (
               <InlineStack gap="400" align="space-between">
                 <div style={{width: '49%'}}>
                   <ColorPickerInput
                     label="Button Text Color"
-                    value={formData.cta.buttonFontColor ?? "rgb(0, 0, 0)"}
+                    value={formData.buttonFontColor || "rgb(0, 0, 0)"}
                     onChange={onCtaButtonFontColorChange}
                     type="solid"
                   />
@@ -116,7 +321,7 @@ export function CTAButtonField() {
                 <div style={{width: '49%'}}>
                   <ColorPickerInput
                     label="Button Background Color"
-                    value={formData.cta.buttonBackgroundColor ?? "rgb(0, 0, 0)"}
+                    value={formData.buttonBackgroundColor || "rgb(255, 255, 255)"}
                     onChange={onCtaButtonBackgroundColorChange}
                     type="solid"
                   />
@@ -129,17 +334,30 @@ export function CTAButtonField() {
         return (
           <TextField
             label="Link URL"
-            value={formData.cta.ctaLink}
+            value={formData.ctaLink || ''}
             onChange={onCtaLinkChange}
             autoComplete="off"
-            error={hasError('cta.ctaLink')}
-            helpText={hasError('cta.ctaLink') ? getFieldErrorMessage('cta.ctaLink') : undefined}
+            error={hasError('ctaLink')}
+            helpText={hasError('ctaLink') ? getFieldErrorMessage('ctaLink') : undefined}
           />
         );
       default:
         return null;
     }
-  };
+  }, [
+    formData.ctaType, 
+    formData.ctaText, 
+    formData.ctaLink, 
+    formData.buttonFontColor, 
+    formData.buttonBackgroundColor,
+    onCtaTextChange, 
+    onCtaLinkChange, 
+    onCtaLinkTextColorChange, 
+    onCtaButtonFontColorChange, 
+    onCtaButtonBackgroundColorChange,
+    hasError, 
+    getFieldErrorMessage
+  ]);
 
   return (
     <Card roundedAbove="sm">
@@ -155,28 +373,28 @@ export function CTAButtonField() {
             <InlineStack gap="300">
               <RadioButton
                 label="Clickable link"
-                checked={formData.cta.ctaType === 'link'}
+                checked={formData.ctaType === 'link'}
                 id="link"
                 name="cta"
                 onChange={() => onCtaTypeChange('link')}
               />
               <RadioButton
                 label="Clickable bar"
-                checked={formData.cta.ctaType === 'bar'}
+                checked={formData.ctaType === 'bar'}
                 id="bar"
                 name="cta"
                 onChange={() => onCtaTypeChange('bar')}
               />
               <RadioButton
                 label="Regular Button"
-                checked={formData.cta.ctaType === 'regular'}
+                checked={formData.ctaType === 'regular'}
                 id="regular"
                 name="cta"
                 onChange={() => onCtaTypeChange('regular')}
               />
               <RadioButton
                 label="None"
-                checked={formData.cta.ctaType === 'none'}
+                checked={formData.ctaType === 'none'}
                 id="none"
                 name="cta"
                 onChange={() => onCtaTypeChange('none')}
@@ -188,12 +406,12 @@ export function CTAButtonField() {
           {renderFields()}
 
           {/* Font Section - Only show for link and regular types */}
-          {(formData.cta.ctaType === 'link' || formData.cta.ctaType === 'regular') && (
+          {(formData.ctaType === 'link' || formData.ctaType === 'regular') && (
             <FontSection
-              fontType={formData.cta.fontType}
-              fontUrl={formData.cta.fontUrl}
-              hasError={hasError}
-              getFieldErrorMessage={getFieldErrorMessage}
+              fontType={formData.fontType as FontType}
+              fontUrl={formData.fontUrl}
+              hasError={(field) => hasError(`fontType.${field}`)}
+              getFieldErrorMessage={(field) => getFieldErrorMessage(`fontType.${field}`)}
               onFontTypeChange={onFontTypeChange}
               onFontUrlChange={onFontUrlChange}
               errorPath="cta"
@@ -201,7 +419,7 @@ export function CTAButtonField() {
           )}
 
           {/* Padding Section - Only show for regular button type */}
-          {formData.cta.ctaType === 'regular' && (
+          {formData.ctaType === 'regular' && (
             <>
               <Text variant="headingMd" as="h6">Padding</Text>
               <InlineStack gap="400" align="space-between">
@@ -211,16 +429,16 @@ export function CTAButtonField() {
                     <RangeSlider
                       label="Padding top"
                       labelHidden
-                      value={formData.cta.padding.top}
-                      prefix={formData.cta.padding.top}
+                      value={formData.padding.top}
+                      prefix={formData.padding.top}
                       onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'top')}
                       output
                       suffix="px"
                       min={0}
                       max={50}
                     />
-                    {hasError('cta.padding.top') && (
-                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.top')}</Text>
+                    {hasError('padding.top') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('padding.top')}</Text>
                     )}
                   </BlockStack>
                 </div>
@@ -230,16 +448,16 @@ export function CTAButtonField() {
                     <RangeSlider
                       label="Padding right"
                       labelHidden
-                      value={formData.cta.padding.right}
-                      prefix={formData.cta.padding.right}
+                      value={formData.padding.right}
+                      prefix={formData.padding.right}
                       onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'right')}
                       output
                       suffix="px"
                       min={0}
                       max={50}
                     />
-                    {hasError('cta.padding.right') && (
-                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.right')}</Text>
+                    {hasError('padding.right') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('padding.right')}</Text>
                     )}
                   </BlockStack>
                 </div>
@@ -252,16 +470,16 @@ export function CTAButtonField() {
                     <RangeSlider
                       label="Padding bottom"
                       labelHidden
-                      value={formData.cta.padding.bottom}
-                      prefix={formData.cta.padding.bottom}
+                      value={formData.padding.bottom}
+                      prefix={formData.padding.bottom}
                       onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'bottom')}
                       output
                       suffix="px"
                       min={0}
                       max={50}
                     />
-                    {hasError('cta.padding.bottom') && (
-                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.bottom')}</Text>
+                    {hasError('padding.bottom') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('padding.bottom')}</Text>
                     )}
                   </BlockStack>
                 </div>
@@ -271,16 +489,16 @@ export function CTAButtonField() {
                     <RangeSlider
                       label="Padding left"
                       labelHidden
-                      value={formData.cta.padding.left}
-                      prefix={formData.cta.padding.left}
+                      value={formData.padding.left}
+                      prefix={formData.padding.left}
                       onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'left')}
                       output
                       suffix="px"
                       min={0}
                       max={50}
                     />
-                    {hasError('cta.padding.left') && (
-                      <Text tone="critical" as="span">{getFieldErrorMessage('cta.padding.left')}</Text>
+                    {hasError('padding.left') && (
+                      <Text tone="critical" as="span">{getFieldErrorMessage('padding.left')}</Text>
                     )}
                   </BlockStack>
                 </div>

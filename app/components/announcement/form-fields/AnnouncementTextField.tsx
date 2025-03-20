@@ -1,13 +1,23 @@
-import {BlockStack, Box, Button, Card, Icon, InlineStack, RangeSlider, Text, TextField,} from "@shopify/polaris";
-import {useFormContext} from "../../../contexts/AnnouncementFormContext";
-import {FontSection} from "../fontSection";
+import {BlockStack, Box, Button, Card, Icon, InlineStack, RangeSlider, Text, TextField} from "@shopify/polaris";
 import {DeleteIcon, PlusIcon} from "@shopify/polaris-icons";
 import type {TextEntry, FontType} from "../../../types/announcement";
-import {useCallback, useMemo} from "react";
+import {useCallback, useMemo, useState, useEffect} from "react";
 import { ColorPickerInput } from "app/components/ColorPickerInput";
+import { FontSection } from "../fontSection";
+import type { AnnouncementTextFieldData } from "../../../schemas/schemas/AnnouncementTextFieldSchema";
+import { announcementTextFieldSchema } from "../../../schemas/schemas/AnnouncementTextFieldSchema";
+import { ZodError } from "zod";
+
+// Extended type that includes TextEntries
+export type ExtendedAnnouncementData = AnnouncementTextFieldData & {
+  textEntries?: TextEntry[]
+};
 
 interface AnnouncementTextFieldProps {
-  isMultiText: boolean;
+  initialData?: Partial<ExtendedAnnouncementData>;
+  isMultiText?: boolean;
+  onDataChange: (data: ExtendedAnnouncementData, isValid: boolean) => void;
+  externalErrors?: Record<string, string>;
 }
 
 const MAX_TEXT_ENTRIES = 5;
@@ -16,31 +26,93 @@ const DEFAULT_FONT_SIZE = {
   MAX: 32,
 };
 
+const DEFAULT_TEXT_ENTRY: TextEntry = {
+  id: '1',
+  announcementText: '',
+  textColor: 'rgb(0, 0, 0)',
+  fontSize: 16,
+  fontType: 'site' as FontType,
+  fontUrl: '',
+  languageCode: '',
+};
+
 /**
  * Component for managing announcement text entries with support for multiple text blocks
  */
-export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProps) {
-  const { formData, handleFormChange, hasError, getFieldErrorMessage } = useFormContext();
+export function AnnouncementTextField({
+  initialData = {},
+  isMultiText = false,
+  onDataChange,
+  externalErrors = {}
+}: AnnouncementTextFieldProps) {
+  // Log the incoming initial data for debugging
+  console.log("TextField received initialData:", initialData);
+
+  const [formData, setFormData] = useState<ExtendedAnnouncementData>(() => {
+    // Initialize with defaults merged with any provided initial data
+    return {
+      announcementText: initialData.announcementText || '',
+      textColor: initialData.textColor || 'rgb(0, 0, 0)',
+      fontSize: initialData.fontSize || 16,
+      fontType: (initialData.fontType as FontType) || 'site',
+      fontUrl: initialData.fontUrl || '',
+      languageCode: initialData.languageCode || '',
+      textEntries: initialData.textEntries || [{ ...DEFAULT_TEXT_ENTRY }],
+    };
+  });
+
+  // Update state when initialData changes (for edit mode)
+  useEffect(() => {
+    console.log("initialData changed, updating formData state");
+    // Only update if significant initial data is available (to prevent overwriting with defaults)
+    if (initialData.announcementText || initialData.textEntries?.length) {
+      setFormData({
+        announcementText: initialData.announcementText || '',
+        textColor: initialData.textColor || 'rgb(0, 0, 0)',
+        fontSize: initialData.fontSize || 16,
+        fontType: (initialData.fontType as FontType) || 'site',
+        fontUrl: initialData.fontUrl || '',
+        languageCode: initialData.languageCode || '',
+        textEntries: initialData.textEntries || [{ ...DEFAULT_TEXT_ENTRY }],
+      });
+    }
+  }, [initialData]);
+
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
+
+  // Combine external and local errors
+  const errors = useMemo(() => ({
+    ...localErrors,
+    ...externalErrors
+  }), [localErrors, externalErrors]);
 
   // Convert existing single text to entries format if needed
   const textEntries = useMemo<TextEntry[]>(() => {
-    return formData.text.textEntries || [{
+    // If we already have text entries, use them
+    if (formData.textEntries && formData.textEntries.length > 0) {
+      console.log("Using existing text entries:", formData.textEntries);
+      return formData.textEntries;
+    }
+
+    // Otherwise create a single entry from the main text data
+    console.log("Creating default text entry from main data");
+    return [{
       id: '1',
-      announcementText: formData.text.announcementText,
-      textColor: formData.text.textColor,
-      fontSize: formData.text.fontSize,
-      fontType: formData.text.fontType,
-      fontUrl: formData.text.fontUrl,
-      languageCode: formData.text.languageCode || '',
+      announcementText: formData.announcementText,
+      textColor: formData.textColor,
+      fontSize: formData.fontSize,
+      fontType: formData.fontType as FontType,
+      fontUrl: formData.fontUrl || '',
+      languageCode: formData.languageCode || '',
     }];
-  }, [formData.text]);
+  }, [formData]);
 
   /**
    * Updates the form state with new text entries and syncs the main fields
    */
   const updateFormState = useCallback((updatedEntries: TextEntry[]) => {
-    handleFormChange('text', {
-      ...formData.text,
+    const newFormData = {
+      ...formData,
       textEntries: updatedEntries,
       // Keep the main fields in sync with the first entry
       announcementText: updatedEntries[0].announcementText,
@@ -49,8 +121,14 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
       fontType: updatedEntries[0].fontType,
       fontUrl: updatedEntries[0].fontUrl,
       languageCode: updatedEntries[0].languageCode,
-    });
-  }, [formData.text, handleFormChange]);
+    };
+
+    setFormData(newFormData);
+
+    // Validate and notify parent of changes
+    const isValid = validateData(newFormData);
+    onDataChange(newFormData, isValid);
+  }, [formData, onDataChange]);
 
   /**
    * Creates and adds a new text entry
@@ -61,15 +139,15 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
     const newEntry: TextEntry = {
       id: Date.now().toString(),
       announcementText: '',
-      textColor: formData.text.textColor,
-      fontSize: formData.text.fontSize,
-      fontType: formData.text.fontType,
-      fontUrl: formData.text.fontUrl,
+      textColor: formData.textColor,
+      fontSize: formData.fontSize,
+      fontType: formData.fontType as FontType,
+      fontUrl: formData.fontUrl || '',
       languageCode: '',
     };
 
     updateFormState([...textEntries, newEntry]);
-  }, [textEntries, formData.text, updateFormState]);
+  }, [textEntries, formData, updateFormState]);
 
   /**
    * Removes a text entry by ID
@@ -101,41 +179,123 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
       return { ...entry, [field]: value };
     });
 
-    const updates = {
-      ...formData.text,
-      textEntries: updatedEntries,
-    };
+    updateFormState(updatedEntries);
+  }, [textEntries, updateFormState]);
 
-    // Update main fields if the first entry is being modified
-    if (id === textEntries[0].id) {
-      const mainFieldMapping: Partial<Record<keyof TextEntry, keyof typeof formData.text>> = {
-        announcementText: 'announcementText',
-        textColor: 'textColor',
-        fontSize: 'fontSize',
-        fontType: 'fontType',
-        fontUrl: 'fontUrl',
-        languageCode: 'languageCode',
-      };
+  /**
+   * Validates the form data without setting errors (for internal use)
+   */
+  const validateData = useCallback((dataToValidate: ExtendedAnnouncementData): boolean => {
+    try {
+      // Validate the primary data using the schema
+      announcementTextFieldSchema.parse({
+        announcementText: dataToValidate.announcementText,
+        textColor: dataToValidate.textColor,
+        fontSize: dataToValidate.fontSize,
+        fontType: dataToValidate.fontType,
+        fontUrl: dataToValidate.fontUrl,
+        languageCode: dataToValidate.languageCode,
+      });
 
-      const mainField = mainFieldMapping[field];
-      if (mainField) {
-        (updates as any)[mainField] = field === 'fontType' ? value as FontType : value;
-
-        // Clear font URL in main fields when switching to site font
-        if (field === 'fontType' && value === 'site') {
-          (updates as any).fontUrl = '';
-        }
+      // For multi-text entries, validate each entry
+      if (isMultiText && dataToValidate.textEntries && dataToValidate.textEntries.length > 1) {
+        dataToValidate.textEntries.forEach((entry, index) => {
+          if (index === 0) return; // Skip first entry, already validated
+          announcementTextFieldSchema.parse({
+            announcementText: entry.announcementText,
+            textColor: entry.textColor,
+            fontSize: entry.fontSize,
+            fontType: entry.fontType,
+            fontUrl: entry.fontUrl,
+            languageCode: entry.languageCode,
+          });
+        });
       }
-    }
 
-    handleFormChange('text', updates);
-  }, [textEntries, formData, handleFormChange]);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, [isMultiText]);
+
+  /**
+   * Validates the form data and sets error messages
+   */
+  const validateForm = useCallback(() => {
+    try {
+      // Validate the primary data using the schema
+      announcementTextFieldSchema.parse({
+        announcementText: formData.announcementText,
+        textColor: formData.textColor,
+        fontSize: formData.fontSize,
+        fontType: formData.fontType,
+        fontUrl: formData.fontUrl,
+        languageCode: formData.languageCode,
+      });
+
+      // For multi-text entries, validate each entry
+      if (isMultiText && textEntries.length > 1) {
+        textEntries.forEach((entry, index) => {
+          if (index === 0) return; // Skip first entry, already validated
+          announcementTextFieldSchema.parse({
+            announcementText: entry.announcementText,
+            textColor: entry.textColor,
+            fontSize: entry.fontSize,
+            fontType: entry.fontType,
+            fontUrl: entry.fontUrl,
+            languageCode: entry.languageCode,
+          });
+        });
+      }
+
+      // Clear errors if validation passes
+      setLocalErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const newErrors: Record<string, string> = {};
+
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          newErrors[path] = err.message;
+        });
+
+        setLocalErrors(newErrors);
+      }
+      return false;
+    }
+  }, [formData, textEntries, isMultiText]);
+
+  // Run validation when component mounts or external errors change
+  useEffect(() => {
+    validateForm();
+  }, [externalErrors, validateForm]);
+
+  // Notify parent component about validation state on mount and when data changes
+  useEffect(() => {
+    const isValid = validateForm();
+    onDataChange(formData, isValid);
+  }, [formData, validateForm, onDataChange]);
+
+  /**
+   * Checks if a field has an error
+   */
+  const hasError = useCallback((path: string) => {
+    return !!errors[path];
+  }, [errors]);
+
+  /**
+   * Gets error message for a field
+   */
+  const getFieldErrorMessage = useCallback((path: string) => {
+    return errors[path] || '';
+  }, [errors]);
 
   /**
    * Gets the validation path based on the entry index
    */
   const getValidationPath = useCallback((index: number, field: string) => {
-    return index === 0 ? `text.${field}` : `text.textEntries.${index}.${field}`;
+    return index === 0 ? field : `textEntries.${index}.${field}`;
   }, []);
 
   /**
@@ -174,22 +334,12 @@ export function AnnouncementTextField({ isMultiText }: AnnouncementTextFieldProp
         {/* Text Color and Font Size Section */}
         <InlineStack gap="400" align="space-between">
           <div style={{width: '49%'}}>
-            {/* <TextField
-              label="Text Color"
-              value={entry.textColor}
-              onChange={(value) => updateTextEntry(entry.id, 'textColor', value)}
-              autoComplete="off"
-              prefix="#"
-              error={hasError(getValidationPath(index, 'textColor'))}
-              helpText={hasError(getValidationPath(index, 'textColor')) ?
-                getFieldErrorMessage(getValidationPath(index, 'textColor')) : undefined}
-            /> */}
             <ColorPickerInput
-  label="Text Color"
-  value={entry.textColor ??"rgb(0, 0, 0)"}
-  onChange={(newColor) =>updateTextEntry(entry.id, 'textColor', newColor)}
-  type="solid"
-/>
+              label="Text Color"
+              value={entry.textColor || "rgb(0, 0, 0)"}
+              onChange={(newColor) => updateTextEntry(entry.id, 'textColor', newColor)}
+              type="solid"
+            />
           </div>
           <div style={{width: '49%'}}>
             <BlockStack gap="200">

@@ -136,6 +136,11 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
       },
     } as FormState;
 
+    // If it's a countdown type, include the countdown settings
+    if (announcementType === 'countdown' && DEFAULT_INITIAL_DATA.countdown) {
+      defaultData.countdown = DEFAULT_INITIAL_DATA.countdown;
+    }
+
     formData = defaultData;
   }
 
@@ -153,6 +158,21 @@ function AnnouncementForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessChip, setShowSuccessChip] = useState(false);
   const [actionType, setActionType] = useState<'draft' | 'publish' | null>(null);
+  
+  // Determine tabs based on announcement type
+  const tabs = React.useMemo(() => {
+    const baseTabs = [...TABS]; // Create a copy of the base tabs
+    
+    // If this is a countdown announcement, add the countdown tab after the text tab
+    if (formData.basic.type === 'countdown') {
+      baseTabs.splice(2, 0, {
+        id: 'countdown',
+        content: 'Countdown Timer',
+      });
+    }
+    
+    return baseTabs;
+  }, [formData.basic.type]);
 
   // Hide success message after 3 seconds
   useEffect(() => {
@@ -319,7 +339,7 @@ function AnnouncementForm() {
             validationErrors={validationErrors}
             actionData={undefined}
           />
-          <Tabs tabs={TABS} selected={selected} onSelect={handleTabChange}>
+          <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
             <Box padding="200">
               <AnnouncementTabs selected={selected} pages={pages}/>
               <input type="hidden" name="formData" value={JSON.stringify(formData)}/>

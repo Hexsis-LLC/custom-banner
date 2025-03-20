@@ -1,17 +1,15 @@
-import {
-  Card,
-  Icon,
-  Text,
-  BlockStack,
-  InlineStack,
-  RadioButton,
-  TextField,
-  RangeSlider,
-  Box,
-  Select,
-} from "@shopify/polaris";
-import { useFormContext } from "../../../contexts/AnnouncementFormContext";
-import { ColorPickerInput } from "app/components/ColorPickerInput";
+import {BlockStack, Box, Card, Icon, InlineStack, RadioButton, RangeSlider, Select, Text,} from "@shopify/polaris";
+import {ColorPickerInput} from "app/components/ColorPickerInput";
+import type {BackgroundFieldData} from "../../../schemas/schemas/BackgroundFieldSchema";
+import { backgroundFieldSchema} from "../../../schemas/schemas/BackgroundFieldSchema";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {ZodError} from "zod";
+
+interface BackgroundFieldProps {
+  initialData?: Partial<BackgroundFieldData>;
+  onDataChange: (data: BackgroundFieldData, isValid: boolean) => void;
+  externalErrors?: Record<string, string>;
+}
 
 const patternOptions = [
   { label: 'None', value: 'none' },
@@ -19,33 +17,187 @@ const patternOptions = [
   { label: 'Stripe Blue', value: 'stripe-blue' },
 ];
 
-export function BackgroundField() {
-  const { formData, handleFormChange, hasError, getFieldErrorMessage } = useFormContext();
+const DEFAULT_PADDING = {
+  top: 12,
+  right: 16,
+  bottom: 12,
+  left: 16,
+};
 
-  const onBackgroundTypeChange = (value: 'solid' | 'gradient') => {
-    handleFormChange('background', { backgroundType: value });
-  };
+export function BackgroundField({
+  initialData = {},
+  onDataChange,
+  externalErrors = {}
+}: BackgroundFieldProps) {
+  // Track if this is the initial mount
+  const isInitialMount = useRef(true);
 
-  const onColor1Change = (value: string) => {
-    if (formData.background.backgroundType === 'solid') {
-      handleFormChange('background', { color1: value });
-    } else {
-      handleFormChange('background', { gradientValue: value });
+  // Log the incoming initial data for debugging
+  console.log("BackgroundField received initialData:", initialData);
+
+  const [formData, setFormData] = useState<BackgroundFieldData>(() => {
+    // Initialize with defaults merged with any provided initial data
+    return {
+      backgroundType: initialData.backgroundType || 'solid',
+      color1: initialData.color1 || 'rgb(0, 0, 0)',
+      color2: initialData.color2 || 'rgb(255, 255, 255)',
+      gradientValue: initialData.gradientValue || 'linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)',
+      pattern: initialData.pattern || 'none',
+      padding: initialData.padding || { ...DEFAULT_PADDING },
+    };
+  });
+
+  // Instead of using an effect for validation on mount,
+  // use a ref to track if we've already called onDataChange
+  const hasCalledOnDataChange = useRef(false);
+
+  // Update state when initialData changes (for edit mode)
+  useEffect(() => {
+    // Skip updates if hasCalledOnDataChange is already true (component already initialized)
+    if (hasCalledOnDataChange.current) {
+      console.log("BackgroundField already initialized, skipping initialData effect");
+      return;
     }
-  };
 
-  const onColor2Change = (value: string) => {
-    handleFormChange('background', { color2: value });
-  };
+    console.log("BackgroundField initialData changed, updating formData state");
+    // Only update if significant initial data is available and different from current
+    if ((initialData.backgroundType || initialData.color1) &&
+        (initialData.backgroundType !== formData.backgroundType ||
+         initialData.color1 !== formData.color1)) {
+      setFormData({
+        backgroundType: initialData.backgroundType || 'solid',
+        color1: initialData.color1 || 'rgb(0, 0, 0)',
+        color2: initialData.color2 || 'rgb(255, 255, 255)',
+        gradientValue: initialData.gradientValue || 'linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)',
+        pattern: initialData.pattern || 'none',
+        padding: initialData.padding || { ...DEFAULT_PADDING },
+      });
+    }
+  }, [initialData, formData.backgroundType, formData.color1]);
 
-  const onPatternChange = (value: string) => {
-    handleFormChange('background', { pattern: value });
-  };
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
 
-  const onPaddingChange = (value: number, position: 'top' | 'right' | 'bottom' | 'left') => {
-    const newPadding = { ...formData.background.padding, [position]: value };
-    handleFormChange('background', { padding: newPadding });
-  };
+  // Combine external and local errors
+  const errors = useMemo(() => ({
+    ...localErrors,
+    ...externalErrors
+  }), [localErrors, externalErrors]);
+
+  /**
+   * Updates the form data and notifies parent
+   */
+  const updateFormState = useCallback((updates: Partial<BackgroundFieldData>) => {
+    // Check if we're actually changing something
+    let hasChanged = false;
+    Object.keys(updates).forEach(key => {
+      const typedKey = key as keyof BackgroundFieldData;
+      // @ts-ignore - We know these keys exist in both objects
+      if (updates[typedKey] !== formData[typedKey]) {
+        hasChanged = true;
+      }
+    });
+
+    // Only update if something changed
+    if (hasChanged) {
+      setFormData(prevFormData => {
+        // Validate data but don't notify parent here
+        // (that will happen in the formData effect)
+        return {
+          ...prevFormData,
+          ...updates
+        };
+      });
+    }
+  }, [formData]);
+
+  /**
+   * Validates the form data and sets error messages
+   */
+  const validateForm = useCallback(() => {
+    try {
+      backgroundFieldSchema.parse(formData);
+      setLocalErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const newErrors: Record<string, string> = {};
+
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          newErrors[path] = err.message;
+        });
+
+        setLocalErrors(newErrors);
+      }
+      return false;
+    }
+  }, [formData]);
+
+  // Run validation when external errors change
+  useEffect(() => {
+    validateForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalErrors]);
+
+  // Only run validation when formData changes, not on mount
+  useEffect(() => {
+    // Skip the first render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+
+      // Immediately validate on mount but don't call onDataChange
+      validateForm();
+      hasCalledOnDataChange.current = true;
+      return;
+    }
+
+    // For subsequent updates, validate and notify parent
+    const isValid = validateForm();
+
+    // Prevent recursive updates by ensuring we don't notify parent with the same data
+    if (hasCalledOnDataChange.current) {
+      onDataChange(formData, isValid);
+    } else {
+      hasCalledOnDataChange.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]);
+
+  /**
+   * Checks if a field has an error
+   */
+  const hasError = useCallback((path: string) => {
+    return !!errors[path];
+  }, [errors]);
+
+  /**
+   * Gets error message for a field
+   */
+  const getFieldErrorMessage = useCallback((path: string) => {
+    return errors[path] || '';
+  }, [errors]);
+
+  // Handler functions
+  const onBackgroundTypeChange = useCallback((value: 'solid' | 'gradient') => {
+    updateFormState({ backgroundType: value });
+  }, [updateFormState]);
+
+  const onColor1Change = useCallback((value: string) => {
+    if (formData.backgroundType === 'solid') {
+      updateFormState({ color1: value });
+    } else {
+      updateFormState({ gradientValue: value });
+    }
+  }, [formData.backgroundType, updateFormState]);
+
+  const onPatternChange = useCallback((value: string) => {
+    updateFormState({ pattern: value as 'none' | 'stripe-green' | 'stripe-blue' });
+  }, [updateFormState]);
+
+  const onPaddingChange = useCallback((value: number, position: 'top' | 'right' | 'bottom' | 'left') => {
+    const newPadding = { ...formData.padding, [position]: value };
+    updateFormState({ padding: newPadding });
+  }, [formData.padding, updateFormState]);
 
   return (
     <Card roundedAbove="sm">
@@ -59,31 +211,31 @@ export function BackgroundField() {
           <InlineStack gap="300">
             <RadioButton
               label="Solid"
-              checked={formData.background.backgroundType === 'solid'}
+              checked={formData.backgroundType === 'solid'}
               id="solid"
               name="background"
               onChange={() => onBackgroundTypeChange('solid')}
             />
             <RadioButton
               label="Gradient"
-              checked={formData.background.backgroundType === 'gradient'}
+              checked={formData.backgroundType === 'gradient'}
               id="gradient"
               name="background"
               onChange={() => onBackgroundTypeChange('gradient')}
             />
           </InlineStack>
 
-          {formData.background.backgroundType === 'solid' ? (
+          {formData.backgroundType === 'solid' ? (
             <ColorPickerInput
               label="Color"
-              value={formData.background.color1}
+              value={formData.color1}
               onChange={onColor1Change}
               type="solid"
             />
           ) : (
             <ColorPickerInput
               label="Gradient"
-              value={formData.background.gradientValue || "linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)"}
+              value={formData.gradientValue || "linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)"}
               onChange={onColor1Change}
               type="gradient"
             />
@@ -92,9 +244,9 @@ export function BackgroundField() {
           <Select
             label="Pattern"
             options={patternOptions}
-            value={formData.background.pattern}
+            value={formData.pattern}
             onChange={onPatternChange}
-            error={hasError('background.pattern')}
+            error={hasError('pattern') ? getFieldErrorMessage('pattern') : undefined}
           />
         </BlockStack>
       </Box>
@@ -109,10 +261,10 @@ export function BackgroundField() {
                 <RangeSlider
                   label="Padding top"
                   labelHidden
-                  value={formData.background.padding.top}
+                  value={formData.padding.top}
                   onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'top')}
                   output
-                  prefix={formData.background.padding.top}
+                  prefix={formData.padding.top}
                   suffix="px"
                   min={0}
                   max={50}
@@ -125,10 +277,10 @@ export function BackgroundField() {
                 <RangeSlider
                   label="Padding right"
                   labelHidden
-                  value={formData.background.padding.right}
+                  value={formData.padding.right}
                   onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'right')}
                   output
-                  prefix={formData.background.padding.right}
+                  prefix={formData.padding.right}
                   suffix="px"
                   min={0}
                   max={50}
@@ -144,10 +296,10 @@ export function BackgroundField() {
                 <RangeSlider
                   label="Padding bottom"
                   labelHidden
-                  value={formData.background.padding.bottom}
+                  value={formData.padding.bottom}
                   onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'bottom')}
                   output
-                  prefix={formData.background.padding.bottom}
+                  prefix={formData.padding.bottom}
                   suffix="px"
                   min={0}
                   max={50}
@@ -160,10 +312,10 @@ export function BackgroundField() {
                 <RangeSlider
                   label="Padding left"
                   labelHidden
-                  value={formData.background.padding.left}
+                  value={formData.padding.left}
                   onChange={(value) => onPaddingChange(typeof value === 'number' ? value : value[0], 'left')}
                   output
-                  prefix={formData.background.padding.left}
+                  prefix={formData.padding.left}
                   suffix="px"
                   min={0}
                   max={50}
@@ -175,4 +327,4 @@ export function BackgroundField() {
       </Box>
     </Card>
   );
-} 
+}

@@ -1,5 +1,5 @@
-import type { Size, FontType } from "../types/announcement";
-import type { FormCloseButtonPosition, FormAnnouncementBannerData } from "../types/announcement-form";
+import type { Size, FontType, CloseButtonPosition } from "../types/announcement";
+import type { FormAnnouncementBannerData } from "../types/announcement-form";
 
 export const TABS = [
   {id: 'basic', content: 'Basic'},
@@ -24,7 +24,7 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
     type: 'basic',
     isActive: true,
     showCloseButton: true,
-    closeButtonPosition: 'right' as FormCloseButtonPosition,
+    closeButtonPosition: 'right' as CloseButtonPosition,
     closeButtonColor: 'rgb(255, 255, 255)',
     status: 'draft',
   },
@@ -68,6 +68,15 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
     },
     backgroundColor: '#000000',
     backgroundPattern: null,
+  },
+  countdown: {
+    timerType: 'till_end_date',
+    timeFormat: 'HH:mm:ss',
+    showDays: true,
+    endDateTime: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+    afterTimerEnds: {
+      action: 'hide',
+    }
   },
   other: {
     displayBeforeDelay: 'none',
