@@ -1,9 +1,9 @@
 import React from 'react';
 import {Box, Banner} from "@shopify/polaris";
-import type {ActionData} from "../../types/announcement-form";
+import {ActionData, FormError} from "../../types/announcement-form";
 
 interface ValidationMessagesProps {
-  validationErrors: string[];
+  validationErrors: FormError[];
   actionData: ActionData | undefined;
 }
 
@@ -22,7 +22,7 @@ export function ValidationMessages({validationErrors, actionData}: ValidationMes
           >
             <ul style={{margin: 0, paddingLeft: '20px'}}>
               {validationErrors.map((error, index) => (
-                <li key={index} style={{marginBottom: '8px'}}>{error}</li>
+                <li key={index} style={{marginBottom: '8px'}}>{error.message}</li> /// TODO: need to add tab name
               ))}
             </ul>
           </Banner>

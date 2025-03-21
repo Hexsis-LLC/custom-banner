@@ -31,8 +31,8 @@ export const announcementsRelations = relations(announcements, ({ many, one }) =
   childAnnouncement: one(announcements, {
     fields: [announcements.childAnnouncementId],
     references: [announcements.id],
-    relationName: 'child_announcement'
   }),
+  parentAnnouncements: many(announcements, { relationName: 'childAnnouncement' }),
 }));
 
 export const pagePatternsRelations = relations(pagePatterns, ({ many }) => ({

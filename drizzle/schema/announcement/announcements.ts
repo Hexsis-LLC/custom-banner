@@ -3,7 +3,6 @@ import {
   integer,
   text,
 } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 
 // Table definition
 export const announcements = sqliteTable('announcements', {

@@ -39,7 +39,7 @@ export function CTAButtonField({
   // Track if this is the initial mount
   const isInitialMount = useRef(true);
   const hasCalledOnDataChange = useRef(false);
-  
+
   // Log the incoming initial data for debugging
   console.log("CTAButtonField received initialData:", initialData);
 
@@ -55,7 +55,7 @@ export function CTAButtonField({
       ctaText: initialData.ctaText || 'Click Here',
       ctaLink: initialData.ctaLink || 'https://',
     };
-    
+
     // Add textColor only if it's a link type (to avoid type errors)
     if (baseData.ctaType === 'link') {
       return {
@@ -63,7 +63,7 @@ export function CTAButtonField({
         textColor: (initialData as any).textColor || 'rgb(255, 255, 255)',
       } as CTAButtonFieldData;
     }
-    
+
     return baseData as CTAButtonFieldData;
   });
 
@@ -74,35 +74,36 @@ export function CTAButtonField({
       console.log("CTAButtonField already initialized, skipping initialData effect");
       return;
     }
-    
-    console.log("CTAButtonField initialData changed, updating formData state");
-    
+
+    console.log("CTAButtonField initialData received:", initialData);
+
     // Only update if significant initial data is available
     if (initialData.ctaType) {
       const baseData = {
-        ctaType: (initialData.ctaType as CTAType) || formData.ctaType,
-        padding: initialData.padding || formData.padding,
-        fontType: initialData.fontType || formData.fontType,
-        fontUrl: initialData.fontUrl || formData.fontUrl,
-        buttonFontColor: initialData.buttonFontColor || formData.buttonFontColor,
-        buttonBackgroundColor: initialData.buttonBackgroundColor || formData.buttonBackgroundColor,
-        ctaText: initialData.ctaText || formData.ctaText,
-        ctaLink: initialData.ctaLink || formData.ctaLink,
+        ctaType: (initialData.ctaType as CTAType) || 'none',
+        padding: initialData.padding || { ...DEFAULT_PADDING },
+        // Only use the explicit CTA font settings, never inherit from message
+        fontType: initialData.fontType || 'site',
+        fontUrl: initialData.fontUrl || '',
+        buttonFontColor: initialData.buttonFontColor || 'rgb(0, 0, 0)',
+        buttonBackgroundColor: initialData.buttonBackgroundColor || 'rgb(255, 255, 255)',
+        ctaText: initialData.ctaText || 'Click Here',
+        ctaLink: initialData.ctaLink || 'https://',
       };
-      
+
       // Add textColor only if it's a link type
-      if (initialData.ctaType === 'link' || formData.ctaType === 'link') {
+      if (initialData.ctaType === 'link' || baseData.ctaType === 'link') {
         setFormData({
           ...baseData,
-          textColor: (initialData as any).textColor || 
-            // Cast to any to avoid typing issues when accessing textColor
-            ((formData as any).textColor || 'rgb(255, 255, 255)'),
+          textColor: (initialData as any).textColor || 'rgb(255, 255, 255)',
         } as CTAButtonFieldData);
       } else {
         setFormData(baseData as CTAButtonFieldData);
       }
+
+      console.log("CTAButtonField initialized with font:", baseData.fontType, baseData.fontUrl);
     }
-  }, [initialData, formData]);
+  }, [initialData]);
 
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
 
@@ -125,32 +126,23 @@ export function CTAButtonField({
         hasChanged = true;
       }
     });
-    
+
     // Only update if something changed
     if (hasChanged) {
+      console.log("CTAButtonField updating state with:", updates);
       setFormData(prevFormData => {
         const newFormData = {
           ...prevFormData,
           ...updates
         } as CTAButtonFieldData;
-        
+
         // Will trigger the useEffect for formData that will validate and notify parent
         return newFormData;
       });
     }
   }, [formData]);
 
-  /**
-   * Validates the form data without setting errors (for internal use)
-   */
-  const validateData = useCallback((dataToValidate: CTAButtonFieldData): boolean => {
-    try {
-      ctaButtonFieldSchema.parse(dataToValidate);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }, []);
+
 
   /**
    * Validates the form data and sets error messages
@@ -163,12 +155,12 @@ export function CTAButtonField({
     } catch (error) {
       if (error instanceof ZodError) {
         const newErrors: Record<string, string> = {};
-        
+
         error.errors.forEach((err) => {
           const path = err.path.join('.');
           newErrors[path] = err.message;
         });
-        
+
         setLocalErrors(newErrors);
       }
       return false;
@@ -186,18 +178,22 @@ export function CTAButtonField({
     // Skip the first render
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      
+
       // Immediately validate on mount but don't call onDataChange
       validateForm();
       hasCalledOnDataChange.current = true;
       return;
     }
-    
+
+    // Track any font changes
+    console.log("CTAButtonField form data changed, fontType:", formData.fontType, "fontUrl:", formData.fontUrl);
+
     // For subsequent updates, validate and notify parent
     const isValid = validateForm();
-    
+
     // Prevent recursive updates by ensuring we don't notify parent with the same data
     if (hasCalledOnDataChange.current) {
+      console.log("Notifying parent about CTA changes", formData);
       onDataChange(formData, isValid);
     } else {
       hasCalledOnDataChange.current = true;
@@ -230,12 +226,38 @@ export function CTAButtonField({
   }, [formData.padding, updateFormState]);
 
   const onFontTypeChange = useCallback((value: string) => {
-    updateFormState({ fontType: value });
-  }, [updateFormState]);
+    // When font type changes, only update the CTA font setting
+    // This ensures the message font settings remain unchanged
+    console.log("CTAButtonField: Font type changing to:", value);
+    console.log("This should ONLY affect CTA button font, not message font");
+
+    // First update the font type
+    setFormData(prevData => {
+      const newData = {
+        ...prevData,
+        fontType: value,
+        // Clear font URL when switching to site font
+        fontUrl: value === 'site' ? '' : prevData.fontUrl
+      };
+
+      // A separate setFormData call prevents batching issues
+      // that could cause updates to get lost
+      return newData;
+    });
+  }, []);
 
   const onFontUrlChange = useCallback((value: string) => {
-    updateFormState({ fontUrl: value });
-  }, [updateFormState]);
+    // When font URL changes, only update the CTA font URL
+    // This ensures the message font URL remains unchanged
+    console.log("CTAButtonField: Font URL changing to:", value);
+    console.log("This should ONLY affect CTA button font URL, not message font URL");
+
+    // Use setFormData directly to ensure the change is captured
+    setFormData(prevData => ({
+      ...prevData,
+      fontUrl: value
+    }));
+  }, []);
 
   const onCtaTextChange = useCallback((value: string) => {
     updateFormState({ ctaText: value });
@@ -345,17 +367,17 @@ export function CTAButtonField({
         return null;
     }
   }, [
-    formData.ctaType, 
-    formData.ctaText, 
-    formData.ctaLink, 
-    formData.buttonFontColor, 
+    formData.ctaType,
+    formData.ctaText,
+    formData.ctaLink,
+    formData.buttonFontColor,
     formData.buttonBackgroundColor,
-    onCtaTextChange, 
-    onCtaLinkChange, 
-    onCtaLinkTextColorChange, 
-    onCtaButtonFontColorChange, 
+    onCtaTextChange,
+    onCtaLinkChange,
+    onCtaLinkTextColorChange,
+    onCtaButtonFontColorChange,
     onCtaButtonBackgroundColorChange,
-    hasError, 
+    hasError,
     getFieldErrorMessage
   ]);
 
@@ -374,29 +396,29 @@ export function CTAButtonField({
               <RadioButton
                 label="Clickable link"
                 checked={formData.ctaType === 'link'}
-                id="link"
-                name="cta"
+                id="cta-link"
+                name="cta-type-radio"
                 onChange={() => onCtaTypeChange('link')}
               />
               <RadioButton
                 label="Clickable bar"
                 checked={formData.ctaType === 'bar'}
-                id="bar"
-                name="cta"
+                id="cta-bar"
+                name="cta-type-radio"
                 onChange={() => onCtaTypeChange('bar')}
               />
               <RadioButton
                 label="Regular Button"
                 checked={formData.ctaType === 'regular'}
-                id="regular"
-                name="cta"
+                id="cta-regular"
+                name="cta-type-radio"
                 onChange={() => onCtaTypeChange('regular')}
               />
               <RadioButton
                 label="None"
                 checked={formData.ctaType === 'none'}
-                id="none"
-                name="cta"
+                id="cta-none"
+                name="cta-type-radio"
                 onChange={() => onCtaTypeChange('none')}
               />
             </InlineStack>
@@ -407,15 +429,19 @@ export function CTAButtonField({
 
           {/* Font Section - Only show for link and regular types */}
           {(formData.ctaType === 'link' || formData.ctaType === 'regular') && (
-            <FontSection
-              fontType={formData.fontType as FontType}
-              fontUrl={formData.fontUrl}
-              hasError={(field) => hasError(`fontType.${field}`)}
-              getFieldErrorMessage={(field) => getFieldErrorMessage(`fontType.${field}`)}
-              onFontTypeChange={onFontTypeChange}
-              onFontUrlChange={onFontUrlChange}
-              errorPath="cta"
-            />
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h6">CTA Button Font</Text>
+              <FontSection
+                fontType={formData.fontType as FontType}
+                fontUrl={formData.fontUrl}
+                hasError={(field) => hasError(`fontType.${field}`)}
+                getFieldErrorMessage={(field) => getFieldErrorMessage(`fontType.${field}`)}
+                onFontTypeChange={onFontTypeChange}
+                onFontUrlChange={onFontUrlChange}
+                errorPath="cta"
+                sectionId="cta-font"
+              />
+            </BlockStack>
           )}
 
           {/* Padding Section - Only show for regular button type */}
@@ -509,4 +535,4 @@ export function CTAButtonField({
       </Box>
     </Card>
   );
-} 
+}

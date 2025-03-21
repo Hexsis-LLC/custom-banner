@@ -1,19 +1,18 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { FormState, ValidationState } from '../types/announcement-form';
+import {FormError, FormState, ValidationState} from '../types/announcement-form';
 import { validateAnnouncement } from '../schemas/announcement';
-import { getErrorMessage } from '../utils/announcement-form';
 import { ZodError } from 'zod';
 
 type FormAction =
   | { type: 'UPDATE_SECTION'; section: keyof FormState; data: Partial<FormState[keyof FormState]> }
   | { type: 'RESET_VALIDATION' }
-  | { type: 'SET_VALIDATION_ERRORS'; errors: string[] }
+  | { type: 'SET_VALIDATION_ERRORS'; errors: FormError[] }
   | { type: 'SET_FIELD_ERRORS'; errors: ValidationState }
   | { type: 'SET_FORM_DATA'; data: FormState };
 
 interface FormReducerState {
   formData: FormState;
-  validationErrors: string[];
+  validationErrors: FormError[];
   fieldErrors: ValidationState;
 }
 
@@ -104,17 +103,19 @@ export function FormProvider({ children, initialData }: { children: React.ReactN
       return true;
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((err) => getErrorMessage(err));
-        const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
-          const tabName = message.split(' in ')[1].split(' tab')[0];
+        /*const errorMessages = error.errors.map((err) => getErrorMessage(err));
+*/
+        /*const groupedErrors = errorMessages.reduce((acc: { [key: string]: string[] }, message: string) => {
+          const tabName = message.split(' in ')[1].split(' tab')[0]; // Extracting tab name
           if (!acc[tabName]) acc[tabName] = [];
-          acc[tabName].push(message.split(' in ')[0]);
+          acc[tabName].push(message.split(' in ')[0]); // Storing message without tab info
           return acc;
-        }, {});
+        }, {});*/
 
-        const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
+
+        /*const formattedErrors = Object.entries(groupedErrors).map(([tab, errors]) =>
           `${tab} tab: ${errors.join(', ')}`
-        );
+        );*/
 
         const errorFields = new Set<string>(error.errors.map((err) => err.path.join('.')));
 
@@ -129,7 +130,10 @@ export function FormProvider({ children, initialData }: { children: React.ReactN
           },
         });
 
-        dispatch({ type: 'SET_VALIDATION_ERRORS', errors: formattedErrors });
+        dispatch({ type: 'SET_VALIDATION_ERRORS', errors: error.errors.map((err) => ({
+            path: err.path as string[],
+            message: err.message,
+          })) });
       }
       return false;
     }
@@ -140,7 +144,7 @@ export function FormProvider({ children, initialData }: { children: React.ReactN
   }, [state.fieldErrors.errorFields]);
 
   const getFieldErrorMessage = useCallback((fieldPath: string) => {
-    const error = state.fieldErrors.errors.find(err => err.path.join('.') === fieldPath);
+    const error = state.fieldErrors.errors.find((err: { path: any[]; }) => err.path.join('.') === fieldPath);
     return error ? error.message : '';
   }, [state.fieldErrors.errors]);
 

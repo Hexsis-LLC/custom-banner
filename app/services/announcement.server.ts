@@ -33,7 +33,7 @@ export class AnnouncementService {
 
   private async updateKv(shopId: string) {
     const announcements = await this.getActiveAnnouncements(shopId);
-    
+
     if (!announcements.length) {
       await this.kvService.updateAnnouncementsByShop(shopId, {
         global: [],
@@ -45,7 +45,7 @@ export class AnnouncementService {
     const groupedAnnouncements = await this.transformer.transformActiveAnnouncements(
       announcements as unknown as AugmentedDbAnnouncement[]
     );
-    
+
     const kvData = convertToKVData(groupedAnnouncements);
     const result = await this.kvService.updateAnnouncementsByShop(shopId, kvData);
 
@@ -78,16 +78,16 @@ export class AnnouncementService {
 
     // Create related data in a transaction
     await this.createAnnouncementRelations(
-      createdAnnouncement.id, 
-      texts, 
-      background, 
-      form, 
+      createdAnnouncement.id,
+      texts,
+      background,
+      form,
       patterns
     );
 
     // Fetch the complete announcement
     const completeAnnouncement = await this.getAnnouncement(createdAnnouncement.id);
-    
+
     if (!completeAnnouncement) {
       throw new Error('Failed to fetch complete announcement after creation');
     }
@@ -252,7 +252,7 @@ export class AnnouncementService {
         .delete(callToAction)
         .where(eq(callToAction.announcementTextId, text.id));
     }
-    
+
     await tx
       .delete(announcementText)
       .where(eq(announcementText.announcementId, id));
@@ -378,7 +378,7 @@ export class AnnouncementService {
   async bulkDuplicateAnnouncements(ids: number[]) {
     return await db.transaction(async (tx) => {
       const originals = await Promise.all(ids.map(id => this.getAnnouncement(id)));
-      
+
       return await Promise.all(
         originals
           .filter((original): original is NonNullable<typeof original> => original !== null)
@@ -448,7 +448,7 @@ export class AnnouncementService {
   private async duplicateCTAs(tx: any, originalCTAs: any[], newTextId: number) {
     for (const cta of originalCTAs) {
       const anyCtaOld = cta as any;
-      
+
       const ctaValues: Omit<typeof callToAction.$inferInsert, 'id' | 'createdAt' | 'updatedAt'> = {
         type: 'button' as const,
         text: cta.text,

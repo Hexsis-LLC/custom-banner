@@ -51,8 +51,8 @@ const bannerContentStyle = (props: StyledProps): React.CSSProperties => ({
   position: 'relative',
   minHeight: props.height || '40px',
   height: props.height || 'auto',
-  padding: props.padding 
-    ? `${props.padding.top}px ${props.padding.right}px ${props.padding.bottom}px ${props.padding.left}px` 
+  padding: props.padding
+    ? `${props.padding.top}px ${props.padding.right}px ${props.padding.bottom}px ${props.padding.left}px`
     : '10px 40px',
   width: '100%',
   boxSizing: 'border-box'
@@ -60,7 +60,7 @@ const bannerContentStyle = (props: StyledProps): React.CSSProperties => ({
 
 const bannerTextStyle = (props: StyledProps): React.CSSProperties => {
   // Only apply fontFamily if it's not a site font
-  const fontStyles = props.fontType === 'site' 
+  const fontStyles = props.fontType === 'site'
     ? {}
     : { fontFamily: props.fontFamily || 'inherit' };
 
@@ -93,7 +93,7 @@ const ctaWrapperStyle: React.CSSProperties = {
 
 const ctaTextLinkStyle = (props: StyledProps): React.CSSProperties => {
   // Only apply fontFamily if it's not a site font
-  const fontStyles = props.fontType === 'site' 
+  const fontStyles = props.fontType === 'site'
     ? {}
     : { fontFamily: props.fontFamily || 'inherit' };
 
@@ -113,7 +113,7 @@ const ctaTextLinkStyle = (props: StyledProps): React.CSSProperties => {
 
 const ctaButtonStyle = (props: StyledProps): React.CSSProperties => {
   // Only apply fontFamily if it's not a site font
-  const fontStyles = props.fontType === 'site' 
+  const fontStyles = props.fontType === 'site'
     ? {}
     : { fontFamily: props.fontFamily || 'inherit' };
 
@@ -128,8 +128,8 @@ const ctaButtonStyle = (props: StyledProps): React.CSSProperties => {
     textAlign: 'center',
     backgroundColor: props.cta?.buttonBackgroundColor || 'rgb(255, 255, 255)',
     color: props.cta?.buttonFontColor || 'rgb(0, 0, 0)',
-    padding: props.cta?.padding 
-      ? `${props.cta.padding.top}px ${props.cta.padding.right}px ${props.cta.padding.bottom}px ${props.cta.padding.left}px` 
+    padding: props.cta?.padding
+      ? `${props.cta.padding.top}px ${props.cta.padding.right}px ${props.cta.padding.bottom}px ${props.cta.padding.left}px`
       : '5px 15px',
     borderRadius: '4px',
     cursor: 'pointer',
@@ -232,15 +232,15 @@ export function LivePreview() {
   const closePos = basic.closeButtonPosition as Exclude<CloseButtonPosition, 'none'>;
 
   // Calculate size based on form data
-  const height = basic.size === 'custom' && basic.sizeHeight 
+  const height = basic.size === 'custom' && basic.sizeHeight
     ? `${basic.sizeHeight}px`
-    : basic.size === 'large' 
+    : basic.size === 'large'
       ? '72px'
       : basic.size === 'mid'
         ? '62px'
         : '52px'; // small or default
 
-  const width = basic.size === 'custom' && basic.sizeWidth 
+  const width = basic.size === 'custom' && basic.sizeWidth
     ? `${basic.sizeWidth}%`
     : '100%';
 
@@ -253,15 +253,15 @@ export function LivePreview() {
       };
     } else if (background.backgroundType === 'gradient') {
       // Use gradientValue if available, otherwise construct it
-      const gradientStyle = background.gradientValue || 
+      const gradientStyle = background.gradientValue ||
         `linear-gradient(90deg, ${background.color1 || '#000000'}, ${background.color2 || '#ffffff'})`;
-      
+
       return {
         backgroundColor: undefined,
         background: gradientStyle
       };
     }
-    
+
     // Default fallback
     return {
       backgroundColor: '#000000',
@@ -270,7 +270,7 @@ export function LivePreview() {
   };
 
   const bgStyles = getBackgroundStyles();
-  
+
   const styleProps = {
     backgroundColor: bgStyles.backgroundColor,
     background: bgStyles.background,
@@ -281,14 +281,14 @@ export function LivePreview() {
 
   // Add debug logging to track background styles
   useEffect(() => {
-    console.log('Background Debug:', {
+   /* console.log('Background Debug:', {
       backgroundType: background.backgroundType,
       color1: background.color1,
       color2: background.color2,
       gradientValue: background.gradientValue,
       computedStyles: bgStyles,
       padding: background.padding
-    });
+    });*/
   }, [background, bgStyles]);
 
   // Get text styles based on font type
@@ -398,7 +398,7 @@ export function LivePreview() {
         );
       case 'bar':
         return (
-          <div 
+          <div
             style={{
               ...ctaContainerStyle,
               width: '100%',
@@ -462,7 +462,7 @@ export function LivePreview() {
             )}
 
             {basic.showCloseButton && basic.closeButtonPosition !== 'none' && (
-              <button style={closeButtonStyle({ 
+              <button style={closeButtonStyle({
                 position: closePos,
                 color: basic.closeButtonColor
               })}>✕</button>
@@ -473,4 +473,4 @@ export function LivePreview() {
       {cta.ctaType === 'bar' && renderCTA()}
     </div>
   );
-} 
+}

@@ -22,7 +22,8 @@ export const afterTimerEnds = sqliteTable('after_timer_ends', {
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 }, (table) => ({
-  announcementIdx: index('after_timer_announcement_idx').on(table.announcementId)
+  announcementIdx: index('after_timer_announcement_idx').on(table.announcementId),
+  childAnnouncementIdx: index('after_timer_child_idx').on(table.childAnnouncementId)
 }));
 
 // Relations
@@ -34,6 +35,5 @@ export const afterTimerEndsRelations = relations(afterTimerEnds, ({ one }) => ({
   childAnnouncement: one(announcements, {
     fields: [afterTimerEnds.childAnnouncementId],
     references: [announcements.id],
-    relationName: 'child_announcement'
   }),
 })); 

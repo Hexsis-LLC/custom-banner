@@ -44,6 +44,8 @@ export const loader = async ({request, params}: LoaderFunctionArgs) => {
     const announcementService = new AnnouncementService();
     const existingAnnouncement = await announcementService.getAnnouncement(parseInt(announcementId));
 
+    console.log(existingAnnouncement)
+
     if (!existingAnnouncement) {
       throw new Error('Announcement not found');
     }
@@ -158,11 +160,11 @@ function AnnouncementForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessChip, setShowSuccessChip] = useState(false);
   const [actionType, setActionType] = useState<'draft' | 'publish' | null>(null);
-  
+
   // Determine tabs based on announcement type
   const tabs = React.useMemo(() => {
     const baseTabs = [...TABS]; // Create a copy of the base tabs
-    
+
     // If this is a countdown announcement, add the countdown tab after the text tab
     if (formData.basic.type === 'countdown') {
       baseTabs.splice(2, 0, {
@@ -170,7 +172,7 @@ function AnnouncementForm() {
         content: 'Countdown Timer',
       });
     }
-    
+
     return baseTabs;
   }, [formData.basic.type]);
 

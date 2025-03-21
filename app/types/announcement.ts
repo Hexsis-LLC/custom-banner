@@ -7,9 +7,9 @@ import {
   pagePatterns,
   announcementsXPagePatterns
 } from '../../drizzle/schema/announcement';
-import { InferSelectModel } from 'drizzle-orm';
+import type { InferSelectModel } from 'drizzle-orm';
 
-export type Size = 'large' | 'mid' | 'small' | 'custom';
+export type BannerSize = 'large' | 'mid' | 'small' | 'custom';
 export type BannerType = 'basic' | 'countdown' | 'email_signup' | 'multi_text';
 export type CloseButtonPosition = 'right' | 'left' | 'center' | 'none';
 export type AnnouncementStatus = 'draft' | 'published' | 'paused' | 'ended';
@@ -41,41 +41,16 @@ interface BaseNullableFields {
   isActive: boolean | null;
 }
 
-interface BaseText {
-  textMessage: string;
-  textColor: string;
-  fontSize: number;
-  customFont: string | null;
-  languageCode: string | null;
-}
-
-interface BaseCTA {
-  type: CTAType;
-  text: string;
-  link: string;
-  bgColor: string;
-  textColor: string;
-  buttonRadius: number | null;
-  padding: string | null;
-}
 
 interface BaseBackground {
   backgroundColor: string;
   backgroundPattern: string | null;
 }
 
-interface BaseForm {
-  inputType: 'text' | 'email' | 'checkbox';
-  placeholder: string | null;
-  label: string | null;
-  isRequired: boolean | null;
-  validationRegex: string | null;
-}
-
 // Form-specific interfaces
 export interface BasicSettings {
   id?: number;
-  size: Size;
+  size: BannerSize;
   sizeHeight: string;
   sizeWidth: string;
   campaignTitle: string;
@@ -93,8 +68,6 @@ export interface BasicSettings {
   countdownEndTime?: string;
   timezone?: string;
   status: AnnouncementStatus;
-  heightPx?: number;
-  widthPercent?: number;
 }
 
 export interface TextEntry {
@@ -174,7 +147,7 @@ export interface Announcement extends BaseEntity, BaseNullableFields {
   type: BannerType;
   title: string;
   shopId: string;
-  size: Size;
+  size: BannerSize;
   startType: 'now' | 'specific';
   endType: 'until_stop' | 'specific';
   startDate: string;
@@ -192,7 +165,7 @@ export interface KVAnnouncement extends BaseEntity {
   type: BannerType;
   title: string;
   shopId: string;
-  size: Size;
+  size: BannerSize;
   heightPx: number | null;
   widthPercent: number | null;
   startType: 'now' | 'specific';
@@ -281,6 +254,35 @@ export interface FormState extends Omit<AnnouncementBannerData, 'basic'> {
     startDate: string;
     endDate: string;
   };
+  countdown?: {
+    timerType: 'till_end_date' | 'duration' | 'daily_schedule';
+    timeFormat: string;
+    showDays: boolean;
+    endDateTime?: string;
+    durationDays?: number;
+    durationHours?: number;
+    durationMinutes?: number;
+    durationSeconds?: number;
+    dailyStartTime?: string;
+    dailyEndTime?: string;
+    afterTimerEnds?: {
+      action: 'hide' | 'show_zeros' | 'create_announcement';
+      nextAnnouncementId?: string;
+      message?: string;
+      textColor?: string;
+      fontSize?: number;
+      ctaType?: 'link' | 'button' | 'none';
+      ctaText?: string;
+      ctaLink?: string;
+      buttonBackground?: string;
+      buttonTextColor?: string;
+      fontType?: 'site' | 'dynamic' | 'custom';
+      fontUrl?: string;
+      ctaFontType?: 'site' | 'dynamic' | 'custom';
+      ctaFontUrl?: string;
+      childAnnouncementId?: string;
+    };
+  };
 }
 
 export interface LoaderData {
@@ -302,7 +304,7 @@ export interface CreateAnnouncementInput {
   type: BannerType;
   title: string;
   shopId: string;
-  size: Size;
+  size: BannerSize;
   heightPx?: number;
   widthPercent?: number;
   startType: 'now' | 'specific';

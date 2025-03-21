@@ -1,7 +1,7 @@
 import {BlockStack, Box, Button, Card, Icon, InlineStack, RangeSlider, Text, TextField} from "@shopify/polaris";
 import {DeleteIcon, PlusIcon} from "@shopify/polaris-icons";
 import type {TextEntry, FontType} from "../../../types/announcement";
-import {useCallback, useMemo, useState, useEffect} from "react";
+import {useCallback, useMemo, useState, useEffect, useRef} from "react";
 import { ColorPickerInput } from "app/components/ColorPickerInput";
 import { FontSection } from "../fontSection";
 import type { AnnouncementTextFieldData } from "../../../schemas/schemas/AnnouncementTextFieldSchema";
@@ -36,6 +36,19 @@ const DEFAULT_TEXT_ENTRY: TextEntry = {
   languageCode: '',
 };
 
+// Utility function to debounce function calls
+function debounce<T extends (...args: any[]) => any>(
+  func: T, 
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(...args: Parameters<T>) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
 /**
  * Component for managing announcement text entries with support for multiple text blocks
  */
@@ -61,11 +74,20 @@ export function AnnouncementTextField({
     };
   });
 
+  // Add a reference to store previous form data for comparison
+  const previousFormDataRef = useRef('');
+
+  // Create a debounced version of onDataChange for non-text updates
+  const debouncedOnDataChange = useRef(debounce((data: ExtendedAnnouncementData, isValid: boolean) => {
+    onDataChange(data, isValid);
+  }, 150)).current;
+
   // Update state when initialData changes (for edit mode)
   useEffect(() => {
     console.log("initialData changed, updating formData state");
-    // Only update if significant initial data is available (to prevent overwriting with defaults)
-    if (initialData.announcementText || initialData.textEntries?.length) {
+    // Always update when we receive initialData with content
+    if (initialData && Object.keys(initialData).length > 0) {
+      console.log("Applying new initial data:", initialData);
       setFormData({
         announcementText: initialData.announcementText || '',
         textColor: initialData.textColor || 'rgb(0, 0, 0)',
@@ -73,7 +95,14 @@ export function AnnouncementTextField({
         fontType: (initialData.fontType as FontType) || 'site',
         fontUrl: initialData.fontUrl || '',
         languageCode: initialData.languageCode || '',
-        textEntries: initialData.textEntries || [{ ...DEFAULT_TEXT_ENTRY }],
+        textEntries: initialData.textEntries || [{ 
+          ...DEFAULT_TEXT_ENTRY,
+          announcementText: initialData.announcementText || '',
+          textColor: initialData.textColor || 'rgb(0, 0, 0)',
+          fontSize: initialData.fontSize || 16,
+          fontType: (initialData.fontType as FontType) || 'site',
+          fontUrl: initialData.fontUrl || '',
+        }],
       });
     }
   }, [initialData]);
@@ -106,82 +135,7 @@ export function AnnouncementTextField({
       languageCode: formData.languageCode || '',
     }];
   }, [formData]);
-
-  /**
-   * Updates the form state with new text entries and syncs the main fields
-   */
-  const updateFormState = useCallback((updatedEntries: TextEntry[]) => {
-    const newFormData = {
-      ...formData,
-      textEntries: updatedEntries,
-      // Keep the main fields in sync with the first entry
-      announcementText: updatedEntries[0].announcementText,
-      textColor: updatedEntries[0].textColor,
-      fontSize: updatedEntries[0].fontSize,
-      fontType: updatedEntries[0].fontType,
-      fontUrl: updatedEntries[0].fontUrl,
-      languageCode: updatedEntries[0].languageCode,
-    };
-
-    setFormData(newFormData);
-
-    // Validate and notify parent of changes
-    const isValid = validateData(newFormData);
-    onDataChange(newFormData, isValid);
-  }, [formData, onDataChange]);
-
-  /**
-   * Creates and adds a new text entry
-   */
-  const addNewText = useCallback(() => {
-    if (textEntries.length >= MAX_TEXT_ENTRIES) return;
-
-    const newEntry: TextEntry = {
-      id: Date.now().toString(),
-      announcementText: '',
-      textColor: formData.textColor,
-      fontSize: formData.fontSize,
-      fontType: formData.fontType as FontType,
-      fontUrl: formData.fontUrl || '',
-      languageCode: '',
-    };
-
-    updateFormState([...textEntries, newEntry]);
-  }, [textEntries, formData, updateFormState]);
-
-  /**
-   * Removes a text entry by ID
-   */
-  const removeText = useCallback((id: string) => {
-    if (textEntries.length <= 1) return;
-    const updatedEntries = textEntries.filter(entry => entry.id !== id);
-    updateFormState(updatedEntries);
-  }, [textEntries, updateFormState]);
-
-  /**
-   * Updates a specific field in a text entry
-   */
-  const updateTextEntry = useCallback((id: string, field: keyof TextEntry, value: string | number) => {
-    const updatedEntries = textEntries.map(entry => {
-      if (entry.id !== id) return entry;
-
-      // Special handling for font type changes
-      if (field === 'fontType') {
-        const fontType = value as FontType;
-        return {
-          ...entry,
-          fontType,
-          // Clear font URL when switching to site font
-          fontUrl: fontType === 'site' ? '' : entry.fontUrl,
-        };
-      }
-
-      return { ...entry, [field]: value };
-    });
-
-    updateFormState(updatedEntries);
-  }, [textEntries, updateFormState]);
-
+  
   /**
    * Validates the form data without setting errors (for internal use)
    */
@@ -217,6 +171,155 @@ export function AnnouncementTextField({
       return false;
     }
   }, [isMultiText]);
+
+  /**
+   * Updates the form state with new text entries and syncs the main fields
+   */
+  const updateFormState = useCallback((updatedEntries: TextEntry[]) => {
+    // Create the new form data
+    const newFormData = {
+      ...formData,
+      textEntries: updatedEntries,
+      // Keep the main fields in sync with the first entry
+      announcementText: updatedEntries[0].announcementText,
+      textColor: updatedEntries[0].textColor,
+      fontSize: updatedEntries[0].fontSize,
+      fontType: updatedEntries[0].fontType,
+      fontUrl: updatedEntries[0].fontUrl,
+      languageCode: updatedEntries[0].languageCode,
+    };
+
+    // For text changes, update immediately to prevent input lag
+    if (newFormData.announcementText !== formData.announcementText) {
+      setFormData(newFormData);
+      const isValid = validateData(newFormData);
+      onDataChange(newFormData, isValid); // Use immediate update for text
+      return;
+    }
+
+    // For non-text changes like font or color, use debounced update
+    const currentDataString = JSON.stringify({
+      textColor: formData.textColor,
+      fontSize: formData.fontSize,
+      fontType: formData.fontType,
+      fontUrl: formData.fontUrl,
+      textEntries: formData.textEntries ? 
+        formData.textEntries.map(e => ({
+          id: e.id,
+          textColor: e.textColor,
+          fontSize: e.fontSize,
+          fontType: e.fontType, 
+          fontUrl: e.fontUrl
+        })) : []
+    });
+    
+    const newDataString = JSON.stringify({
+      textColor: newFormData.textColor,
+      fontSize: newFormData.fontSize,
+      fontType: newFormData.fontType,
+      fontUrl: newFormData.fontUrl,
+      textEntries: newFormData.textEntries ? 
+        newFormData.textEntries.map(e => ({
+          id: e.id,
+          textColor: e.textColor,
+          fontSize: e.fontSize,
+          fontType: e.fontType, 
+          fontUrl: e.fontUrl
+        })) : []
+    });
+    
+    // Only update if there's an actual change
+    if (currentDataString !== newDataString) {
+      setFormData(newFormData);
+      
+      // Since we're already comparing the data, we can validate and notify the parent here
+      const isValid = validateData(newFormData);
+      debouncedOnDataChange(newFormData, isValid); // Use debounced update for non-text fields
+    }
+  }, [formData, validateData, onDataChange, debouncedOnDataChange]);
+
+  /**
+   * Creates and adds a new text entry
+   */
+  const addNewText = useCallback(() => {
+    if (textEntries.length >= MAX_TEXT_ENTRIES) return;
+
+    const newEntry: TextEntry = {
+      id: Date.now().toString(),
+      announcementText: '',
+      textColor: formData.textColor,
+      fontSize: formData.fontSize,
+      fontType: formData.fontType as FontType,
+      fontUrl: formData.fontUrl || '',
+      languageCode: '',
+    };
+
+    updateFormState([...textEntries, newEntry]);
+  }, [textEntries, formData, updateFormState]);
+
+  /**
+   * Removes a text entry by ID
+   */
+  const removeText = useCallback((id: string) => {
+    if (textEntries.length <= 1) return;
+    const updatedEntries = textEntries.filter(entry => entry.id !== id);
+    updateFormState(updatedEntries);
+  }, [textEntries, updateFormState]);
+
+  /**
+   * Updates a specific field in a text entry
+   */
+  const updateTextEntry = useCallback((id: string, field: keyof TextEntry, value: string | number) => {
+    console.log(`Updating text entry ${id}, field ${field} with value:`, value);
+    
+    // Skip empty id
+    if (!id) return;
+    
+    // For text fields, update directly without comparing first to avoid input lag
+    if (field === 'announcementText') {
+      const updatedEntries = textEntries.map(entry => {
+        if (entry.id !== id) return entry;
+        return { 
+          ...entry, 
+          [field]: typeof value === 'string' ? value : String(value)
+        };
+      });
+
+      updateFormState(updatedEntries);
+      return;
+    }
+    
+    // For other fields, check if value changed to prevent unnecessary updates
+    const existingEntry = textEntries.find(entry => entry.id === id);
+    if (existingEntry && JSON.stringify(existingEntry[field]) === JSON.stringify(value)) {
+      console.log('Value unchanged, skipping update');
+      return; // Skip update if the value hasn't changed
+    }
+    
+    const updatedEntries = textEntries.map(entry => {
+      if (entry.id !== id) return entry;
+
+      // Special handling for font type changes
+      if (field === 'fontType') {
+        const fontType = value as FontType;
+        console.log(`Setting message font type to ${fontType} for entry ${entry.id}`);
+        return {
+          ...entry,
+          fontType,
+          // Clear font URL when switching to site font
+          fontUrl: fontType === 'site' ? '' : entry.fontUrl,
+        };
+      }
+
+      if (field === 'fontUrl') {
+        console.log(`Setting message font URL to ${value} for entry ${entry.id}`);
+      }
+
+      return { ...entry, [field]: value };
+    });
+
+    updateFormState(updatedEntries);
+  }, [textEntries, updateFormState]);
 
   /**
    * Validates the form data and sets error messages
@@ -269,13 +372,9 @@ export function AnnouncementTextField({
   // Run validation when component mounts or external errors change
   useEffect(() => {
     validateForm();
-  }, [externalErrors, validateForm]);
-
-  // Notify parent component about validation state on mount and when data changes
-  useEffect(() => {
-    const isValid = validateForm();
-    onDataChange(formData, isValid);
-  }, [formData, validateForm, onDataChange]);
+    // We only want to run this when externalErrors change, not when validateForm changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalErrors]);
 
   /**
    * Checks if a field has an error
@@ -304,6 +403,17 @@ export function AnnouncementTextField({
   const renderTextEntry = useCallback((entry: TextEntry, index: number) => {
     const showDeleteButton = isMultiText && textEntries.length > 1;
     const messageLabel = isMultiText && textEntries.length > 1 ? `Text Message ${index + 1}` : 'Text Message';
+    
+    console.log(`Rendering text entry ${index}:`, entry);
+
+    // Create memoized handlers to prevent re-renders
+    const handleTextChange = useCallback((value: string) => {
+      // Skip update if nothing changed to prevent loops
+      if (value === entry.announcementText) return;
+      
+      console.log(`Text changed in entry ${index}:`, value);
+      updateTextEntry(entry.id, 'announcementText', value);
+    }, [entry.id, entry.announcementText]);
 
     return (
       <BlockStack key={entry.id} gap="400">
@@ -316,7 +426,7 @@ export function AnnouncementTextField({
               placeholder="Enter your announcement text"
               autoComplete="off"
               value={entry.announcementText}
-              onChange={(value) => updateTextEntry(entry.id, 'announcementText', value)}
+              onChange={handleTextChange}
               error={hasError(getValidationPath(index, 'announcementText'))}
               helpText={hasError(getValidationPath(index, 'announcementText')) ?
                 getFieldErrorMessage(getValidationPath(index, 'announcementText')) : undefined}
@@ -360,15 +470,19 @@ export function AnnouncementTextField({
         </InlineStack>
 
         {/* Font Section */}
-        <FontSection
-          fontType={entry.fontType}
-          fontUrl={entry.fontUrl}
-          hasError={(field) => hasError(getValidationPath(index, field))}
-          getFieldErrorMessage={(field) => getFieldErrorMessage(getValidationPath(index, field))}
-          onFontTypeChange={(value) => updateTextEntry(entry.id, 'fontType', value)}
-          onFontUrlChange={(value) => updateTextEntry(entry.id, 'fontUrl', value)}
-          errorPath={getValidationPath(index, '')}
-        />
+        <BlockStack gap="400">
+          <Text variant="headingMd" as="h6">Message Font</Text>
+          <FontSection
+            fontType={entry.fontType}
+            fontUrl={entry.fontUrl}
+            hasError={(field) => hasError(getValidationPath(index, field))}
+            getFieldErrorMessage={(field) => getFieldErrorMessage(getValidationPath(index, field))}
+            onFontTypeChange={(value) => updateTextEntry(entry.id, 'fontType', value)}
+            onFontUrlChange={(value) => updateTextEntry(entry.id, 'fontUrl', value)}
+            errorPath={getValidationPath(index, '')}
+            sectionId="message-font"
+          />
+        </BlockStack>
 
         {/* Separator between entries */}
         {isMultiText && index < textEntries.length - 1 && (

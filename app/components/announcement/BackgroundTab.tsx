@@ -12,19 +12,7 @@ export function AnnouncementBackgroundTab() {
   // Format the context data for the background field component
   const initialBackgroundData = useMemo(() => {
     // Make sure we're providing all required fields with proper defaults
-    return {
-      backgroundType: (formData.background.backgroundType || 'solid') as 'solid' | 'gradient',
-      color1: formData.background.color1 || 'rgb(0, 0, 0)',
-      color2: formData.background.color2 || 'rgb(255, 255, 255)',
-      gradientValue: formData.background.gradientValue || 'linear-gradient(90deg, rgb(0, 0, 0) 0%, rgb(255, 255, 255) 100%)',
-      pattern: (formData.background.pattern || 'none') as 'none' | 'stripe-green' | 'stripe-blue',
-      padding: formData.background.padding || {
-        top: 12,
-        right: 16,
-        bottom: 12,
-        left: 16,
-      },
-    };
+    return formData.background;
   }, [formData.background]);
 
   // Log the formatted initial data
@@ -74,9 +62,6 @@ export function AnnouncementBackgroundTab() {
       gradientValue: data.gradientValue,
       pattern: data.pattern,
       padding: data.padding,
-      // Keep these fields in sync too for API compatibility
-      backgroundColor: data.backgroundType === 'solid' ? data.color1 : undefined,
-      backgroundPattern: data.pattern !== 'none' ? data.pattern : undefined,
     });
   }, [handleFormChange, isInitialMount]);
 

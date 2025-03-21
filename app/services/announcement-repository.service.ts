@@ -8,8 +8,56 @@ import {
   bannerBackground,
   bannerForm,
   callToAction,
-
+  countdownSettings,
 } from '../../drizzle/schema/announcement';
+
+// Define return types based on schema relationships
+type Announcement = typeof announcements.$inferSelect;
+
+// Type for child announcements with less nesting
+type ChildAnnouncement = Announcement & {
+  texts: (typeof announcementText.$inferSelect & {
+    ctas: (typeof callToAction.$inferSelect)[]
+  })[];
+};
+
+// Simplified child announcement type for filtered queries
+type ChildAnnouncementPartial = Announcement & {
+  texts: (typeof announcementText.$inferSelect)[];
+};
+
+type AnnouncementWithRelations = Announcement & {
+  texts: (typeof announcementText.$inferSelect & {
+    ctas: (typeof callToAction.$inferSelect)[]
+  })[];
+  background: typeof bannerBackground.$inferSelect;
+  form: (typeof bannerForm.$inferSelect)[];
+  pagePatternLinks: (typeof announcementsXPagePatterns.$inferSelect & {
+    pagePattern: {
+      pattern: string;
+      id: number;
+    }
+  })[];
+  countdownSettings: typeof countdownSettings.$inferSelect | null;
+  childAnnouncement: ChildAnnouncement | null;
+};
+
+// A partial version of AnnouncementWithRelations that matches what's returned by getFilteredAnnouncementsByShop
+type AnnouncementPartial = Announcement & {
+  texts: (typeof announcementText.$inferSelect)[];
+  background: typeof bannerBackground.$inferSelect;
+  pagePatternLinks: (typeof announcementsXPagePatterns.$inferSelect & {
+    pagePattern: {
+      pattern: string;
+      id: number;
+    }
+  })[];
+  countdownSettings?: typeof countdownSettings.$inferSelect | null;
+  childAnnouncement?: ChildAnnouncementPartial | null;
+};
+
+// SQLite delete operation can return various result formats
+type SQLiteDeleteResult = any;
 
 /**
  * Repository service for database operations related to announcements
@@ -18,7 +66,7 @@ export class AnnouncementRepositoryService {
   /**
    * Fetches an announcement by ID with all related data
    */
-  async getAnnouncement(id: number) {
+  async getAnnouncement(id: number): Promise<AnnouncementWithRelations | undefined> {
     console.log('Fetching announcement by id:', id);
     const announcement = await db.query.announcements.findFirst({
       where: eq(announcements.id, id),
@@ -33,6 +81,23 @@ export class AnnouncementRepositoryService {
         pagePatternLinks: {
           with: {
             pagePattern: true
+          }
+        },
+        countdownSettings: true,
+        childAnnouncement: {
+          with: {
+            texts: {
+              with: {
+                ctas: true
+              }
+            },
+            background: true,
+            form: true,
+            pagePatternLinks: {
+              with: {
+                pagePattern: true
+              }
+            }
           }
         }
       }
@@ -52,7 +117,7 @@ export class AnnouncementRepositoryService {
   /**
    * Fetches active announcements for a shop
    */
-  async getActiveAnnouncements(shopId: string, currentPath?: string) {
+  async getActiveAnnouncements(shopId: string, currentPath?: string): Promise<AnnouncementWithRelations[]> {
     const now = new Date().toISOString();
 
     console.log('Fetching active announcements with criteria:', {
@@ -81,6 +146,16 @@ export class AnnouncementRepositoryService {
         pagePatternLinks: {
           with: {
             pagePattern: true
+          }
+        },
+        countdownSettings: true,
+        childAnnouncement: {
+          with: {
+            texts: {
+              with: {
+                ctas: true
+              }
+            },
           }
         }
       }
@@ -168,7 +243,7 @@ export class AnnouncementRepositoryService {
   /**
    * Gets all announcements for a shop
    */
-  async getAnnouncementsByShop(shopId: string) {
+  async getAnnouncementsByShop(shopId: string): Promise<AnnouncementWithRelations[]> {
     return await db.query.announcements.findMany({
       where: eq(announcements.shopId, shopId),
       with: {
@@ -184,6 +259,16 @@ export class AnnouncementRepositoryService {
             pagePattern: true,
           },
         },
+        countdownSettings: true,
+        childAnnouncement: {
+          with: {
+            texts: {
+              with: {
+                ctas: true
+              }
+            },
+          }
+        }
       },
       orderBy: sql`${announcements.startDate}
       DESC`,
@@ -200,7 +285,10 @@ export class AnnouncementRepositoryService {
     sort: string,
     page: number,
     limit: number
-  ) {
+  ): Promise<{
+    data: AnnouncementPartial[];
+    totalCount: number;
+  }> {
     // Create base filter conditions
     const baseConditions = [eq(announcements.shopId, shopId)];
 
@@ -268,6 +356,16 @@ export class AnnouncementRepositoryService {
             pagePattern: true,
           },
         },
+        countdownSettings: true,
+        childAnnouncement: {
+          with: {
+            texts: {
+              with: {
+                ctas: true
+              }
+            },
+          }
+        }
       },
       orderBy: sortOrder,
       limit,
@@ -280,7 +378,7 @@ export class AnnouncementRepositoryService {
   /**
    * Bulk deletes announcements
    */
-  async bulkDeleteAnnouncements(ids: number[]) {
+  async bulkDeleteAnnouncements(ids: number[]): Promise<SQLiteDeleteResult> {
     return await db.transaction(async (tx) => {
       // Delete all related records in a single query for each table
       await tx
@@ -319,7 +417,7 @@ export class AnnouncementRepositoryService {
   /**
    * Bulk updates announcement status
    */
-  async bulkUpdateAnnouncementStatus(ids: number[], status: 'draft' | 'published' | 'paused' | 'ended') {
+  async bulkUpdateAnnouncementStatus(ids: number[], status: 'draft' | 'published' | 'paused' | 'ended'): Promise<Announcement[]> {
     return await db.transaction(async (tx) => {
       return tx
         .update(announcements)
@@ -332,7 +430,7 @@ export class AnnouncementRepositoryService {
   /**
    * Toggles an announcement's active status
    */
-  async toggleAnnouncementStatus(id: number, isActive: boolean) {
+  async toggleAnnouncementStatus(id: number, isActive: boolean): Promise<Announcement[]> {
     return db
       .update(announcements)
       .set({isActive})

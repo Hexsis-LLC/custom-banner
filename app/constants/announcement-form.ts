@@ -1,4 +1,4 @@
-import type { Size, FontType, CloseButtonPosition } from "../types/announcement";
+import type { BannerSize, FontType, CloseButtonPosition } from "../types/announcement";
 import type { FormAnnouncementBannerData } from "../types/announcement-form";
 
 export const TABS = [
@@ -11,7 +11,7 @@ export const TABS = [
 
 export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
   basic: {
-    size: 'large' as Size,
+    size: 'large' as BannerSize,
     sizeHeight: "52",
     sizeWidth: "100",
     campaignTitle: '',
@@ -30,7 +30,7 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
   },
   text: {
     announcementText: '',
-    textColor: '#FFFFFF',
+    textColor: 'rgb(255, 255, 255)',
     fontSize: 16,
     fontType: 'site' as FontType,
     fontUrl: '',
@@ -47,18 +47,19 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
     },
     fontType: 'site',
     fontUrl: '',
-    buttonFontColor: '#000000',
-    buttonBackgroundColor: '#FFFFFF',
+    buttonFontColor: 'rgb(0, 0, 0)',
+    buttonBackgroundColor: 'rgb(255, 255, 255)',
     type: 'button',
     text: 'Click Here',
     link: 'https://',
-    bgColor: '#FFFFFF',
-    textColor: '#000000',
+    bgColor: 'rgb(255, 255, 255)',
+    textColor: 'rgb(0, 0, 0)',
   },
   background: {
     backgroundType: 'solid',
-    color1: '#000000',
+    color1: 'rgb(0, 0, 0)',
     color2: '',
+    gradientValue: '',
     pattern: 'none',
     padding: {
       top: 12,
@@ -66,7 +67,7 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
       bottom: 12,
       left: 16,
     },
-    backgroundColor: '#000000',
+    backgroundColor: 'rgb(0, 0, 0)',
     backgroundPattern: null,
   },
   countdown: {
@@ -74,8 +75,23 @@ export const DEFAULT_INITIAL_DATA: FormAnnouncementBannerData = {
     timeFormat: 'HH:mm:ss',
     showDays: true,
     endDateTime: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+    durationDays: 0,
+    durationHours: 0,
+    durationMinutes: 0,
+    durationSeconds: 0,
+    dailyStartTime: '0:00',
+    dailyEndTime: '23:00',
     afterTimerEnds: {
       action: 'hide',
+      message: '',
+      textColor: 'rgb(255, 255, 255)',
+      fontSize: 20,
+      ctaType: 'none',
+      ctaText: '',
+      ctaLink: '',
+      buttonBackground: 'rgb(0, 0, 0)',
+      buttonTextColor: 'rgb(255, 255, 255)',
+      fontType: 'site'
     }
   },
   other: {

@@ -26,19 +26,6 @@ export function DatePickerPopover({
                                     isModal = false,
                                     error,
                                   }: DatePickerPopoverProps) {
-  function nodeContainsDescendant(rootNode: any, descendant: any) {
-    if (rootNode === descendant) {
-      return true;
-    }
-    let parent = descendant.parentNode;
-    while (parent != null) {
-      if (parent === rootNode) {
-        return true;
-      }
-      parent = parent.parentNode;
-    }
-    return false;
-  }
 
   const [visible, setVisible] = useState(false);
   const [{month, year}, setDate] = useState({
@@ -47,13 +34,6 @@ export function DatePickerPopover({
   });
 
   const formattedValue = selectedDate.toISOString().slice(0, 10);
-  const datePickerRef = useRef(null);
-
-  function isNodeWithinPopover(node: any) {
-    return datePickerRef?.current
-      ? nodeContainsDescendant(datePickerRef.current, node)
-      : false;
-  }
 
   function handleInputValueChange() {
     // Read-only field, no need to handle changes

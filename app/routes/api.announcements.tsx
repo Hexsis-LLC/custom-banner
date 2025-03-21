@@ -4,7 +4,15 @@ import { AnnouncementService } from "../services/announcement.server";
 import {AnnouncementAction} from "../services/announcementAction.server";
 import { ZodError } from "zod";
 import { validateAnnouncement } from "../schemas/announcement";
-import type { DbAnnouncement, DbAnnouncementText, DbBannerBackground, DbBannerForm, PagePatternLink } from "../types/announcement";
+import type { 
+  DbAnnouncement, 
+  DbAnnouncementText, 
+  DbBannerBackground, 
+  DbBannerForm, 
+  PagePatternLink,
+  AnnouncementStatus 
+} from "../types/announcement";
+import type { FormState } from "../types/announcement-form";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -158,17 +166,32 @@ const handleSingleAnnouncement = async (
       return createErrorResponse('Invalid announcement data', 400);
     }
 
-    // Update dates and status
-    if (validatedData.basic) {
-      validatedData.basic.startDate = new Date(validatedData.basic.startDate);
-      validatedData.basic.endDate = new Date(validatedData.basic.endDate);
-      validatedData.basic.status = action === 'publish' ? 'published' : 'draft';
-    }
+    // Process dates and status
+    const processedData: any = {
+      ...validatedData,
+      basic: {
+        ...validatedData.basic,
+        startDate: validatedData.basic.startDate instanceof Date 
+          ? validatedData.basic.startDate.toISOString() 
+          : validatedData.basic.startDate,
+        endDate: validatedData.basic.endDate instanceof Date 
+          ? validatedData.basic.endDate.toISOString() 
+          : validatedData.basic.endDate,
+        status: action === 'publish' ? 'published' : 'draft'
+      }
+    };
 
     const announcementAction = new AnnouncementAction();
-    const result = id
-      ? await announcementAction.updateBasicBannerFormData(id, validatedData, shopId)
-      : await announcementAction.createBasicBannerFormData(validatedData, shopId);
+    let result;
+    
+    // Use the proper methods based on whether we're updating or creating
+    if (id) {
+      // Update existing announcement
+      result = await announcementAction.updateBannerFormData(id, processedData, shopId);
+    } else {
+      // Create new announcement
+      result = await announcementAction.createBannerFormData(processedData, shopId);
+    }
 
     return createSuccessResponse(
       `Successfully ${action === 'publish' ? 'published' : 'saved as draft'}`,

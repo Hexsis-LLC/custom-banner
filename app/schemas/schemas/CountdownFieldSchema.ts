@@ -13,7 +13,20 @@ export const countdownFieldSchema = z.object({
   dailyEndTime: z.string().optional(),
   afterTimerEnds: z.object({
     action: z.enum(['hide', 'show_zeros', 'create_announcement']),
-    childAnnouncementId: z.number().optional(),
+    nextAnnouncementId: z.number().optional(),
+    message: z.string().optional(),
+    textColor: z.string().optional(),
+    fontSize: z.number().optional(),
+    ctaType: z.enum(['link', 'button', 'none']).optional(),
+    ctaText: z.string().optional(),
+    ctaLink: z.string().optional(),
+    buttonBackground: z.string().optional(),
+    buttonTextColor: z.string().optional(),
+    fontType: z.enum(['site', 'dynamic', 'custom']).optional(),
+    fontUrl: z.string().optional(),
+    ctaFontType: z.enum(['site', 'dynamic', 'custom']).optional(),
+    ctaFontUrl: z.string().optional(),
+    childAnnouncementId: z.string().optional(),
   }).optional(),
 }).superRefine((data, ctx) => {
   if (data.timerType === 'till_end_date' && !data.endDateTime) {
