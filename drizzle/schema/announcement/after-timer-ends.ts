@@ -6,6 +6,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { announcements } from './announcements';
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from "drizzle-zod";
 
 // Table definition
 export const afterTimerEnds = sqliteTable('after_timer_ends', {
@@ -36,4 +37,9 @@ export const afterTimerEndsRelations = relations(afterTimerEnds, ({ one }) => ({
     fields: [afterTimerEnds.childAnnouncementId],
     references: [announcements.id],
   }),
-})); 
+}));
+
+
+export const SelectAfterTimerEndsSchema = createSelectSchema(afterTimerEnds);
+export const InsertAfterTimerEndsSchema = createInsertSchema(afterTimerEnds);
+export const UpdateAfterTimerEndsSchema = createUpdateSchema(afterTimerEnds);

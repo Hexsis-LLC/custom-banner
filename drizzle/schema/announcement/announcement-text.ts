@@ -5,6 +5,7 @@ import {
   index,
 } from 'drizzle-orm/sqlite-core';
 import { announcements } from './announcements';
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from "drizzle-zod";
 
 // Table definition
 export const announcementText = sqliteTable('announcement_text', {
@@ -23,3 +24,9 @@ export const announcementText = sqliteTable('announcement_text', {
 }, (table) => ({
   announcementIdx: index('text_announcement_idx').on(table.announcementId)
 }));
+
+
+export const SelectAnnouncementTextSchema = createSelectSchema(announcementText);
+export const InsertAnnouncementTextSchema = createInsertSchema(announcementText);
+export const UpdateAnnouncementTextSchema = createUpdateSchema(announcementText);
+

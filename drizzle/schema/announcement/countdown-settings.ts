@@ -6,6 +6,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { announcements } from './announcements';
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from "drizzle-zod";
 
 // Table definition
 export const countdownSettings = sqliteTable('countdown_settings', {
@@ -38,4 +39,9 @@ export const countdownSettingsRelations = relations(countdownSettings, ({ one })
     fields: [countdownSettings.announcementId],
     references: [announcements.id],
   }),
-})); 
+}));
+
+export const SelectCountdownSettingsSchema = createSelectSchema(countdownSettings);
+export const InsertCountdownSettingsSchema = createInsertSchema(countdownSettings);
+export const UpdateCountdownSettingsSchema = createUpdateSchema(countdownSettings);
+

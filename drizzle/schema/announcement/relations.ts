@@ -8,8 +8,9 @@ import {
   announcementText,
   callToAction,
   bannerBackground,
-  bannerForm
+  bannerForm,
 } from './index';
+
 
 // Define relations for announcement with circular dependencies
 export const announcementsRelations = relations(announcements, ({ many, one }) => ({
@@ -46,3 +47,6 @@ export const announcementTextRelations = relations(announcementText, ({ one, man
   }),
   ctas: many(callToAction)
 }));
+
+
+

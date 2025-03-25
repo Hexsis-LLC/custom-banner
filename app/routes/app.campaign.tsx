@@ -1,5 +1,6 @@
-import { Outlet } from "@remix-run/react";
+import {Outlet, useNavigate, useOutletContext} from "@remix-run/react";
 
 export default function AppCampaign() {
-  return <Outlet />;
+  const outletContext = useOutletContext<{ hideNav: boolean, isLoading: boolean }>();
+  return <Outlet context={outletContext} />;
 }

@@ -8,8 +8,7 @@ import {authenticate} from "app/shopify.server";
 import {db} from "app/db.server";
 import {onboardingTable} from "drizzle/schemas";
 import {eq} from "drizzle-orm/sql";
-import {SkeletonLoading} from "../components/SkeletonLoading";
-
+import {useEffect, useState} from "react";
 export const links = () => [{rel: "stylesheet", href: polarisStyles}];
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
@@ -29,8 +28,17 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 
 export default function App() {
   const {apiKey, hideNav} = useLoaderData<typeof loader>();
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation();
-
+  useEffect(() => {
+    if (navigation.state !== "idle") {
+      setIsLoading(true)
+      shopify.loading(true);
+    }else{
+      setIsLoading(false)
+      shopify.loading(false);
+    }
+  }, [navigation]);
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       {hideNav && <NavMenu>
@@ -47,11 +55,7 @@ export default function App() {
         </Link>
         <Link to="/app/">Onboarding</Link>
       </NavMenu>}
-      {navigation.state !== "idle" ? (
-        <SkeletonLoading type="default" title="Loading..." />
-      ) : (
-        <Outlet context={{hideNav}}/>
-      )}
+      <Outlet context={{hideNav,isLoading: isLoading}}/>
     </AppProvider>
   );
 }

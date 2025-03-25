@@ -8,6 +8,7 @@ import {
 import {relations} from 'drizzle-orm';
 import {announcements} from './announcements';
 import {pagePatterns} from './page-patterns';
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from "drizzle-zod";
 
 // Table definition
 export const announcementsXPagePatterns = sqliteTable(
@@ -40,3 +41,9 @@ export const announcementsXPagePatternsRelations = relations(announcementsXPageP
     references: [pagePatterns.id],
   }),
 }));
+
+
+export const SelectAnnouncementsXPagePatternsSchema = createSelectSchema(announcementsXPagePatterns);
+export const InsertAnnouncementsXPagePatternsSchema = createInsertSchema(announcementsXPagePatterns);
+export const UpdateAnnouncementsXPagePatternsSchema = createUpdateSchema(announcementsXPagePatterns);
+

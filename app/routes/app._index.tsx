@@ -1,20 +1,12 @@
-import {
-  Page,
-  Card, Text, Button,
-} from "@shopify/polaris";
-import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation, useLoaderData} from "@remix-run/react";
+
+import {useOutletContext, useNavigate, useSubmit, useActionData, useNavigation} from "@remix-run/react";
 import OnboardingInit from "../components/onbording";
 import {json, type LoaderFunctionArgs} from "@remix-run/node";
 import {authenticate} from "../shopify.server";
 import {initializeOnboarding} from "../services/onboarding.server";
 import {useEffect} from "react";
-import {SkeletonLoading} from "../components/SkeletonLoading";
-import {TitleBar} from "@shopify/app-bridge-react";
-import image from "../assets/onboarding.png";
-import EmptyHome from "../components/home/empty_screen";
-import BannerList from "../components/home/banner_list";
-import {AnnouncementService} from "../services/announcement.server";
-import { Announcement } from "app/types/announcement";
+import {SkeletonLoading} from "../components/loader/SkeletonLoading";
+import AppCampaign from "./app.campaign.banner_type";
 
 interface ActionData {
   success: boolean;
@@ -41,11 +33,10 @@ export const action = async ({request}: LoaderFunctionArgs) => {
 };
 
 export default function Index() {
-  const outletContext = useOutletContext<{ hideNav: boolean }>();
+  const outletContext = useOutletContext<{ hideNav: boolean, isLoading: boolean }>();
   const navigate = useNavigate();
   const submit = useSubmit();
   const actionData = useActionData<ActionData>();
-  const navigation = useNavigation();
 
   // Handle navigation after successful form submission
   useEffect(() => {
@@ -58,21 +49,11 @@ export default function Index() {
     // Only submit the form - navigation will happen after success
     submit({}, {method: "post", action: "?index"});
   };
-
-  // Show skeleton loading during navigation or form submission
-  if (navigation.state !== "idle") {
-    return <SkeletonLoading type="home"/>;
-  }
-
   return (
-
     <>
-
-{/*<BannerList />*/}
-
        {outletContext.hideNav ? (
         <>
-          <BannerList />
+          <AppCampaign />
         </>
       ) : (
         <OnboardingInit onStart={handleStart}></OnboardingInit>

@@ -25,7 +25,7 @@ import {
   getOnboardingStatus
 } from "../services/onboarding.server";
 import enableAppEmbed from "../assets/enable-app-embed-example.png";
-import {SkeletonLoading} from "../components/SkeletonLoading";
+import {SkeletonLoading} from "../components/loader/SkeletonLoading";
 
 interface LoaderData {
   shop: string;

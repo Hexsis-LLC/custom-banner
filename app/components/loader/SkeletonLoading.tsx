@@ -7,6 +7,7 @@ import {
   BlockStack,
   Box,
 } from "@shopify/polaris";
+import {HomeSkeletonLoader} from "./home";
 
 interface SkeletonLoadingProps {
   title?: string;
@@ -52,18 +53,7 @@ export function SkeletonLoading({ title = "Loading...", type = 'default' }: Skel
 
   if (type === 'home') {
     return (
-      <SkeletonPage title={title}>
-        <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="200">
-                <SkeletonDisplayText size="medium" />
-                <SkeletonBodyText lines={2} />
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
-      </SkeletonPage>
+      <HomeSkeletonLoader title={title}></HomeSkeletonLoader>
     );
   }
 
@@ -81,4 +71,4 @@ export function SkeletonLoading({ title = "Loading...", type = 'default' }: Skel
       </Layout>
     </SkeletonPage>
   );
-} 
+}

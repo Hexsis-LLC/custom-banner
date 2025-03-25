@@ -6,6 +6,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 import { announcements } from './announcements';
+import {createInsertSchema, createSelectSchema, createUpdateSchema} from "drizzle-zod";
 
 // Table definition
 export const bannerForm = sqliteTable('banner_form', {
@@ -31,3 +32,8 @@ export const bannerFormRelations = relations(bannerForm, ({ one }) => ({
     references: [announcements.id],
   }),
 }));
+
+export const SelectBannerFormSchema = createSelectSchema(bannerForm);
+export const InsertBannerFormSchema = createInsertSchema(bannerForm);
+export const UpdateBannerFormSchema = createUpdateSchema(bannerForm);
+

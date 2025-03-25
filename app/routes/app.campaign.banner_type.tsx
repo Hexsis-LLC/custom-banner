@@ -1,13 +1,16 @@
-import { useNavigate } from "@remix-run/react";
+import {useLocation, useNavigate} from "@remix-run/react";
 import { Page, Layout, Card, Text, BlockStack, Button, InlineStack, Grid } from "@shopify/polaris";
 import { ExternalIcon } from "@shopify/polaris-icons";
-import type { BannerType } from "../types/announcement";
+import {useEffect} from "react";
 
 export default function AppCampaign() {
+  useEffect(() => {
+    console.log("cdd")
+  },[])
   const navigate = useNavigate();
-
+  const location = useLocation();
   const bannerTypes: Array<{
-    id: BannerType;
+    id: "basic" | "multi_text" | "countdown" | "email_signup";
     title: string;
     description: string;
   }> = [
@@ -54,7 +57,7 @@ export default function AppCampaign() {
                           {type.description}
                         </Text>
                         <InlineStack gap="300">
-                          <Button onClick={() => navigate(`/app/campaign/announcement?type=${type.id}`)}>
+                          <Button onClick={() => navigate(`/app/campaign/announcement?type=${type.id}&fromUrl=${location.pathname}`)}>
                             Select
                           </Button>
                           <Button

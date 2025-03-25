@@ -16,7 +16,7 @@ import {
   import type { IndexFiltersProps, TabProps } from '@shopify/polaris';
   import { useState, useCallback } from 'react';
   import { TitleBar } from "@shopify/app-bridge-react";
-  import { useNavigate } from '@remix-run/react';
+  import {useNavigate} from '@remix-run/react';
 
   export default function CampaignPage() {
     const sleep = (ms: number) =>

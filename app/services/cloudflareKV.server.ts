@@ -1,10 +1,8 @@
-import type {KVAnnouncement} from '../types/announcement';
-
 
 export interface AnnouncementKVData {
-  global: KVAnnouncement[];
+  global: any // KVAnnouncement[];
   __patterns: string[];
-  [key: string]: KVAnnouncement[] | string[];
+  [key: string]: any //KVAnnouncement[] | string[];
 }
 
 export class CloudflareKVService {

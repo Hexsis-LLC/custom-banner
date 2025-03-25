@@ -5,11 +5,10 @@ import {
   Icon,
   Popover,
   Card,
-
 } from "@shopify/polaris";
-import type {PopoverCloseSource} from "@shopify/polaris";
-import {useState, useRef, useEffect} from "react";
-import {CalendarIcon} from "@shopify/polaris-icons";
+import type { PopoverCloseSource } from "@shopify/polaris";
+import { useState, useEffect } from "react";
+import { CalendarIcon } from "@shopify/polaris-icons";
 
 interface DatePickerPopoverProps {
   selectedDate: Date;
@@ -26,14 +25,14 @@ export function DatePickerPopover({
                                     isModal = false,
                                     error,
                                   }: DatePickerPopoverProps) {
-
   const [visible, setVisible] = useState(false);
-  const [{month, year}, setDate] = useState({
+  const [{ month, year }, setDate] = useState({
     month: selectedDate.getMonth(),
     year: selectedDate.getFullYear(),
   });
 
-  const formattedValue = selectedDate.toISOString().slice(0, 10);
+  // ✅ Fix: Format date properly without UTC shift
+  const formattedValue = selectedDate.toLocaleDateString("en-CA"); // "YYYY-MM-DD"
 
   function handleInputValueChange() {
     // Read-only field, no need to handle changes
@@ -44,10 +43,10 @@ export function DatePickerPopover({
   }
 
   function handleMonthChange(month: number, year: number) {
-    setDate({month, year});
+    setDate({ month, year });
   }
 
-  function handleDateSelection({end: newSelectedDate}: { end: Date }) {
+  function handleDateSelection({ end: newSelectedDate }: { end: Date }) {
     onChange(newSelectedDate);
     setVisible(false);
   }
@@ -64,13 +63,14 @@ export function DatePickerPopover({
   const textFieldMarkup = (
     <TextField
       role="combobox"
-      label={"Start date"}
-      labelHidden={true}
-      prefix={<Icon source={CalendarIcon}/>}
+      label="Start date"
+      labelHidden
+      prefix={<Icon source={CalendarIcon} />}
       value={formattedValue}
       onFocus={() => setVisible(true)}
       onChange={handleInputValueChange}
       autoComplete="off"
+      error={error}
     />
   );
 
@@ -83,12 +83,12 @@ export function DatePickerPopover({
           onClose={() => setVisible(false)}
           title={`Select ${label.toLowerCase()}`}
           primaryAction={{
-            content: 'Select',
+            content: "Select",
             onAction: () => setVisible(false),
           }}
           secondaryActions={[
             {
-              content: 'Cancel',
+              content: "Cancel",
               onAction: () => setVisible(false),
             },
           ]}
@@ -130,4 +130,3 @@ export function DatePickerPopover({
     </Popover>
   );
 }
-
